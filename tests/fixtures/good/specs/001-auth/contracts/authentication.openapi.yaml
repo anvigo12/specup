@@ -1,0 +1,10 @@
+openapi: 3.0.3
+info:
+  title: Authentication API
+  version: 1.0.0
+paths:
+  /v1/authenticate:
+    post:
+      responses:
+        "200":
+          description: ok

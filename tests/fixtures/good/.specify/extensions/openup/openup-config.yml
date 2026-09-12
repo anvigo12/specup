@@ -1,0 +1,92 @@
+schema_version: "1.0"
+
+lifecycle:
+  phase: ELABORATION
+  iteration: ITER-E-02
+
+wbs:
+  depth_policy: semantic
+  never_terminal_above: 3
+  max_children_warn: 25
+  store: .specify/wbs/wbs.yaml
+
+risk:
+  high_exposure_threshold: 0.40
+  critical_exposure_threshold: 0.65
+  require_residual_reduction: true
+  store: .specify/risks/risk-register.yaml
+
+artifacts:
+  stores:
+    - .specify/traceability/requirements.yaml
+
+traceability:
+  stores:
+    - .specify/traceability/traceability.yaml
+  perimeter:
+    include:
+      - "src/**"
+    exclude:
+      - "**/*.test.*"
+      - "**/*.spec.*"
+  coverage_thresholds:
+    forward: 1.00
+    backward: 0.95
+  baseline_min_provenance: approved
+
+gherkin:
+  features_glob: "specs/*/acceptance/**/*.feature"
+  require_ac_tag: true
+  require_requirement_tag: true
+
+contracts:
+  openapi_glob: "specs/*/contracts/*.openapi.{yaml,yml,json}"
+  microcks:
+    enabled: false
+
+gates:
+  GATE-LIFECYCLE_OBJECTIVES:
+    phase: INCEPTION
+    conditions:
+      - vision_present
+      - stakeholders_identified
+      - initial_risks_registered
+      - wbs_levels_1_to_3_valid
+      - requirements_have_owners
+
+  GATE-LIFECYCLE_ARCHITECTURE:
+    phase: ELABORATION
+    conditions:
+      - architecture_baselined
+      - all_high_risks_have_mitigation
+      - requirements_traceable
+      - critical_contracts_defined
+      - security_review_complete
+      - wbs_valid
+
+  GATE-INITIAL_OPERATIONAL_CAPABILITY:
+    phase: CONSTRUCTION
+    conditions:
+      - wbs_valid
+      - forward_coverage_met
+      - backward_coverage_met
+      - acceptance_scenarios_passing
+      - no_open_critical_risks
+      - no_orphans
+
+  GATE-PRODUCT_RELEASE:
+    phase: TRANSITION
+    conditions:
+      - all_gates_passed
+      - release_evidence_complete
+      - no_open_high_risks
+      - traceability_final
+      - security_validation_passed
+
+audit:
+  report_provenance_mix: true
+  fail_on:
+    - broken_references
+    - orphan_requirements
+    - unmitigated_high_risk
+    - coverage_below_threshold

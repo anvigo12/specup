@@ -1,0 +1,128 @@
+# Good fixture: specup.md s15/s26 worked example, corrected to the frozen grammar.
+#
+# Note: the document's own example (s17) declares id "1.2.3.4.1.2" with level 7, but that
+# id has six segments. WBS-001 catches exactly that class of error; this fixture uses
+# seven-segment ids for L7 tasks so the level and the id agree.
+schema_version: "1.0"
+program: "Autonomous Traffic Platform"
+depth_policy: semantic
+
+nodes:
+  - id: WBS-1
+    name: "Autonomous Traffic Platform"
+    level: 1
+    status: in-progress
+    kind: structural
+    owner: program-office
+
+  - id: WBS-1.2
+    name: "Elaboration"
+    level: 2
+    parent: WBS-1
+    phase: ELABORATION
+    status: in-progress
+    kind: structural
+    owner: architect
+
+  - id: WBS-1.2.3
+    name: "Iteration E2"
+    level: 3
+    parent: WBS-1.2
+    phase: ELABORATION
+    iteration: ITER-E-02
+    status: in-progress
+    kind: structural
+    owner: iteration-owner
+
+  - id: WBS-1.2.3.4
+    name: "Vehicle Authentication"
+    level: 4
+    parent: WBS-1.2.3
+    phase: ELABORATION
+    iteration: ITER-E-02
+    status: in-progress
+    kind: structural
+    owner: backend-team
+
+  - id: WBS-1.2.3.4.1
+    name: "Certificate-based authentication"
+    level: 5
+    parent: WBS-1.2.3.4
+    phase: ELABORATION
+    iteration: ITER-E-02
+    status: in-progress
+    kind: structural
+    owner: backend-team
+    requirements:
+      - REQ-AUTH-0014
+
+  - id: WBS-1.2.3.4.1.1
+    name: "Secure vehicle onboarding"
+    level: 6
+    parent: WBS-1.2.3.4.1
+    phase: ELABORATION
+    iteration: ITER-E-02
+    status: in-progress
+    kind: structural
+    owner: backend-team
+    requirements:
+      - REQ-AUTH-0014
+
+  - id: WBS-1.2.3.4.1.1.1
+    name: "Define certificate contract"
+    level: 7
+    parent: WBS-1.2.3.4.1.1
+    phase: ELABORATION
+    iteration: ITER-E-02
+    status: done
+    kind: implementation
+    owner: backend-team
+    requirements:
+      - REQ-AUTH-0014
+    estimate:
+      unit: hours
+      value: 4
+    evidence:
+      - EVID-0001
+
+  - id: WBS-1.2.3.4.1.1.2
+    name: "Implement certificate validation"
+    level: 7
+    parent: WBS-1.2.3.4.1.1
+    phase: ELABORATION
+    iteration: ITER-E-02
+    status: done
+    kind: risk-mitigation
+    owner: backend-team
+    requirements:
+      - REQ-AUTH-0014
+    risks:
+      - RISK-0007
+    dependencies:
+      - WBS-1.2.3.4.1.1.1
+    estimate:
+      unit: hours
+      value: 8
+    evidence:
+      - EVID-0001
+
+  - id: WBS-1.2.3.4.1.1.3
+    name: "Add negative-path tests"
+    level: 7
+    parent: WBS-1.2.3.4.1.1
+    phase: ELABORATION
+    iteration: ITER-E-02
+    status: done
+    kind: test
+    owner: qa-team
+    requirements:
+      - REQ-AUTH-0014
+    acceptance:
+      - AC-AUTH-0014-0003
+    dependencies:
+      - WBS-1.2.3.4.1.1.2
+    estimate:
+      unit: hours
+      value: 3
+    evidence:
+      - EVID-0001

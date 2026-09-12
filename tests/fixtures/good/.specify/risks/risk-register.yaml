@@ -1,0 +1,37 @@
+schema_version: "1.0"
+
+risks:
+  # specup.md s19 worked example, with the exposure recomputed and the verification
+  # reference moved into the frozen grammar (the document wrote "TEST-PERF-022").
+  - id: RISK-0007
+    title: "Certificate validation latency"
+    description: >-
+      Certificate chain validation may exceed the per-request latency budget under load,
+      degrading vehicle onboarding.
+    category: technical
+    probability: 0.6
+    impact: 0.9
+    exposure: 0.54
+    phase_identified: ELABORATION
+    iteration_identified: ITER-E-02
+    status: mitigating
+    owner: security-team
+    mitigation:
+      - WBS-1.2.3.4.1.1.2
+    verification:
+      - TC-AUTH-0031
+    residual_probability: 0.2
+    residual_impact: 0.5
+    residual_exposure: 0.10
+    evidence:
+      - EVID-0001
+
+  - id: RISK-0012
+    title: "Certificate authority rotation not automated"
+    category: operational
+    probability: 0.3
+    impact: 0.4
+    exposure: 0.12
+    phase_identified: ELABORATION
+    status: open
+    owner: platform-team

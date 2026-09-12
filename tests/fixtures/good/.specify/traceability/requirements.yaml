@@ -1,0 +1,103 @@
+# Governed artifacts other than WBS nodes and risks, which have their own stores.
+schema_version: "1.0"
+
+artifacts:
+  - id: BUS-OBJ-0017
+    type: business-objective
+    title: "Enable authenticated vehicle communication"
+    status: APPROVED
+    owner: product-owner
+    priority: high
+    phase: INCEPTION
+
+  - id: REQ-AUTH-0014
+    type: requirement
+    title: "Vehicle must authenticate using a valid certificate"
+    status: APPROVED
+    owner: product-owner
+    priority: high
+    phase: ELABORATION
+    iteration: ITER-E-02
+
+  - id: NON-FR-AUTH-0017
+    type: non-functional-requirement
+    title: "Authentication completes within 200ms at p95"
+    status: APPROVED
+    owner: architect
+    priority: high
+    phase: ELABORATION
+    iteration: ITER-E-02
+
+  - id: USR-STR-0014
+    type: user-story
+    title: "As a vehicle, I want certificate-based authentication so unauthorized vehicles are rejected"
+    status: APPROVED
+    owner: product-owner
+
+  - id: AC-AUTH-0014-0003
+    type: acceptance-criterion
+    title: "Invalid certificates must be rejected"
+    status: APPROVED
+    owner: qa-team
+
+  - id: AC-AUTH-0014-0004
+    type: acceptance-criterion
+    title: "Authentication p95 latency stays within budget"
+    status: APPROVED
+    owner: qa-team
+
+  - id: SCEN-AUTH-0031
+    type: scenario
+    title: "Invalid vehicle certificate"
+    status: APPROVED
+    owner: qa-team
+    source: specs/001-auth/acceptance/vehicle-auth.feature
+
+  - id: TC-AUTH-0031
+    type: test-case
+    title: "Certificate rejection and latency budget"
+    status: VERIFIED
+    owner: qa-team
+    approvals:
+      - by: qa-lead
+        at: "2026-09-10T09:00:00Z"
+
+  - id: UNIT-AUTH-0031
+    type: unit-test
+    title: "certificate_validator unit tests"
+    status: VERIFIED
+    owner: backend-team
+    approvals:
+      - by: backend-lead
+        at: "2026-09-10T09:00:00Z"
+
+  - id: CONTRACT-AUTH-0001
+    type: contract
+    title: "Authentication API"
+    status: APPROVED
+    owner: architect
+    source: specs/001-auth/contracts/authentication.openapi.yaml
+
+  - id: ADR-0019
+    type: architecture-decision
+    title: "Use mutual TLS with short-lived vehicle certificates"
+    status: APPROVED
+    owner: architect
+    phase: ELABORATION
+
+  - id: ITER-E-02
+    type: iteration
+    title: "Elaboration iteration 2"
+    status: APPROVED
+    owner: iteration-owner
+    phase: ELABORATION
+
+  - id: EVID-0001
+    type: evidence
+    title: "Certificate validation test run and latency benchmark"
+    status: VERIFIED
+    owner: qa-team
+    approvals:
+      - by: qa-lead
+        at: "2026-09-11T12:00:00Z"
+    source: .specify/evidence/acceptance-results.json
