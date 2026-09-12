@@ -1,0 +1,69 @@
+# Governed artifacts other than WBS nodes and risks, which have their own stores.
+#
+# Every artifact here obeys the ID grammar and the governance states in
+# .specify/extensions/openup/schemas/ID-GRAMMAR.md. Artifacts created by a command always
+# enter at DRAFT: generated does not mean approved (specup.md s31).
+#
+#   DRAFT -> REVIEW -> APPROVED -> BASELINED -> IMPLEMENTED -> VERIFIED -> ACCEPTED
+#
+# BASELINED and beyond require a recorded approval with a named human.
+
+schema_version: "1.0"
+
+artifacts: []
+
+# - id: BUS-OBJ-0001
+#   type: business-objective
+#   title: "The business outcome this exists to produce"
+#   status: DRAFT
+#   owner: "product-owner"
+#   priority: high
+#
+# - id: REQ-DOMAIN-0001
+#   type: requirement
+#   title: "What the system must do"
+#   status: DRAFT
+#   owner: "product-owner"
+#   priority: high
+#   phase: ELABORATION
+#   iteration: ITER-E-01
+#
+# - id: NON-FR-DOMAIN-0001
+#   type: non-functional-requirement
+#   title: "A quality attribute with a measurable target"
+#   status: DRAFT
+#   owner: "architect"
+#   priority: high
+#
+# - id: AC-DOMAIN-0001-0001
+#   type: acceptance-criterion
+#   title: "A single, checkable condition"
+#   status: DRAFT
+#   owner: "qa-team"
+#
+# - id: SCEN-DOMAIN-0001
+#   type: scenario
+#   title: "Gherkin scenario name"
+#   status: DRAFT
+#   owner: "qa-team"
+#   source: specs/001-feature/acceptance/feature.feature
+#
+# - id: CONTRACT-DOMAIN-0001
+#   type: contract
+#   title: "API contract"
+#   status: DRAFT
+#   owner: "architect"
+#   source: specs/001-feature/contracts/api.openapi.yaml
+#
+# - id: ADR-0001
+#   type: architecture-decision
+#   title: "The decision taken"
+#   status: DRAFT
+#   owner: "architect"
+#
+# - id: ITER-E-01
+#   type: iteration
+#   title: "Elaboration iteration 1"
+#   status: DRAFT
+#   owner: "iteration-owner"
+#   phase: ELABORATION

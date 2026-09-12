@@ -1,0 +1,46 @@
+# Risk register — canonical machine-readable form.
+#
+# specup.md s19: this is not passive documentation. A risk at or above the configured
+# high_exposure_threshold MUST point at real WBS work and MUST declare how it will be
+# verified, or the Elaboration gate fails.
+#
+#   exposure = probability x impact   (computed; a stored value that disagrees is an error)
+#
+# risk-register.md is a GENERATED view of this file.
+
+schema_version: "1.0"
+
+risks: []
+
+# - id: RISK-0001
+#   title: "Short statement of what could go wrong"
+#   description: >-
+#     What happens, to whom, and why it matters.
+#   category: technical        # technical | architectural | security | schedule |
+#                              # resource | external | operational | compliance
+#   probability: 0.6           # 0..1
+#   impact: 0.9                # 0..1
+#   exposure: 0.54             # = probability x impact
+#   phase_identified: ELABORATION
+#   iteration_identified: ITER-E-01
+#   status: open               # open | mitigating | mitigated | accepted | closed | materialized
+#   owner: "team-accountable-for-this-risk"
+#
+#   # The WBS nodes that reduce this risk. Each must have kind 'risk-mitigation' and must
+#   # list this risk id back — the link is checked from both ends.
+#   mitigation:
+#     - WBS-1.2.3.4.1.1.2
+#
+#   # How the reduction will be proved. Test case, unit/integration test, or evidence id.
+#   verification:
+#     - TC-DOMAIN-0001
+#
+#   residual_probability: 0.2
+#   residual_impact: 0.5
+#   residual_exposure: 0.10
+#
+#   # Accepting a live risk is a human decision (s59), never an agent's. Required when
+#   # status is 'accepted'.
+#   # acceptance_approval:
+#   #   by: "head-of-engineering"
+#   #   at: "2026-01-01T00:00:00Z"

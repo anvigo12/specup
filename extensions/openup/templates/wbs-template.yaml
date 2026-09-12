@@ -1,0 +1,53 @@
+# Work Breakdown Structure — canonical machine-readable form.
+#
+# wbs.md is a GENERATED view of this file (specup.md s47). Edit this file; never edit both.
+#
+# Levels are semantic, and the id encodes the level — the number of dotted segments IS the
+# level, so WBS-1.2.3 is always L3:
+#
+#   L1  Program / Product          L5  Requirement / User Story
+#   L2  OpenUP Phase               L6  Engineering Work Package
+#   L3  Iteration                  L7  Executable Task
+#   L4  Capability / Feature
+#
+# Under depth_policy 'semantic' (the default) a leaf may stop above L7 if it declares a
+# terminal_reason. Under 'strict' every leaf must be L7.
+
+schema_version: "1.0"
+program: "REPLACE-WITH-PROGRAM-NAME"
+depth_policy: semantic
+
+nodes:
+  - id: WBS-1
+    name: "REPLACE-WITH-PROGRAM-NAME"
+    level: 1
+    status: planned
+    kind: structural
+    owner: "REPLACE-WITH-OWNER"
+
+  # - id: WBS-1.1
+  #   name: "Inception"
+  #   level: 2
+  #   parent: WBS-1
+  #   phase: INCEPTION
+  #   status: planned
+  #   kind: structural
+  #   owner: "project-manager"
+
+  # An L7 executable task. These requirements are enforced, not advisory:
+  #   owner, iteration, and at least one requirement are mandatory at L7.
+  # - id: WBS-1.1.1.1.1.1.1
+  #   name: "Implement X"
+  #   level: 7
+  #   parent: WBS-1.1.1.1.1.1
+  #   phase: INCEPTION
+  #   iteration: ITER-I-01
+  #   status: planned
+  #   kind: implementation        # structural | implementation | test | risk-mitigation | spike | release
+  #   owner: "team"
+  #   requirements: [REQ-DOMAIN-0001]
+  #   risks: [RISK-0001]          # mandatory when kind is risk-mitigation
+  #   acceptance: [AC-DOMAIN-0001-0001]   # mandatory when kind is test
+  #   dependencies: [WBS-1.1.1.1.1.1.2]
+  #   estimate: {unit: hours, value: 8}
+  #   evidence: [EVID-0001]

@@ -1,0 +1,46 @@
+# Traceability graph — the relation store.
+#
+# Edges are stored ONCE, in active voice. The inverse direction is DERIVED at load time and
+# must never be written here: two hand-maintained directions are two things that can
+# disagree, and disagreement is exactly what traceability exists to prevent.
+#
+# Closed vocabulary (a relation outside it is an error). Inverse shown in brackets:
+#   refines [refined-by]        contains [contained-by]     decomposes-to [decomposed-from]
+#   implements [implemented-by] modifies [modified-by]      verifies [verified-by]
+#   executes [executed-by]      tests [tested-by]           conforms-to [conformed-by]
+#   validates [validated-by]    mitigates [mitigated-by]    evidences [evidenced-by]
+#   depends-on [depended-on-by] belongs-to [owns]           approves [approved-by]
+#   supersedes [superseded-by]
+#
+# provenance is required on every edge and is the honest part of this file:
+#   derived   recomputed by a validator from the filesystem; reproducible, and regenerated
+#             on every run. Requires derived_by naming the rule that produced it.
+#   asserted  claimed by an agent or author. Not independently reproducible.
+#   approved  asserted, then signed off by a named human. Requires approval and
+#             approved_endpoints_hash, so editing an endpoint downgrades the edge.
+
+schema_version: "1.0"
+scope: ".specify"
+
+edges: []
+
+# - from: REQ-DOMAIN-0001
+#   relation: refines
+#   to: BUS-OBJ-0001
+#   provenance: asserted
+#
+# - from: WBS-1.2.3.4.1.1.1
+#   relation: implements
+#   to: REQ-DOMAIN-0001
+#   provenance: asserted
+#
+# - from: AC-DOMAIN-0001-0001
+#   relation: verifies
+#   to: REQ-DOMAIN-0001
+#   provenance: asserted
+#
+# - from: src/module/file.ts
+#   relation: implements
+#   to: REQ-DOMAIN-0001
+#   provenance: derived
+#   derived_by: task-modifies-closure

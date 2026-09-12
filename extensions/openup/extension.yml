@@ -1,0 +1,179 @@
+schema_version: "1.0"
+
+extension:
+  id: openup
+  name: "OpenUP Governed Lifecycle"
+  version: "0.1.0"
+  description: "Adds the OpenUP lifecycle to Spec Kit: phases, iterations, a seven-level WBS, an executable risk register, bi-directional traceability, and machine-checkable milestone gates."
+  category: "process"
+  effect: "read-write"
+  author: "SpecUP"
+  repository: "https://github.com/specup/spec-kit-extension-openup"
+  license: "MIT"
+
+requires:
+  # 0.9.0 is the first release whose bundle manifest can compose this extension with
+  # the openup-governance preset and the phase workflows as one unit.
+  speckit_version: ">=0.9.0"
+  tools:
+    - name: python
+      version: ">=3.10"
+      required: true
+
+provides:
+  commands:
+    - name: speckit.openup.init
+      file: commands/speckit.openup.init.md
+      description: "Scaffold the OpenUP governance tree: lifecycle, WBS, risks, traceability, evidence"
+
+    - name: speckit.openup.phase
+      file: commands/speckit.openup.phase.md
+      description: "Show or advance the OpenUP phase; advancing requires the phase gate to pass"
+
+    - name: speckit.openup.iteration
+      file: commands/speckit.openup.iteration.md
+      description: "Open, review, or close an iteration within the current phase"
+
+    - name: speckit.openup.wbs
+      file: commands/speckit.openup.wbs.md
+      description: "Create or update the seven-level Work Breakdown Structure and regenerate wbs.md"
+
+    - name: speckit.openup.risk
+      file: commands/speckit.openup.risk.md
+      description: "Create or update the risk register and bind high-exposure risks to mitigation work"
+
+    - name: speckit.openup.trace
+      file: commands/speckit.openup.trace.md
+      description: "Build, derive, and validate the bi-directional traceability graph"
+
+    - name: speckit.openup.behavior
+      file: commands/speckit.openup.behavior.md
+      description: "Write Gherkin scenarios bound by tag to acceptance criteria and requirements"
+
+    - name: speckit.openup.gate
+      file: commands/speckit.openup.gate.md
+      description: "Evaluate a lifecycle gate against evidence and report which conditions fail"
+
+    - name: speckit.openup.audit
+      file: commands/speckit.openup.audit.md
+      description: "Filesystem-first compliance audit with coverage, orphans, and evidence quality"
+
+  templates:
+    - name: openup-wbs
+      file: templates/wbs-template.yaml
+      description: "Seven-level WBS starter with the level semantics documented inline"
+
+    - name: openup-risk-register
+      file: templates/risk-register-template.yaml
+      description: "Risk register starter with the mitigation and verification contract"
+
+    - name: openup-requirements
+      file: templates/requirements-template.yaml
+      description: "Governed artifact registry starter"
+
+    - name: openup-traceability
+      file: templates/traceability-template.yaml
+      description: "Relation store starter with the closed vocabulary and provenance rules"
+
+    - name: openup-vision
+      file: templates/vision-template.md
+      description: "Inception vision document"
+
+    - name: openup-stakeholders
+      file: templates/stakeholders-template.md
+      description: "Stakeholders and human approval boundaries"
+
+    - name: openup-index
+      file: templates/index-template.md
+      description: "Directory context map for progressive disclosure"
+
+  scripts:
+    - name: openup-init
+      file: scripts/python/init_openup.py
+      description: "Scaffold the governance tree; never overwrites authored content"
+      runtimes: [python]
+
+    - name: openup-model
+      file: scripts/python/openup_model.py
+      description: "Shared graph loading, indexing, and verdict types"
+      runtimes: [python]
+
+    - name: validate-wbs
+      file: scripts/python/validate_wbs.py
+      description: "Validate WBS structure, depth policy, and reference resolution"
+      runtimes: [python]
+
+    - name: validate-risk
+      file: scripts/python/validate_risk.py
+      description: "Validate risk exposure arithmetic, mitigation, and verification"
+      runtimes: [python]
+
+    - name: validate-trace
+      file: scripts/python/validate_trace.py
+      description: "Validate the traceability graph, coverage, orphans, and provenance"
+      runtimes: [python]
+
+    - name: evaluate-gate
+      file: scripts/python/evaluate_gate.py
+      description: "Evaluate a named lifecycle gate's conditions against evidence"
+      runtimes: [python]
+
+    - name: openup-audit
+      file: scripts/python/audit.py
+      description: "Aggregate compliance audit across every validator and the current gate"
+      runtimes: [python]
+
+  config:
+    - name: "openup-config.yml"
+      template: "openup-config.yml"
+      description: "Lifecycle position, WBS depth policy, risk thresholds, traceability perimeter, gate definitions"
+      required: true
+
+# Hooks keep the governed graph current as the core workflow runs. They are ERGONOMIC,
+# not enforcement: a hook is rendered as an instruction into the command prompt and an
+# agent can decline it. Hard gates live in the phase workflows' shell steps, which run
+# the same validators and abort on a non-zero exit code.
+hooks:
+  after_specify:
+    command: speckit.openup.trace
+    optional: true
+    prompt: "Requirements changed. Update the traceability graph?"
+    description: "Keep requirement edges current after specification"
+
+  after_plan:
+    command: speckit.openup.wbs
+    optional: true
+    prompt: "Plan changed. Refresh the WBS from it?"
+    description: "Keep the WBS aligned with the plan"
+
+  after_tasks:
+    command: speckit.openup.trace
+    optional: true
+    prompt: "Tasks changed. Re-derive task and WBS edges?"
+    description: "Keep task edges current after task generation"
+
+  after_implement:
+    - command: speckit.openup.trace
+      priority: 10
+      optional: true
+      prompt: "Code changed. Re-derive source-level traceability?"
+      description: "Recompute derived edges from the filesystem"
+    - command: speckit.openup.audit
+      priority: 20
+      optional: true
+      prompt: "Run the compliance audit on the updated graph?"
+      description: "Report coverage, orphans, and evidence quality after implementation"
+
+tags:
+  - "openup"
+  - "governance"
+  - "traceability"
+  - "risk"
+  - "wbs"
+  - "lifecycle"
+
+defaults:
+  depth_policy: semantic
+  high_exposure_threshold: 0.40
+  forward_coverage_threshold: 1.00
+  backward_coverage_threshold: 0.95
