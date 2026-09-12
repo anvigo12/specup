@@ -7,7 +7,9 @@ this validator derives the inverse direction rather than trusting a second hand-
 dataset, which is what keeps the two directions from disagreeing.
 
 The provenance mix (s3 of ID-GRAMMAR.md) is always reported: a graph that is overwhelmingly
-'asserted' must not be able to present itself as fully covered.
+'asserted' must not be able to present itself as fully covered. TRC-010 goes one step further
+and re-runs the derivation rules in derivers.py, because a `derived` label nobody can
+reproduce is an assertion with better marketing.
 """
 
 from __future__ import annotations
@@ -15,7 +17,8 @@ from __future__ import annotations
 import sys
 from typing import Any
 
-from openup_model import ACYCLIC, Verdict, base_parser, load_graph, run, schema_errors
+import derivers
+from openup_model import ACYCLIC, SKIP, Verdict, base_parser, load_graph, run, schema_errors
 
 REQUIREMENT_TYPES = {"requirement", "non-functional-requirement"}
 TEST_TYPES = {"test-case", "unit-test", "integration-test"}
@@ -181,6 +184,49 @@ def validate(args: Any) -> Verdict:
     ]
     _record(verdict, "TRC-009", weak, f"edges on baselined artifacts meet provenance '{minimum}'")
 
+    # TRC-010 / TRC-011 / TRC-012 — is 'derived' true, or only claimed?
+    derivations = derivers.derive_all(graph)
+    produced = derivers.triples_by_rule(derivations)
+    stored = {edge.triple for edge in graph.edges}
+
+    false_claims: list[str] = []
+    verified = unverified = 0
+    for edge in graph.edges:
+        if edge.provenance != "derived":
+            continue
+        rule = edge.derived_by
+        if rule is None:
+            continue  # schema violation; TRC-000 owns it
+        if rule not in derivers.KNOWN_RULES:
+            false_claims.append(f"{edge}: derived_by '{rule}' names no known derivation rule")
+        elif rule in derivers.UNIMPLEMENTED_RULES:
+            unverified += 1
+        elif edge.triple in derivations[rule].triples:
+            verified += 1
+        else:
+            false_claims.append(
+                f"{edge}: claims derived_by '{rule}', but that rule does not reproduce it "
+                f"from the filesystem — the edge is an assertion wearing a derived label"
+            )
+    _record(verdict, "TRC-010", false_claims,
+            f"{verified} derived edge(s) reproduced by the rule they name"
+            + (f"; {unverified} await an unimplemented rule" if unverified else ""))
+
+    missing = [f"{rule} produces {' --'.join(triple[:2])}--> {triple[2]}, which no store declares"
+               for triple, rule in sorted(produced.items()) if triple not in stored]
+    _record(verdict, "TRC-011", missing,
+            f"all {len(produced)} rule-derivable edge(s) are present in the graph")
+
+    criteria = [aid for aid in graph.artifacts if grammar.type_of(aid) == "acceptance-criterion"]
+    uncovered = [f"{aid}: no scenario executes it" for aid in sorted(criteria)
+                 if not graph.follow(aid, "executes", reverse=True)]
+    scenario_coverage = _ratio(len(criteria) - len(uncovered), len(criteria))
+    if not config["gherkin"].get("require_scenario_per_ac", True):
+        verdict.add("TRC-012", SKIP, "gherkin.require_scenario_per_ac is disabled in config")
+    else:
+        _record(verdict, "TRC-012", uncovered,
+                f"all {len(criteria)} acceptance criterion(s) have at least one scenario")
+
     mix = {level: sum(1 for e in graph.edges if e.provenance == level)
            for level in ("derived", "asserted", "approved")}
     verdict.metrics = {
@@ -193,6 +239,13 @@ def validate(args: Any) -> Verdict:
         "orphans": len(orphans),
         "provenance_mix": mix,
         "asserted_share": round(_ratio(mix["asserted"], len(graph.edges)), 4),
+        # 'derived' is only as good as the rule behind it. These split the label into what a
+        # rule actually reproduced and what is merely waiting on one, so the audit cannot
+        # present an unimplemented rule as machine-checkable evidence.
+        "derived_verified": verified,
+        "derived_unverified": unverified,
+        "acceptance_criteria": len(criteria),
+        "scenario_coverage": round(scenario_coverage, 4),
     }
     return verdict
 

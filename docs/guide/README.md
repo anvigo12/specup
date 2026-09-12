@@ -82,7 +82,7 @@ So every traceability edge carries **provenance**:
 
 | Value | Meaning | Trust |
 |---|---|---|
-| `derived` | Recomputed from the filesystem by a named rule | Machine-checkable |
+| `derived` | Recomputed from the filesystem by a named rule, and the rule is re-run to check | Machine-checkable |
 | `asserted` | Claimed by an agent or author | Claim only |
 | `approved` | Asserted, then signed off by a named human | Governance-grade |
 
@@ -90,6 +90,20 @@ An `approved` edge is bound to its endpoints by a SHA-256 hash, so editing eithe
 downgrades the edge rather than silently keeping the sign-off. Every audit prints the
 derived/asserted/approved mix next to the coverage figure, so a graph that is overwhelmingly
 `asserted` cannot present itself as fully covered.
+
+**And the label itself is checked.** The first version of this model closed the circularity
+one level too high: a schema can require `derived_by` to be *present*, but not to be *true*, so
+an agent could move its own claim from `asserted` to `derived`, type a plausible rule name, and
+improve the exact ratio the audit reports. `TRC-010` re-executes the rule an edge names and
+fails the edge when it does not come back. Three of the six declared rules are implemented; an
+edge naming one of the other three is reported as `derived_unverified` and is not counted as
+evidence at a gate. The rules live in
+[`derivers.py`](../../extensions/openup/scripts/python/derivers.py) and regenerate into a
+machine-owned store:
+
+```bash
+python3 .specify/extensions/openup/scripts/python/derive_edges.py --write
+```
 
 ---
 
@@ -282,6 +296,26 @@ Forward only, one step at a time, except that any state may drop back to `DRAFT`
 
 **Generated does not mean approved.** Anything a command creates enters at `DRAFT`.
 
+### Gherkin, and the contract layer that is not built
+
+Gherkin is part of the model, and the part that is built is genuinely built. `.feature` files
+under `gherkin.features_glob` are parsed; each scenario carries its own `@SCEN-<DOMAIN>-nnnn`
+identity plus the `@AC-` criteria it executes, and `gherkin-tag-scan` turns those tags into
+`executes` edges. Tag inheritance works the way Gherkin defines it — `Feature:` tags reach every
+scenario, `Rule:` tags reach the scenarios under that rule. `TRC-012` then enforces `specup.md`
+§24 directly: an acceptance criterion no scenario executes fails the graph.
+
+What Gherkin here does **not** do is run. `acceptance_scenarios_passing` reads
+`.specify/evidence/acceptance-results.json` and trusts whatever produced it; SpecUP binds
+scenarios into the graph, it does not execute them. Wire your own runner to write that file.
+
+The contract layer is a different story: **nothing validates a contract document at all.**
+`MICROCKS-TEST-*` ids and the `validates` relation are reserved in the grammar so nothing has
+to be renamed later, but `contracts.microcks.enabled`, `openapi_glob` and `asyncapi_glob` are
+read by no code, and `critical_contracts_defined` only asserts that a registered `CONTRACT-*`
+artifact's `source` file exists — it never opens it. If you need API conformance today, that is
+a gap to fill yourself, not a feature to configure.
+
 ---
 
 ## The lifecycle
@@ -334,7 +368,8 @@ Every one is backed by a validator you can run yourself. Nothing is agent-only:
 |---|---|---|
 | `validate_wbs.py` | 12 | level/id agreement, parentage, single root, depth policy, reference resolution, dependency cycles |
 | `validate_risk.py` | 8 | exposure arithmetic, residual reduction, mitigation and verification for high risks |
-| `validate_trace.py` | 10 | endpoint resolution, relation legality, duplicates, cycles, coverage, orphans, provenance floor |
+| `validate_trace.py` | 13 | endpoint resolution, relation legality, duplicates, cycles, coverage, orphans, provenance floor, derivation reproducibility, scenario coverage |
+| `derive_edges.py` | 4 | what the derivation rules recover; `--write` regenerates the derived store |
 | `select_work.py` | 3 | Definition of Ready, risk-first ordering |
 | `evaluate_gate.py` | 21 conditions | every condition name declared in config |
 | `audit.py` | — | the aggregate report |

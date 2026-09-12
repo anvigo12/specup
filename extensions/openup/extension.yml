@@ -118,6 +118,16 @@ provides:
       description: "Validate the traceability graph, coverage, orphans, and provenance"
       runtimes: [python]
 
+    - name: openup-derivers
+      file: scripts/python/derivers.py
+      description: "The derivation rules that recompute 'derived' edges from the filesystem"
+      runtimes: [python]
+
+    - name: derive-edges
+      file: scripts/python/derive_edges.py
+      description: "Report or regenerate the machine-derivable traceability edges"
+      runtimes: [python]
+
     - name: select-work
       file: scripts/python/select_work.py
       description: "Select Definition-of-Ready work for the current iteration, ordered risk-first"

@@ -31,8 +31,8 @@ task            # list everything
 
 | Task | What it runs |
 |---|---|
-| `task test` | `python3 -m pytest tests/ -q` — 162 passed, 8 skipped |
-| `task test:engine` | the same suite under `.venv`, with spec-kit importable — 170 passed |
+| `task test` | `python3 -m pytest tests/ -q` — 189 passed, 8 skipped |
+| `task test:engine` | the same suite under `.venv`, with spec-kit importable — 197 passed |
 | `task test:both` | both, in order |
 
 The two suites are not redundant, and `test:both` is the one to run before pushing. Eight

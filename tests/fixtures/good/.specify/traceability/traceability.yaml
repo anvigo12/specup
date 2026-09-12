@@ -1,4 +1,9 @@
 # Edges are stored ONCE in active voice. Inverses are derived at load time, never stored.
+#
+# Hand-maintained. Edges an implemented rule can recompute do NOT belong here — they live in
+# derived.yaml, which derive_edges.py rewrites in full. The `derived` edges that remain below
+# name rules that are not implemented yet, so nothing can reproduce them; validate_trace.py
+# counts them as unverified rather than as evidence (metrics.derived_unverified).
 schema_version: "1.0"
 scope: ".specify"
 
@@ -38,12 +43,6 @@ edges:
     relation: mitigates
     to: RISK-0007
     provenance: asserted
-  - from: WBS-1.2.3.4.1.1.2
-    relation: belongs-to
-    to: ITER-E-02
-    provenance: derived
-    derived_by: wbs-iteration-field
-
   # verification chain
   - from: AC-AUTH-0014-0003
     relation: verifies
@@ -53,11 +52,6 @@ edges:
     relation: verifies
     to: NON-FR-AUTH-0017
     provenance: asserted
-  - from: SCEN-AUTH-0031
-    relation: executes
-    to: AC-AUTH-0014-0003
-    provenance: derived
-    derived_by: gherkin-tag-scan
   - from: TC-AUTH-0031
     relation: verifies
     to: REQ-AUTH-0014
@@ -69,11 +63,6 @@ edges:
     to: REQ-AUTH-0014
     provenance: derived
     derived_by: task-modifies-closure
-  - from: UNIT-AUTH-0031
-    relation: tests
-    to: src/security/certificate_validator.ts
-    provenance: derived
-    derived_by: test-file-naming-convention
   - from: src/security/certificate_validator.ts
     relation: conforms-to
     to: CONTRACT-AUTH-0001

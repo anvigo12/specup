@@ -42,7 +42,7 @@ help.
 | Is there a test suite with meaningful coverage? | Tests are the cheapest source of `derived` edges |
 | Are there existing ADRs? | Architecture baseline is the most expensive gate condition to satisfy from nothing |
 | Who will own the risk register? | If nobody, do not create one |
-| Are there real contracts (OpenAPI/AsyncAPI)? | Feeds `critical_contracts_defined` |
+| Are there real contracts (OpenAPI/AsyncAPI)? | Satisfies `critical_contracts_defined` — which only checks the file exists, not that it is valid |
 
 A useful shape of the answer: "The `payments` service is under active development, has an
 OpenAPI spec and 70% test coverage, and the team lead will own risks." That is a beachhead.
@@ -104,15 +104,19 @@ On a populated graph that reports:
 
 ```json
 {
-  "edges": 19,
+  "edges": 26,
   "requirements": 2,
   "forward_coverage": 1.0,
   "verification_coverage": 1.0,
   "backward_coverage": 1.0,
   "perimeter_files": 2,
   "orphans": 0,
-  "provenance_mix": { "derived": 8, "asserted": 11, "approved": 0 },
-  "asserted_share": 0.5789
+  "provenance_mix": { "derived": 15, "asserted": 11, "approved": 0 },
+  "asserted_share": 0.4231,
+  "derived_verified": 10,
+  "derived_unverified": 5,
+  "acceptance_criteria": 2,
+  "scenario_coverage": 1.0
 }
 ```
 
@@ -124,8 +128,14 @@ If `perimeter_files` runs to hundreds and `orphans` matches it, the perimeter is
 wide. Narrow it to one module and repeat until the orphan list is something a person could
 actually work through.
 
-`asserted_share` is the number to keep honest. It will start near 1.0 and should fall as
-`derived` edges land.
+`derived_verified` is the number to keep honest — not `asserted_share`, which can be moved by
+relabelling. It counts only edges a rule re-derived from the filesystem this run, so it cannot
+be improved except by making the repo more legible: naming test files after their subject,
+tagging scenarios, filling in `iteration:`. It will start at 0 and should climb.
+
+Watch `derived_unverified` too. It counts edges claiming a rule that does not exist yet, which
+look like evidence in a coverage report and are not. On a brownfield graph that number should
+stay at 0 — if it is climbing, something is labelling assertions `derived`.
 
 ### Lower the coverage thresholds — as a recorded decision
 
@@ -169,17 +179,27 @@ implementation"` so a reader can tell reconstructed intent from original intent.
 
 ### 3b. Start with derived edges, because they are free and true
 
-The cheapest real edges come from the filesystem, not from judgement:
+The cheapest real edges come from the filesystem, not from judgement. Three rules are
+implemented, and on a brownfield repo two of them usually pay immediately:
 
-- **Tests → source.** Test-file naming conventions give you `tests` edges mechanically.
-- **Source → contract.** A service with an OpenAPI spec gives you `conforms-to` edges.
-- **Evidence → task.** CI reports and coverage output are evidence artifacts.
+| Rule | What it needs from you | Typical brownfield yield |
+|---|---|---|
+| `test-file-naming-convention` | register each test file as a `UNIT-*`/`TC-*`/`INTG-*` artifact with `source:` | high — an existing suite is already named this way |
+| `wbs-iteration-field` | put `iteration:` on WBS nodes | free, once the skeleton exists |
+| `gherkin-tag-scan` | `@SCEN-`/`@AC-` tags in `.feature` files | low at first — most brownfield repos have no tagged features |
 
 ```bash
+python3 .specify/extensions/openup/scripts/python/derive_edges.py --write
 python3 .specify/extensions/openup/scripts/python/validate_trace.py --json
 ```
 
-Every edge a validator can recompute is one you never have to defend in a review.
+Every edge a rule can recompute is one you never have to defend in a review.
+
+**Source → contract and evidence → task are not implemented.** `openapi-operation-scan`,
+`task-modifies-closure` and `evidence-manifest-scan` are declared but have no code behind them,
+so an edge naming one cannot be reproduced and is reported as `derived_unverified` rather than
+counted as evidence. Write those links as `asserted` instead; the label is accurate, and a
+false `derived` costs you the audit's only real signal.
 
 ### 3c. Then asserted edges, honestly labelled
 
@@ -330,8 +350,10 @@ is the main one.
 
 **Asking an agent to "generate the traceability matrix" for existing code.** It will produce a
 complete, plausible, entirely `asserted` graph in minutes. It will look like success. It is the
-exact circularity SpecUP's provenance model exists to expose — and labelling that output
-`derived` destroys the one signal anybody had.
+exact circularity SpecUP's provenance model exists to expose. Labelling that output `derived`
+to make it look checkable now fails `TRC-010` — but the graph underneath is still fabricated,
+and no validator can tell you that an `asserted` edge is wrong. The tooling protects the label,
+not your judgement about what to trace.
 
 **Setting `phase: INCEPTION` on a system in production.** You will hold the wrong gate and
 learn nothing.
@@ -358,3 +380,6 @@ impossible; install through it.
 | `architecture_baselined` fails, no ADRs exist | Nothing to baseline | Write the two or three ADRs that describe the system as it is |
 | Gate fails on a condition that cannot apply | Brownfield mismatch | Remove the condition from config with a comment — do not fake evidence |
 | Every validator exits `2` | Python dependencies missing | `pip install -r .specify/extensions/openup/requirements.txt` |
+| `TRC-010` fails | An edge claims a rule that does not reproduce it | Fix the claim, not the label — usually the edge should be `asserted` |
+| `TRC-011` fails | The derived store is behind the filesystem | `python3 .specify/extensions/openup/scripts/python/derive_edges.py --write` |
+| `TRC-012` fails on recovered criteria | Brownfield ACs rarely have scenarios yet | Write them, or set `gherkin.require_scenario_per_ac: false` with a target date beside it |

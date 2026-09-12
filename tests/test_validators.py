@@ -335,7 +335,7 @@ def test_unimplemented_condition_fails_closed(project):
     assert "nonexistent_condition" in failing(verdict)
 
 
-def test_release_gate_rejects_a_mostly_asserted_graph(project):
+def test_release_gate_rejects_a_graph_that_is_mostly_unverifiable(project):
     """100% coverage built from unverifiable claims must not pass the release gate."""
     project.config(lambda c: c["lifecycle"].update(phase="TRANSITION"))
     verdict = project.gate("GATE-PRODUCT_RELEASE")

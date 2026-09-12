@@ -67,7 +67,7 @@ steps:
     command: speckit.openup.trace
     integration: "{{ inputs.integration }}"
     input:
-      args: "Derive every edge that can be derived, then assert the remaining judgment links. Mark judgment links 'asserted', not 'derived'."
+      args: "Run derive_edges.py --write for the mechanical edges, then assert the remaining judgment links by hand. Mark judgment links 'asserted', never 'derived' - TRC-010 re-runs the rules and fails any edge they do not reproduce."
 
   # -- structural checks, surfaced before the milestone --------------------
   # continue_on_error keeps the run alive so all three reports are visible at once;
@@ -81,6 +81,15 @@ steps:
   - id: check-risk
     type: shell
     run: "python3 .specify/extensions/openup/scripts/python/validate_risk.py --json --out .specify/evidence/checks/risk.json"
+    continue_on_error: true
+    timeout: 600
+
+  # Regenerate before checking, so TRC-011 reports a graph that is genuinely behind the
+  # filesystem rather than one that is merely a step out of date. The write is mechanical —
+  # it only rewrites the machine-owned derived store — so it cannot manufacture a pass.
+  - id: derive-edges
+    type: shell
+    run: "python3 .specify/extensions/openup/scripts/python/derive_edges.py --write"
     continue_on_error: true
     timeout: 600
 

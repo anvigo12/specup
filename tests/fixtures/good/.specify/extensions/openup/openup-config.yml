@@ -23,6 +23,7 @@ artifacts:
 traceability:
   stores:
     - .specify/traceability/traceability.yaml
+    - .specify/traceability/derived.yaml   # machine-owned; derive_edges.py --write
   perimeter:
     include:
       - "src/**"
@@ -38,6 +39,11 @@ gherkin:
   features_glob: "specs/*/acceptance/**/*.feature"
   require_ac_tag: true
   require_requirement_tag: true
+  require_scenario_per_ac: true
+
+testing:
+  stem_suffixes: [".test", ".spec", "_test", "_spec", "-test", "Test"]
+  stem_prefixes: ["test_", "test-"]
 
 contracts:
   openapi_glob: "specs/*/contracts/*.openapi.{yaml,yml,json}"

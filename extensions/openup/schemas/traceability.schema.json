@@ -36,7 +36,7 @@
         },
         "derived_by": {
           "type": "string",
-          "description": "Required when provenance is 'derived': the validator rule that produced this edge, so it can be reproduced or invalidated. Derived edges are regenerated on every run and must never be hand-edited."
+          "description": "Required when provenance is 'derived': the rule in derivers.py that produced this edge. This schema can only require the field to be PRESENT - validate_trace.py TRC-010 is what re-runs the named rule and fails the edge if it does not reproduce it, which is what stops 'derived' from being a label anyone can type. Derived edges are regenerated wholesale into the machine-owned store and must never be hand-edited."
         },
         "approval": {
           "$ref": "artifact.schema.json#/$defs/approval",
@@ -76,5 +76,5 @@
     "edges": { "type": "array", "items": { "$ref": "#/$defs/edge" } }
   },
 
-  "$comment": "Graph-level invariants enforced by validate_trace.py: (1) both endpoints resolve to an artifact that exists, or the edge is 'broken'; (2) relation is type-legal for its endpoints per the domain/range table in ID-GRAMMAR.md s2; (3) no duplicate (from, relation, to) triples across merged stores; (4) no cycles on contains, decomposes-to, refines, depends-on, supersedes; (5) forward coverage - every requirement reaches an implementing WBS node and a verifying acceptance criterion; (6) backward coverage - every source file inside the configured traceability perimeter is reachable from some requirement; (7) orphan detection per s54, scoped by the perimeter; (8) the derived:asserted:approved ratio is reported, so a graph that is overwhelmingly 'asserted' cannot present itself as 100% covered."
+  "$comment": "Graph-level invariants enforced by validate_trace.py: (1) both endpoints resolve to an artifact that exists, or the edge is 'broken'; (2) relation is type-legal for its endpoints per the domain/range table in ID-GRAMMAR.md s2; (3) no duplicate (from, relation, to) triples across merged stores; (4) no cycles on contains, decomposes-to, refines, depends-on, supersedes; (5) forward coverage - every requirement reaches an implementing WBS node and a verifying acceptance criterion; (6) backward coverage - every source file inside the configured traceability perimeter is reachable from some requirement; (7) orphan detection per s54, scoped by the perimeter; (8) the derived:asserted:approved ratio is reported, so a graph that is overwhelmingly 'asserted' cannot present itself as 100% covered; (9) every 'derived' edge is re-derived by the rule it names, and the ones naming a rule that is not implemented are counted separately rather than trusted; (10) the store must contain every edge the implemented rules produce; (11) every acceptance criterion has at least one scenario executing it (s24)."
 }

@@ -53,6 +53,13 @@ artifacts:
     owner: qa-team
     source: specs/001-auth/acceptance/vehicle-auth.feature
 
+  - id: SCEN-AUTH-0032
+    type: scenario
+    title: "Authentication stays within the latency budget"
+    status: APPROVED
+    owner: qa-team
+    source: specs/001-auth/acceptance/vehicle-auth.feature
+
   - id: TC-AUTH-0031
     type: test-case
     title: "Certificate rejection and latency budget"
@@ -67,6 +74,7 @@ artifacts:
     title: "certificate_validator unit tests"
     status: VERIFIED
     owner: backend-team
+    source: src/security/certificate_validator.test.ts
     approvals:
       - by: backend-lead
         at: "2026-09-10T09:00:00Z"

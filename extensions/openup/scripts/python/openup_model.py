@@ -267,13 +267,17 @@ DEFAULT_CONFIG: dict[str, Any] = {
              "require_residual_reduction": True, "store": ".specify/risks/risk-register.yaml"},
     "artifacts": {"stores": [".specify/traceability/requirements.yaml", "specs/*/artifacts.yaml"]},
     "traceability": {
-        "stores": [".specify/traceability/traceability.yaml", "specs/*/traceability/matrix.yaml"],
+        "stores": [".specify/traceability/traceability.yaml", "specs/*/traceability/matrix.yaml",
+                   ".specify/traceability/derived.yaml"],
         "perimeter": {"include": ["src/**"], "exclude": []},
         "coverage_thresholds": {"forward": 1.00, "backward": 0.95},
         "baseline_min_provenance": "approved",
     },
     "gherkin": {"features_glob": "specs/*/acceptance/**/*.feature",
-                "require_ac_tag": True, "require_requirement_tag": True},
+                "require_ac_tag": True, "require_requirement_tag": True,
+                "require_scenario_per_ac": True},
+    "testing": {"stem_suffixes": [".test", ".spec", "_test", "_spec", "-test", "Test"],
+                "stem_prefixes": ["test_", "test-"]},
     "gates": {},
     "audit": {"report_provenance_mix": True, "fail_on": []},
 }
@@ -340,7 +344,7 @@ def _load_yaml(path: pathlib.Path) -> dict[str, Any]:
     return data
 
 
-def _expand(root: pathlib.Path, patterns: Iterable[str]) -> Iterator[pathlib.Path]:
+def expand_paths(root: pathlib.Path, patterns: Iterable[str]) -> Iterator[pathlib.Path]:
     for pattern in patterns:
         if any(ch in pattern for ch in "*?["):
             for match in sorted(glob.glob(str(root / pattern), recursive=True)):
@@ -409,7 +413,7 @@ class Graph:
             self.risks[risk_id] = risk
 
     def _load_artifacts(self) -> None:
-        for path in _expand(self.root, self.config["artifacts"]["stores"]):
+        for path in expand_paths(self.root, self.config["artifacts"]["stores"]):
             self.loaded_files.append(self._rel(path))
             doc = _load_yaml(path)
             for artifact in doc.get("artifacts", []) or []:
@@ -420,7 +424,7 @@ class Graph:
 
     def _load_edges(self) -> None:
         seen: dict[tuple[str, str, str], Edge] = {}
-        for path in _expand(self.root, self.config["traceability"]["stores"]):
+        for path in expand_paths(self.root, self.config["traceability"]["stores"]):
             self.loaded_files.append(self._rel(path))
             doc = _load_yaml(path)
             for raw in doc.get("edges", []) or []:

@@ -48,6 +48,10 @@ traceability:
   stores:
     - .specify/traceability/traceability.yaml
     - specs/*/traceability/matrix.yaml
+    # Machine-owned. derive_edges.py --write regenerates this file wholesale from the
+    # implemented derivation rules; never hand-edit it. Keeping it separate is what lets
+    # a derived edge be *reproduced* rather than merely *labelled* (TRC-010).
+    - .specify/traceability/derived.yaml
 
   # The traceability perimeter. s54 flags every untraced source file as an orphan, which at
   # file granularity would require an edge for every util, config, and generated file.
@@ -61,8 +65,18 @@ traceability:
       - "**/*.generated.*"
       - "**/__snapshots__/**"
       - "**/node_modules/**"
+      # Keep these in step with testing.stem_suffixes / stem_prefixes below. A test file that
+      # a derivation rule recognises but the perimeter does not is counted twice over: it
+      # derives a `tests` edge AND reports as an untraced source file, so backward coverage
+      # falls every time someone adds a test.
       - "**/*.test.*"
       - "**/*.spec.*"
+      - "**/*_test.*"
+      - "**/*_spec.*"
+      - "**/*-test.*"
+      - "**/*Test.*"
+      - "**/test_*.*"
+      - "**/test-*.*"
 
   coverage_thresholds:
     forward: 1.00   # every requirement reaches implementation and verification
@@ -75,15 +89,32 @@ traceability:
 gherkin:
   features_glob: "specs/*/acceptance/**/*.feature"
   # s24: every acceptance criterion has >=1 scenario, and every scenario maps back to an AC
-  # and a requirement. Scenario binding is by @TAG using the ID grammar.
+  # and a requirement. Scenario binding is by @TAG using the ID grammar. Each scenario also
+  # carries its own @SCEN-<DOMAIN>-nnnn tag: that tag is the scenario's identity in the graph,
+  # and without it gherkin-tag-scan has nothing to hang the `executes` edge on.
   require_ac_tag: true
   require_requirement_tag: true
+  # TRC-012. s24 read strictly: an acceptance criterion nobody wrote a scenario for has not
+  # been specified, only asserted.
+  require_scenario_per_ac: true
+
+testing:
+  # How test-file-naming-convention maps a registered test artifact's `source` file to the
+  # file it tests: strip one marker from the stem, then look for that stem with the SAME
+  # extension inside the traceability perimeter. Zero or several matches derive nothing and
+  # say why — a guess here would be an asserted edge wearing a derived label.
+  stem_suffixes: [".test", ".spec", "_test", "_spec", "-test", "Test"]
+  stem_prefixes: ["test_", "test-"]
 
 contracts:
+  # NOT YET READ BY ANY VALIDATOR. Declared so the shape is settled, but no code globs these
+  # and no code parses an OpenAPI or AsyncAPI document. The only contract check that runs is
+  # `critical_contracts_defined`, which asserts a registered CONTRACT-* artifact's `source`
+  # file exists — it does not open it. Do not read this block as "contracts are validated".
   openapi_glob: "specs/*/contracts/*.openapi.{yaml,yml,json}"
   asyncapi_glob: "specs/*/contracts/*.asyncapi.{yaml,yml,json}"
-  # v1 does static schema validation only. Microcks conformance is deferred to a later
-  # phase (specup.md's own Maturity Level 4, s64) because it needs a reachable server.
+  # Microcks conformance is deferred to a later phase (specup.md's own Maturity Level 4,
+  # s64) because it needs a reachable server. This flag is inert until then.
   microcks:
     enabled: false
 

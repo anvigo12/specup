@@ -227,16 +227,25 @@ The loop, per task:
 
 ### Keep the provenance honest
 
-Mark an edge `derived` only when a validator actually recomputed it from the filesystem.
-Marking judgment calls `derived` to improve the audit removes the only signal a reviewer has.
+Never hand-write a `derived` edge. Generate them:
 
 ```bash
+python3 .specify/extensions/openup/scripts/python/derive_edges.py --write
 python3 .specify/extensions/openup/scripts/python/audit.py
 ```
 
-Watch the derived/asserted/approved mix, not just the coverage number. Early on a new project
-will be mostly `asserted`, and that is fine and honest. What matters is the trend: as tests,
-contracts and codegen come online, `derived` should grow.
+The first command rewrites `.specify/traceability/derived.yaml` from the rules. Everything you
+write by hand belongs in `traceability.yaml` as `asserted`.
+
+Marking a judgment call `derived` to improve the audit is the failure this model exists to
+catch, and it is now caught rather than trusted: `TRC-010` re-runs the rule an edge names and
+fails the edge if it does not come back. You cannot improve the ratio by renaming things.
+
+Watch the derived/asserted/approved mix, not just the coverage number — and inside `derived`,
+watch `derived_verified` against `derived_unverified`. Early on a new project will be mostly
+`asserted`, and that is fine and honest. What matters is the trend: as tests and scenarios come
+online, `derived_verified` should grow. `derived_unverified` growing means edges are naming
+rules nobody implemented, which is worse than `asserted` because it reads like evidence.
 
 ---
 
@@ -258,6 +267,9 @@ Most days you will not run a whole workflow. You will:
 ```bash
 # what can I actually work on right now?
 python3 .specify/extensions/openup/scripts/python/select_work.py --json
+
+# pick up what the filesystem changed under you
+python3 .specify/extensions/openup/scripts/python/derive_edges.py --write
 
 # is the graph still sound?
 python3 .specify/extensions/openup/scripts/python/validate_wbs.py

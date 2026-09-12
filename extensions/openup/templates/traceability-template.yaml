@@ -13,9 +13,12 @@
 #   supersedes [superseded-by]
 #
 # provenance is required on every edge and is the honest part of this file:
-#   derived   recomputed by a validator from the filesystem; reproducible, and regenerated
-#             on every run. Requires derived_by naming the rule that produced it.
-#   asserted  claimed by an agent or author. Not independently reproducible.
+#   derived   recomputed from the filesystem by a rule in derivers.py. These do NOT belong in
+#             this file — they live in derived.yaml, which derive_edges.py --write rewrites in
+#             full. TRC-010 re-runs the rule and fails any edge it does not reproduce, so
+#             writing one here by hand cannot make it true; it only makes the graph fail.
+#   asserted  claimed by an agent or author. Not independently reproducible. This is the
+#             correct label for everything in this file.
 #   approved  asserted, then signed off by a named human. Requires approval and
 #             approved_endpoints_hash, so editing an endpoint downgrades the edge.
 
@@ -39,8 +42,8 @@ edges: []
 #   to: REQ-DOMAIN-0001
 #   provenance: asserted
 #
-# - from: src/module/file.ts
-#   relation: implements
-#   to: REQ-DOMAIN-0001
-#   provenance: derived
-#   derived_by: task-modifies-closure
+#
+# No `derived` example here on purpose. To add derived edges, tag the filesystem the rules read
+# (a @SCEN-/@AC- tag, a test file named after its subject, an `iteration:` on a WBS node) and run:
+#
+#   python .specify/extensions/openup/scripts/python/derive_edges.py --write

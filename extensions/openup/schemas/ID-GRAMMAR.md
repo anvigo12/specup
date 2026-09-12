@@ -106,20 +106,28 @@ process, and the evidence claim in §72 becomes circular.
 
 | Value | Meaning | Trust |
 |---|---|---|
-| `derived` | Recomputed by a validator from the filesystem (imports, test-file naming, codegen output). Reproducible; overwritten on every run. | Machine-checkable |
+| `derived` | Recomputed by a validator from the filesystem (test-file naming, Gherkin tags, codegen output). Reproducible; overwritten on every run. | Machine-checkable **once the rule reproduces it** |
 | `asserted` | Claimed by an agent or author. Not independently reproducible. | Claim only |
 | `approved` | `asserted`, then signed off by a named human with a timestamp. | Governance-grade |
 
 Rules:
 
 1. A validator may create and overwrite `derived` edges freely; it must never silently modify
-   `asserted` or `approved` edges.
+   `asserted` or `approved` edges. Derived edges live in their own machine-owned store
+   (`.specify/traceability/derived.yaml`), which `derive_edges.py --write` rewrites in full.
 2. Editing the endpoints of an `approved` edge downgrades it to `asserted` and records the
    downgrade — approval does not survive a change to what was approved.
 3. Gates may require a minimum provenance level. Baseline gates (§30, §59) require `approved` for
    requirement-level edges.
 4. `audit.py` reports the derived : asserted : approved ratio. A graph that is overwhelmingly
    `asserted` proves little, and the report must make that visible rather than showing 100% coverage.
+5. **`derived` is a claim until the rule is re-run.** `derived_by` must name a rule in
+   `derivers.py`, and `TRC-010` re-executes that rule and fails the edge if it does not come back.
+   Without this the provenance model reproduces the circularity it exists to break, one level up:
+   the schema only ever required `derived_by` to be *present*, so relabelling an assertion
+   `derived` was free and moved the very ratio rule 4 reports. Edges naming a rule that is
+   declared but not implemented are counted separately as `derived_unverified` and are **not**
+   evidence — `traceability_final` scores reproduced derivations and human approvals only.
 
 ---
 

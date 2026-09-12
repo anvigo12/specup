@@ -261,13 +261,27 @@ def _no_orphans(ctx: GateContext):
 def _trace_final(ctx: GateContext):
     ok = ctx.trace.status != "FAIL"
     failures = [f"{c.id}: {c.message}" for c in ctx.trace.checks if c.status == "FAIL"]
-    asserted = ctx.trace.metrics.get("asserted_share", 0)
-    if ok and asserted > 0.5:
+    metrics = ctx.trace.metrics
+    edges = metrics.get("edges", 0)
+    mix = metrics.get("provenance_mix", {})
+    reproduced = metrics.get("derived_verified", 0)
+    approved = mix.get("approved", 0)
+
+    # What a third party could check without taking anyone's word for it: an edge a derivation
+    # rule actually reproduces from the filesystem, or one a human signed off on. This used to
+    # measure the 'asserted' share instead, which an agent could improve by relabelling its own
+    # claims 'derived' — the label was free, and the metric moved. Counting only reproduced
+    # derivations closes that: the rule has to run, and TRC-010 fails the edge if it disagrees.
+    verifiable = (reproduced + approved) / edges if edges else 0.0
+    if ok and verifiable < 0.5:
         failures.append(
-            f"{asserted:.0%} of edges are merely 'asserted' — the graph is not independently verifiable"
+            f"only {verifiable:.0%} of edges are independently verifiable — {reproduced} "
+            f"reproduced by a derivation rule, {approved} human-approved, against "
+            f"{mix.get('asserted', 0)} asserted and {metrics.get('derived_unverified', 0)} "
+            f"claiming a rule that is not implemented"
         )
         ok = False
-    return ok, f"traceability {ctx.trace.status}, asserted share {asserted:.0%}", failures
+    return ok, f"traceability {ctx.trace.status}, {verifiable:.0%} independently verifiable", failures
 
 
 @condition("all_gates_passed")

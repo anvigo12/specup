@@ -61,14 +61,17 @@ to match the implementation inverts the relationship this whole workflow rests o
 ### 2. Update traceability
 
 ```bash
+python3 .specify/extensions/openup/scripts/python/derive_edges.py --write
 python3 .specify/extensions/openup/scripts/python/validate_trace.py --json
 ```
 
-Re-derive what is derivable — test-file naming, contract conformance, evidence manifests —
-and mark those edges `derived` with their `derived_by` rule. Mark judgment links `asserted`.
+The first command regenerates every mechanically-recoverable edge. Write the judgment links by
+hand, as `asserted`, into the hand-maintained store — never a `derived` one.
 
 **Do not label an asserted link `derived` to improve the audit.** Provenance is the only thing
-separating evidence from claim; falsifying it removes the one signal a reviewer has.
+separating evidence from claim; falsifying it removes the one signal a reviewer has. `TRC-010`
+re-runs the rule you name and fails the edge when it does not come back, so this is now a
+failing graph rather than a better score.
 
 ### 3. Reassess risk
 

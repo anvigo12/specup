@@ -137,9 +137,15 @@ def render(report: dict[str, Any]) -> str:
 
     mix = trace.get("provenance_mix", {})
     total = sum(mix.values()) or 1
+    # 'derived' is split, because the label alone proves nothing: an edge is machine-checkable
+    # only if the rule it names exists and reproduces it (TRC-010). The rest is a claim that
+    # happens to be wearing a rule name.
+    reproduced = trace.get("derived_verified", 0)
+    unreproduced = trace.get("derived_unverified", 0)
     lines += [
         "Evidence quality",
-        f"  derived:   {mix.get('derived', 0):>4}  ({mix.get('derived', 0) / total:.0%})  machine-checkable",
+        f"  derived:   {reproduced:>4}  ({reproduced / total:.0%})  reproduced by a rule",
+        f"  unverified:{unreproduced:>4}  ({unreproduced / total:.0%})  claims a rule that is not implemented",
         f"  asserted:  {mix.get('asserted', 0):>4}  ({mix.get('asserted', 0) / total:.0%})  agent claim only",
         f"  approved:  {mix.get('approved', 0):>4}  ({mix.get('approved', 0) / total:.0%})  human sign-off",
         "",

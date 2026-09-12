@@ -50,6 +50,11 @@ a stated rule), `asserted` (a claim), or `approved` (signed off by a named human
 judgment call `derived` to improve an audit defeats the only mechanism that distinguishes
 evidence from assertion. When in doubt, mark it `asserted`.
 
+`derived` is not self-certifying: the named rule is re-run against the filesystem, and an edge
+it does not reproduce fails the graph. A rule that is declared but not implemented cannot
+reproduce anything, so edges naming one are reported as unverified and do not count as
+evidence at a gate.
+
 Coverage figures are reported alongside the provenance mix. A project can be 100% "traced"
 and have nothing anyone could check.
 

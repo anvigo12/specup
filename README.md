@@ -140,13 +140,15 @@ disagree, and disagreement is what traceability exists to prevent.
 
 | Value | Meaning | Trust |
 |---|---|---|
-| `derived` | Recomputed from the filesystem by a named rule | Machine-checkable |
+| `derived` | Recomputed from the filesystem by a named rule — and the rule is **re-run to check** | Machine-checkable |
 | `asserted` | Claimed by an agent or author | Claim only |
 | `approved` | Asserted, then signed off by a named human | Governance-grade |
 
 This exists because the agent writing the code otherwise also writes the proof it was traced
 — auditor and audited collapse into one process. An `approved` edge is bound to its endpoints
-by hash, so editing either one downgrades it rather than silently keeping the sign-off.
+by hash, so editing either one downgrades it rather than silently keeping the sign-off, and a
+`derived` edge is only counted as evidence once the rule it names reproduces it
+([below](#derived-has-to-survive-being-re-run)).
 
 **Seven WBS levels** — L1 Program → L7 Executable Task, where the number of dotted segments
 *is* the level. `specup.md` §18 demands every leaf be L7, which collides with its own §65
@@ -157,7 +159,7 @@ anti-bloat rule; the default `semantic` policy lets a leaf terminate early when 
 
 ## Validators
 
-Six CLIs. Each emits a JSON verdict on stdout and exits `0` pass / `1` fail / `2`
+Seven CLIs. Each emits a JSON verdict on stdout and exits `0` pass / `1` fail / `2`
 could-not-evaluate. That dual contract is what lets one script serve both an agent and a
 workflow step.
 
@@ -165,7 +167,8 @@ workflow step.
 |---|---|---|
 | `validate_wbs.py` | 12 | level/id agreement, parentage, single root, depth policy, reference resolution, dependency cycles |
 | `validate_risk.py` | 8 | exposure arithmetic, residual reduction, mitigation and verification for high risks, both-ends agreement |
-| `validate_trace.py` | 10 | endpoint resolution, relation type legality, duplicates, cycles, forward/backward coverage, orphans, provenance floor |
+| `validate_trace.py` | 13 | endpoint resolution, relation type legality, duplicates, cycles, forward/backward coverage, orphans, provenance floor, **derivation reproducibility**, scenario coverage |
+| `derive_edges.py` | 4 | what the derivation rules recover; `--write` regenerates the machine-owned store |
 | `select_work.py` | 3 | Definition of Ready, risk-first ordering |
 | `evaluate_gate.py` | 21 conditions | every condition name declared in config |
 | `audit.py` | — | the aggregate §33 report |
@@ -173,6 +176,29 @@ workflow step.
 **Exit 2 is not exit 1.** A graph that fails to load is a setup fault, not a governance
 failure. Collapsing them would tell someone their project failed its milestone when the truth
 is a malformed YAML file.
+
+### `derived` has to survive being re-run
+
+`provenance: derived` claims a rule recovered an edge mechanically, and the audit counts it as
+machine-checkable on that basis. The schema can only require `derived_by` to be *present* — so
+until `TRC-010`, relabelling an assertion `derived` was free and moved the very ratio the audit
+reports. An agent grading its own traceability had a one-word bypass.
+
+[`derivers.py`](extensions/openup/scripts/python/derivers.py) implements the rules, and
+`TRC-010` re-executes the one an edge names:
+
+| Rule | Produces | |
+|---|---|---|
+| `gherkin-tag-scan` | `SCEN-*` → `executes` → `AC-*`, from `@` tags in `.feature` files | implemented |
+| `test-file-naming-convention` | test artifact → `tests` → the file its `source` is named after | implemented |
+| `wbs-iteration-field` | WBS node → `belongs-to` → iteration | implemented |
+| `openapi-operation-scan`, `task-modifies-closure`, `evidence-manifest-scan` | — | **not implemented** |
+
+An edge an implemented rule does not reproduce fails (`TRC-010`). An edge a rule produces that
+no store declares fails (`TRC-011`) and is fixed by `derive_edges.py --write`. An edge naming
+one of the three unimplemented rules is counted as `derived_unverified` — reported, never
+trusted. `traceability_final` at the release gate scores reproduced derivations plus human
+approvals, so a graph cannot buy its way past by renaming its own claims.
 
 ---
 
@@ -264,7 +290,7 @@ specup.md                          the original design document (unchanged)
 extensions/openup/
   extension.yml                    manifest: 9 commands, 7 templates, 8 scripts
   schemas/                         ID-GRAMMAR.md + 4 JSON Schemas
-  scripts/python/                  the validators (~2,000 lines)
+  scripts/python/                  the validators (~2,500 lines)
   templates/                       starter WBS, risk, traceability, vision, index
   openup-config.yml                thresholds, perimeter, gate definitions
 presets/openup-governance/         4 append addenda + 2 wrap overlays
@@ -305,7 +331,7 @@ every audit.
 
 ```bash
 python3 -m pip install pyyaml jsonschema referencing pytest
-python3 -m pytest tests/ -q          # 162 passed, 8 skipped
+python3 -m pytest tests/ -q          # 189 passed, 8 skipped
 ```
 
 The 8 skips are the engine-validation tests. To run them, install spec-kit:
@@ -313,7 +339,7 @@ The 8 skips are the engine-validation tests. To run them, install spec-kit:
 ```bash
 uv venv .venv && uv pip install --python .venv/bin/python specify-cli==1.0.6 pytest
 uv pip install --python .venv/bin/python -r extensions/openup/requirements.txt
-.venv/bin/python -m pytest tests/ -q  # 170 passed
+.venv/bin/python -m pytest tests/ -q  # 197 passed
 ```
 
 Or with [Taskfile](docs/dev/taskfile.md), which wraps both suites and the release pipeline:
@@ -332,6 +358,7 @@ engine would be worse than an honest skip.
 | Suite | Covers |
 |---|---|
 | `test_validators.py` | One deliberately-broken fixture per invariant |
+| `test_derivers.py` | The derivation rules, and that `derived` cannot be claimed without them |
 | `test_extension_manifest.py` | Spec Kit's documented manifest rules |
 | `test_installed_layout.py` | The extension in its real `.specify/extensions/` layout |
 | `test_workflows.py` | Structure, shell-injection rule, engine validation |
@@ -339,9 +366,11 @@ engine would be worse than an honest skip.
 | `test_bundle.py` | Manifest schema, version-pin drift, the preset→extension pairing |
 | `test_taskfile_boundary.py` | No workflow, command or manifest may reach the task runner |
 
-Tests are mutation-checked. Neutering `WBS-001`, `RISK-001`, the fail-closed path, the
-shell-injection rule, the wrap frontmatter rule, a bundle version pin, and the bundle's
-extension entry each makes the corresponding tests fail.
+Tests are mutation-checked. Neutering `WBS-001`, `RISK-001`, `TRC-010`, `TRC-011`,
+`TRC-012`, the fail-closed path, the shell-injection rule, the wrap frontmatter rule, a
+bundle version pin, and the bundle's extension entry each makes the corresponding tests
+fail. Reverting `traceability_final` to scoring the `asserted` label instead of reproduced
+evidence fails two.
 
 ---
 
@@ -354,8 +383,18 @@ extension entry each makes the corresponding tests fail.
   `contributed_components: []`, so `bundle remove` is then a no-op.
   [`install.py`](bundles/specup/install.py) does the install and enforces the version pins
   spec-kit would have enforced. Publishing to a catalog is what retires it.
-- **Microcks is deferred.** v1 does static OpenAPI/AsyncAPI validation only. Contract
-  mocking and conformance is `specup.md`'s own Maturity Level 4.
+- **Nothing validates a contract document.** `MICROCKS-TEST-*` ids and the `validates`
+  relation are reserved in the grammar so nothing has to be renamed later, but no contract
+  checking runs at all: `contracts.microcks.enabled`, `openapi_glob` and `asyncapi_glob`
+  are read by no code, and `critical_contracts_defined` only asserts that each registered
+  `CONTRACT-*` artifact's declared `source` file exists on disk — the OpenAPI/AsyncAPI
+  document itself is never parsed. Mocking and conformance is `specup.md`'s own Maturity
+  Level 4; static schema validation is not built either.
+- **Three of six derivation rules are unimplemented.** `task-modifies-closure`,
+  `openapi-operation-scan` and `evidence-manifest-scan` are named in
+  [`speckit.openup.trace.md`](extensions/openup/commands/speckit.openup.trace.md) but have
+  no code behind them, so an edge claiming one of them cannot be reproduced. `TRC-010`
+  reports those edges as unverified rather than counting them as machine-checkable.
 - **No CI enforcement yet.** The validators are CI-ready by construction — JSON out, exit
   codes — but no pipeline is authored (§62–63).
 - **`python3` in shell steps.** Windows hosts normally have `python`; adjust the `run:` lines
