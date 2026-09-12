@@ -1,0 +1,83 @@
+schema_version: "1.0"
+
+bundle:
+  id: specup
+  name: "SpecUP — OpenUP Governed Lifecycle"
+  version: "0.1.0"
+  role: "governance"
+  description: "Installs the full OpenUP governance stack: the openup extension (validators, schemas, commands), the openup-governance preset, and the four phase workflows whose gates halt a run on a failing verdict."
+  author: "Aniket Gore"
+  license: "MIT"
+
+requires:
+  # Deliberately narrower than the components' own `>=0.9.0` / `>=0.8.5` floors.
+  # Those are the versions each primitive's own manifest schema needs; this is the
+  # version the bundle has actually been exercised against. The bundler surface
+  # (`bundle.yml` schema_version "1.0", the install/validate/build commands, the
+  # preset priority+strategy requirement) was verified on 1.0.6 and nothing older
+  # was ever run, so claiming support for 0.9.x would be an untested assertion —
+  # the exact thing this project's gates exist to reject.
+  speckit_version: ">=1.0.0,<2.0.0"
+  # Surfaced as an install-time warning, not a check. The validators exit 2 without
+  # these, which halts a workflow on its setup-fault branch rather than passing a
+  # gate it could not evaluate. See extensions/openup/requirements.txt.
+  tools:
+    - "python3 >=3.10"
+    - "pip: PyYAML>=6.0, jsonschema>=4.18, referencing>=0.30"
+
+# No `integration:` key. SpecUP is integration-agnostic: every command is plain
+# markdown and every check is a shell step, so the bundle inherits whichever
+# integration the project already uses. Pinning one here would make the bundle
+# refuse to install into a project using any other — a real failure mode the
+# resolver raises on (FR-019), for no benefit.
+
+provides:
+  # Install order is extensions -> presets -> steps -> workflows, fixed by
+  # `BundleManifest.components`. That order is load-bearing here, and is the
+  # reason this bundle exists at all: the preset's guidance tells an agent to run
+  # validators at `.specify/extensions/openup/scripts/python/`. Installed alone,
+  # the preset is instructions pointing at files that are not there.
+  extensions:
+    - id: openup
+      version: "0.1.0"
+
+  presets:
+    - id: openup-governance
+      version: "0.1.0"
+      # Lower priority wins in the 4-layer resolution stack. 10 is Spec Kit's
+      # own DEFAULT_PRIORITY, which keeps a project's explicit overrides in
+      # `.specify/templates/overrides/` ahead of this preset — governance should
+      # lose to a deliberate local decision, and be visible when it does.
+      priority: 10
+      # The manifest requires one strategy per preset entry, but this preset's
+      # own `preset.yml` sets a strategy per artifact: `append` for the four core
+      # templates, `wrap` for speckit.tasks and speckit.implement. `append` is
+      # recorded here as the dominant one. The installer reads `priority` and
+      # ignores this field; the per-artifact strategies in preset.yml are what
+      # actually compose.
+      strategy: append
+
+  workflows:
+    # The only layer with real enforcement. Each ends with the same block: run
+    # evaluate_gate.py as a shell step, branch on its exit code, and abort the
+    # run on a rejected gate.
+    - id: openup-inception
+      version: "0.1.0"
+    - id: openup-elaboration
+      version: "0.1.0"
+    - id: openup-construction
+      version: "0.1.0"
+    - id: openup-transition
+      version: "0.1.0"
+
+  # No `steps:`. The workflows use only built-in step types (shell, gate, if,
+  # fan-out, command, prompt), so there is no custom step package to install.
+
+tags:
+  - governance
+  - openup
+  - lifecycle
+  - traceability
+  - risk-management
+  - wbs
+  - quality-gates

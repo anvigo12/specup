@@ -8,9 +8,11 @@ phase workflows that enforce an [Eclipse OpenUP](https://www.eclipse.org/epf/)-s
 lifecycle with a seven-level WBS, an executable risk register, and bi-directional
 traceability.
 
-> **Status:** Stages 0–4 complete and verified against spec-kit **1.0.6**. Stage 5 (the
-> `specup` bundle that ships all three layers as one installable unit) is not built yet.
-> Install the extension and preset separately until then.
+> **Status:** Complete and verified against spec-kit **1.0.6**. All three layers plus the
+> `specup` bundle that ships them as one unit. `specify bundle install` cannot install
+> unpublished components, so the bundle installs through
+> [`bundles/specup/install.py`](bundles/specup/install.py) — see
+> [Why not `specify bundle install`](bundles/specup/README.md#why-not-specify-bundle-install).
 
 ---
 
@@ -61,7 +63,15 @@ extensions/openup/         ← CAPABILITY. New /speckit.openup.* commands, the J
 
 presets/openup-governance/ ← DISCIPLINE. The only layer that can reach Spec Kit's own
   templates/ commands/       constitution, spec, plan, tasks and /implement.
+
+bundles/specup/            ← COHESION. Not a fourth layer — the only place Spec Kit
+  bundle.yml install.py      lets "these three, at these versions" be stated at all.
 ```
+
+That last one is load-bearing rather than convenience packaging. The preset instructs an
+agent to run validators the *extension* installs, and Spec Kit has no preset→extension
+dependency mechanism. Installed alone, the preset reads as fully authoritative while every
+check it names silently does not run.
 
 A useful consequence: **the path an agent runs and the path a workflow runs are the same
 string.** Extension commands get no `{SCRIPT}` substitution, so they reference
@@ -76,19 +86,19 @@ workflow `shell` steps invoke. There is no second thing to keep in sync.
 # 1. A Spec Kit project
 specify init --here --integration claude
 
-# 2. The capability layer
-cp -r extensions/openup .specify/extensions/openup
+# 2. All three layers, in dependency order, with the version pins checked
+python3 /path/to/specup/bundles/specup/install.py --project .
 python3 -m pip install -r .specify/extensions/openup/requirements.txt
 
-# 3. The discipline layer
-specify preset add --dev ./presets/openup-governance
-
-# 4. Scaffold the governance tree
+# 3. Scaffold the governance tree
 python3 .specify/extensions/openup/scripts/python/init_openup.py --program "My Product"
 
-# 5. See where you stand (it will FAIL — an empty plan is not a valid plan)
+# 4. See where you stand (it will FAIL — an empty plan is not a valid plan)
 python3 .specify/extensions/openup/scripts/python/audit.py
 ```
+
+Step 2 installs the extension, then the preset, then the four workflows. The order is not
+cosmetic: the preset's guidance calls validators the extension installs.
 
 Then drive a phase:
 
@@ -217,6 +227,17 @@ Run against spec-kit 1.0.6 with the real engine, using `tests/fixtures/good`:
 | High-exposure risk stripped of its mitigation | `Status: paused` at `[gate-failed]` — **final step never reached** |
 | `wbs.yaml` corrupted so the graph cannot load | `Status: failed`, `exited with code 2` |
 
+And the bundle, into a clean `specify init` project:
+
+| Step | Result |
+|---|---|
+| `install.py --project <clean project>` | 6 components installed in manifest order, pins checked |
+| `specify preset resolve spec-template` | `[append] openup-governance v0.1.0` composed onto core |
+| 9 `speckit.openup.*` skills | registered under `.claude/skills/` |
+| `audit.py` on the fresh scaffold | exit **1** — `initial_risks_registered`, `wbs_levels_1_to_3_valid` and `requirements_have_owners` all FAIL, correctly |
+| `specify bundle build` | `specup-0.1.0.zip`, 3 files, fixed timestamps |
+| A pin bumped to `0.2.0` in `bundle.yml` | install refuses before touching the project |
+
 The preset was likewise installed into a real `specify init` project: all four core templates
 gained their `[append]` layer, the composed `speckit-tasks` skill had zero literal
 `{CORE_TEMPLATE}` placeholders with pre/core/post in order, `{SCRIPT}` resolved identically to
@@ -236,7 +257,8 @@ extensions/openup/
   openup-config.yml                thresholds, perimeter, gate definitions
 presets/openup-governance/         4 append addenda + 2 wrap overlays
 workflows/openup-{phase}/          the four phase workflows
-tests/                             130 tests (~1,260 lines) + fixtures
+bundles/specup/                    bundle.yml + the local installer
+tests/                             148 tests + fixtures
 ```
 
 ---
@@ -271,15 +293,15 @@ every audit.
 
 ```bash
 python3 -m pip install pyyaml jsonschema referencing pytest
-python3 -m pytest tests/ -q          # 126 passed, 4 skipped
+python3 -m pytest tests/ -q          # 140 passed, 8 skipped
 ```
 
-The 4 skips are the engine-validation tests. To run them, install spec-kit:
+The 8 skips are the engine-validation tests. To run them, install spec-kit:
 
 ```bash
 uv venv .venv && uv pip install --python .venv/bin/python specify-cli==1.0.6 pytest
 uv pip install --python .venv/bin/python -r extensions/openup/requirements.txt
-.venv/bin/python -m pytest tests/ -q  # 130 passed
+.venv/bin/python -m pytest tests/ -q  # 148 passed
 ```
 
 They **skip rather than fake** when spec-kit is absent: a green test that did not run the
@@ -292,18 +314,23 @@ engine would be worse than an honest skip.
 | `test_installed_layout.py` | The extension in its real `.specify/extensions/` layout |
 | `test_workflows.py` | Structure, shell-injection rule, engine validation |
 | `test_preset.py` | Preset schema, wrap contract, frontmatter preservation |
+| `test_bundle.py` | Manifest schema, version-pin drift, the preset→extension pairing |
 
 Tests are mutation-checked. Neutering `WBS-001`, `RISK-001`, the fail-closed path, the
-shell-injection rule, and the wrap frontmatter rule each makes the corresponding tests fail.
+shell-injection rule, the wrap frontmatter rule, a bundle version pin, and the bundle's
+extension entry each makes the corresponding tests fail.
 
 ---
 
 ## Limitations
 
-- **Stage 5 is not built.** There is no `bundle.yml`, so the extension, preset and workflows
-  install separately. Spec Kit has no preset→extension dependency mechanism, which means
-  nothing currently prevents installing the preset without the extension — its guidance would
-  reference validators that are not there.
+- **`specify bundle install` cannot install this bundle.** Not a defect in the manifest —
+  spec-kit resolves component ids only against assets shipped in its own wheel or a
+  published catalog, and there is no `--dev` for bundles. With the components absent it
+  errors; with them present it exits 0 having installed nothing and records
+  `contributed_components: []`, so `bundle remove` is then a no-op.
+  [`install.py`](bundles/specup/install.py) does the install and enforces the version pins
+  spec-kit would have enforced. Publishing to a catalog is what retires it.
 - **Microcks is deferred.** v1 does static OpenAPI/AsyncAPI validation only. Contract
   mocking and conformance is `specup.md`'s own Maturity Level 4.
 - **No CI enforcement yet.** The validators are CI-ready by construction — JSON out, exit
