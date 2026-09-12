@@ -1,0 +1,64 @@
+schema_version: "1.0"
+
+preset:
+  id: "openup-governance"
+  name: "OpenUP Governance"
+  version: "0.1.0"
+  description: "Composes OpenUP lifecycle governance into Spec Kit's own constitution, spec, plan and tasks templates, and wraps /tasks and /implement with the governed execution contract."
+  author: "SpecUP"
+  repository: "https://github.com/specup/spec-kit-preset-openup-governance"
+  license: "MIT"
+
+requires:
+  speckit_version: ">=0.9.0"
+
+# This preset changes Spec Kit's OWN artifacts. It deliberately ships no WBS, risk or
+# traceability templates: those belong to the openup extension, and duplicating them here
+# would create exactly the two-sources-of-truth drift the governance model exists to prevent.
+#
+# The preset is useful alone — it adds the discipline to the core prompts — but its
+# instructions reference validators that ship with the openup extension. Install both
+# together via the specup bundle.
+provides:
+  templates:
+    - type: "template"
+      name: "constitution-template"
+      file: "templates/constitution-addendum.md"
+      description: "Append filesystem-first principles, approval boundaries, and the gate contract"
+      strategy: "append"
+
+    - type: "template"
+      name: "spec-template"
+      file: "templates/spec-addendum.md"
+      description: "Append governed requirement identity, ownership, and acceptance criteria"
+      strategy: "append"
+
+    - type: "template"
+      name: "plan-template"
+      file: "templates/plan-addendum.md"
+      description: "Append lifecycle position, architecture decisions, risk and contract linkage"
+      strategy: "append"
+
+    - type: "template"
+      name: "tasks-template"
+      file: "templates/tasks-addendum.md"
+      description: "Append the Definition of Ready, the Definition of Done, and the task contract"
+      strategy: "append"
+
+    - type: "command"
+      name: "speckit.tasks"
+      file: "commands/speckit.tasks.md"
+      description: "Generate tasks from the WBS, risk register and acceptance criteria, in the governed contract form"
+      strategy: "wrap"
+
+    - type: "command"
+      name: "speckit.implement"
+      file: "commands/speckit.implement.md"
+      description: "Resolve the governance chain before implementing, and produce evidence after"
+      strategy: "wrap"
+
+tags:
+  - "openup"
+  - "governance"
+  - "traceability"
+  - "lifecycle"
