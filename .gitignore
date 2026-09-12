@@ -12,6 +12,12 @@ venv/
 .specify/extensions/*/local-config.yml
 extensions/openup/openup-config.local.yml
 
+# Build output
+dist/
+
+# Taskfile's source/generates fingerprint cache
+.task/
+
 # OS / editor
 .DS_Store
 *.swp

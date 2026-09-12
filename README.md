@@ -16,6 +16,18 @@ traceability.
 
 ---
 
+## Documentation
+
+| | |
+|---|---|
+| [Guide](docs/guide/README.md) | What SpecUP is, the data model, the lifecycle, the commands |
+| [New project](docs/guide/new-project.md) | Greenfield adoption |
+| [Existing project](docs/guide/existing-project.md) | Brownfield adoption, where intent has to be recovered |
+| [Publishing runbook](docs/runbooks/publishing-to-spec-kit.md) | Cutting a release; why a self-hosted catalog is the only route |
+| [Taskfile](docs/dev/taskfile.md) | The task runner, and the boundary it must not cross |
+
+---
+
 ## The problem this addresses
 
 An AI agent can produce plausible, well-structured output whose only provenance is a chat
@@ -293,7 +305,7 @@ every audit.
 
 ```bash
 python3 -m pip install pyyaml jsonschema referencing pytest
-python3 -m pytest tests/ -q          # 140 passed, 8 skipped
+python3 -m pytest tests/ -q          # 162 passed, 8 skipped
 ```
 
 The 8 skips are the engine-validation tests. To run them, install spec-kit:
@@ -301,8 +313,18 @@ The 8 skips are the engine-validation tests. To run them, install spec-kit:
 ```bash
 uv venv .venv && uv pip install --python .venv/bin/python specify-cli==1.0.6 pytest
 uv pip install --python .venv/bin/python -r extensions/openup/requirements.txt
-.venv/bin/python -m pytest tests/ -q  # 148 passed
+.venv/bin/python -m pytest tests/ -q  # 170 passed
 ```
+
+Or with [Taskfile](docs/dev/taskfile.md), which wraps both suites and the release pipeline:
+
+```bash
+task test:both      # the pair is what proves the skips are honest
+task release:check  # everything that must be green before tagging
+```
+
+`task` is a contributor convenience and never a runtime dependency — see
+[the boundary](docs/dev/taskfile.md#the-boundary), which a test enforces.
 
 They **skip rather than fake** when spec-kit is absent: a green test that did not run the
 engine would be worse than an honest skip.
@@ -315,6 +337,7 @@ engine would be worse than an honest skip.
 | `test_workflows.py` | Structure, shell-injection rule, engine validation |
 | `test_preset.py` | Preset schema, wrap contract, frontmatter preservation |
 | `test_bundle.py` | Manifest schema, version-pin drift, the preset→extension pairing |
+| `test_taskfile_boundary.py` | No workflow, command or manifest may reach the task runner |
 
 Tests are mutation-checked. Neutering `WBS-001`, `RISK-001`, the fail-closed path, the
 shell-injection rule, the wrap frontmatter rule, a bundle version pin, and the bundle's

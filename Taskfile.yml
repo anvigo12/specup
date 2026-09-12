@@ -1,0 +1,130 @@
+version: '3'
+
+# SpecUP task runner.
+#
+# THE BOUNDARY THIS FILE MUST NOT CROSS
+# -------------------------------------
+# Every task here is for developing, testing, packaging or publishing SpecUP.
+# None of them is ever invoked BY SpecUP.
+#
+# No workflow `run:` field may call `task`, and no gate may be evaluated through
+# it. The reason is governance, not preference: validators live under
+# `.specify/extensions/openup/`, a directory `specify extension add` owns and
+# reinstalls, whereas a Taskfile sits at a project root where editing it is
+# unremarkable and leaves no trace. Routing a gate through `task gate` would give
+# anyone a tidy, reviewable-looking way to redefine a failing check as passing --
+# exactly what `speckit.openup.gate.md` forbids.
+#
+# `tests/test_taskfile_boundary.py` fails if a workflow ever calls `task`.
+
+vars:
+  VENV: .venv
+  # The engine suite needs spec-kit importable; the rest must run without it.
+  VENV_PY: '{{.VENV}}/bin/python'
+  SPECKIT_VERSION: 1.0.6
+  DIST: dist
+
+tasks:
+  default:
+    desc: List available tasks
+    cmds:
+      - task --list
+    silent: true
+
+  # -- tests ---------------------------------------------------------------
+
+  test:
+    desc: Run the suite without spec-kit (engine tests skip)
+    cmds:
+      - python3 -m pytest tests/ -q
+
+  test:engine:
+    desc: Run the full suite against the real spec-kit engine
+    deps: [venv]
+    cmds:
+      - '{{.VENV_PY}} -m pytest tests/ -q'
+
+  test:both:
+    desc: Run both suites; the pair is what proves the skips are honest
+    cmds:
+      - task: test
+      - task: test:engine
+
+  venv:
+    desc: Create the engine venv with spec-kit and the validator dependencies
+    status:
+      # Rebuild only when missing. `task venv --force` recreates it.
+      - test -x {{.VENV_PY}}
+    cmds:
+      - uv venv {{.VENV}}
+      - uv pip install --python {{.VENV_PY}} specify-cli=={{.SPECKIT_VERSION}} pytest
+      - uv pip install --python {{.VENV_PY}} -r extensions/openup/requirements.txt
+
+  # -- the bundle ----------------------------------------------------------
+
+  bundle:validate:
+    desc: Check bundle.yml with spec-kit's own validator
+    deps: [venv]
+    cmds:
+      - '{{.VENV}}/bin/specify bundle validate --path bundles/specup --offline'
+
+  bundle:build:
+    desc: Build the distributable bundle artifact
+    deps: [venv]
+    cmds:
+      - mkdir -p {{.DIST}}
+      - '{{.VENV}}/bin/specify bundle build --path bundles/specup --output {{.DIST}}'
+
+  install:
+    desc: 'Install SpecUP into a Spec Kit project: task install PROJECT=/path/to/project'
+    requires:
+      vars: [PROJECT]
+    cmds:
+      - python3 bundles/specup/install.py --project {{.PROJECT}}
+
+  install:dry:
+    desc: 'Show what install would do: task install:dry PROJECT=/path/to/project'
+    requires:
+      vars: [PROJECT]
+    cmds:
+      - python3 bundles/specup/install.py --project {{.PROJECT}} --dry-run
+
+  # -- release -------------------------------------------------------------
+
+  release:archives:
+    desc: Build reproducible component archives and their SHA-256 digests
+    deps: [bundle:validate]
+    cmds:
+      - mkdir -p {{.DIST}}
+      - python3 tools/build_archives.py --out {{.DIST}}
+    sources:
+      - bundles/specup/bundle.yml
+      - extensions/openup/**/*
+      - presets/openup-governance/**/*
+      - workflows/*/workflow.yml
+    generates:
+      - '{{.DIST}}/SHA256SUMS'
+
+  release:check:
+    desc: Everything that must be green before tagging a release
+    cmds:
+      - task: test:both
+      - task: bundle:validate
+      - task: bundle:build
+      - task: release:archives
+      - echo ""
+      - echo "Release candidate is green. Next -> docs/runbooks/publishing-to-spec-kit.md"
+
+  # -- housekeeping --------------------------------------------------------
+
+  clean:
+    desc: Remove build output and caches (leaves .venv alone)
+    cmds:
+      - rm -rf {{.DIST}} .pytest_cache
+      - find . -name __pycache__ -type d -prune -exec rm -rf {} +
+
+  clean:all:
+    desc: clean, plus the engine venv
+    cmds:
+      - task: clean
+      - rm -rf {{.VENV}}
