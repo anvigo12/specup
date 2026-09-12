@@ -1,0 +1,161 @@
+schema_version: "1.0"
+
+workflow:
+  id: "openup-elaboration"
+  name: "OpenUP Elaboration"
+  version: "0.1.0"
+  author: "SpecUP"
+  description: "Establish an executable architecture and retire the highest-exposure risks, then hold the Lifecycle Architecture milestone against evidence."
+
+requires:
+  speckit_version: ">=0.8.5"
+
+# SECURITY: no `{{ inputs.* }}` value appears inside any `run:` field. See the note in
+# openup-inception/workflow.yml.
+
+inputs:
+  focus:
+    type: string
+    required: true
+    prompt: "Which capability or architectural question is this elaboration iteration about?"
+  integration:
+    type: string
+    default: "auto"
+    prompt: "Integration to use ('auto' uses the project's initialized integration)"
+
+steps:
+  # -- open the iteration, risk first -------------------------------------
+  - id: open-iteration
+    command: speckit.openup.iteration
+    integration: "{{ inputs.integration }}"
+    input:
+      args: "open"
+
+  - id: plan
+    command: speckit.plan
+    integration: "{{ inputs.integration }}"
+    input:
+      args: "{{ inputs.focus }}"
+
+  # -- resolve technical uncertainty before scaling implementation (s40) ---
+  - id: architecture
+    command: speckit.openup.risk
+    integration: "{{ inputs.integration }}"
+    input:
+      args: "Review and update the risk register against the plan. Record an architecture decision (ADR) for each significant technical choice, and raise a risk for each unresolved uncertainty."
+
+  - id: contracts
+    command: speckit.plan
+    integration: "{{ inputs.integration }}"
+    input:
+      args: "Define the API contracts (OpenAPI / AsyncAPI) for the interfaces this capability exposes or consumes, and register each as a CONTRACT-<DOMAIN>-nnnn artifact."
+
+  - id: behavior
+    command: speckit.openup.behavior
+    integration: "{{ inputs.integration }}"
+    input:
+      args: "{{ inputs.focus }}"
+
+  # -- decompose to executable work ---------------------------------------
+  - id: decompose
+    command: speckit.openup.wbs
+    integration: "{{ inputs.integration }}"
+    input:
+      args: "Decompose to L7. Create a risk-mitigation task for every risk at or above the high exposure threshold, and order the work so those come first."
+
+  - id: trace
+    command: speckit.openup.trace
+    integration: "{{ inputs.integration }}"
+    input:
+      args: "Derive every edge that can be derived, then assert the remaining judgment links. Mark judgment links 'asserted', not 'derived'."
+
+  # -- structural checks, surfaced before the milestone --------------------
+  # continue_on_error keeps the run alive so all three reports are visible at once;
+  # the gate below is what actually decides.
+  - id: check-wbs
+    type: shell
+    run: "python3 .specify/extensions/openup/scripts/python/validate_wbs.py --json --out .specify/evidence/checks/wbs.json"
+    continue_on_error: true
+    timeout: 600
+
+  - id: check-risk
+    type: shell
+    run: "python3 .specify/extensions/openup/scripts/python/validate_risk.py --json --out .specify/evidence/checks/risk.json"
+    continue_on_error: true
+    timeout: 600
+
+  - id: check-trace
+    type: shell
+    run: "python3 .specify/extensions/openup/scripts/python/validate_trace.py --json --out .specify/evidence/checks/trace.json"
+    continue_on_error: true
+    timeout: 600
+
+  - id: repair
+    type: if
+    condition: "{{ steps.check-wbs.output.exit_code != 0 or steps.check-risk.output.exit_code != 0 or steps.check-trace.output.exit_code != 0 }}"
+    then:
+      - id: fix-graph
+        command: speckit.openup.audit
+        integration: "{{ inputs.integration }}"
+        input:
+          args: "Structural checks failed. Read .specify/evidence/checks/ and fix the graph itself - add the missing edges, criteria or mitigation nodes. Do not lower a threshold, widen the perimeter, or fabricate evidence to make a check pass."
+
+  # -- the milestone -------------------------------------------------------
+  - id: evaluate-gate
+    type: shell
+    run: "python3 .specify/extensions/openup/scripts/python/evaluate_gate.py --gate GATE-LIFECYCLE_ARCHITECTURE --json --out .specify/evidence/gates/lifecycle-architecture.json"
+    continue_on_error: true
+    timeout: 900
+
+  - id: halt-if-unevaluable
+    type: if
+    condition: "{{ steps.evaluate-gate.output.exit_code == 2 }}"
+    then:
+      - id: cannot-evaluate
+        type: shell
+        run: "echo 'GATE-LIFECYCLE_ARCHITECTURE could not be evaluated - the governed graph failed to load. This is a setup fault, not a governance failure. Fix it and re-run.' >&2; exit 2"
+
+  - id: enforce-gate
+    type: if
+    condition: "{{ steps.evaluate-gate.output.exit_code == 1 }}"
+    then:
+      - id: gate-failed
+        type: gate
+        message: |
+          GATE-LIFECYCLE_ARCHITECTURE FAILED.
+
+          {{ steps.evaluate-gate.output.stdout }}
+
+          Full verdict: .specify/evidence/gates/lifecycle-architecture.json
+
+          This milestone asks whether the architecture is baselined and the high-exposure
+          risks are actually handled. Scaling implementation past a failure here is the
+          specific mistake specup.md s40 warns about.
+
+          'reject' stops the run. 'override' proceeds and records the decision and the
+          failing verdict as evidence.
+        options: [reject, override]
+        on_reject: abort
+
+      - id: record-override
+        type: shell
+        run: "python3 .specify/extensions/openup/scripts/python/evaluate_gate.py --gate GATE-LIFECYCLE_ARCHITECTURE --json --out .specify/evidence/overrides/{{ context.run_id }}.json"
+        continue_on_error: true
+        timeout: 900
+
+  - id: architect-approval
+    type: gate
+    message: |
+      The Lifecycle Architecture gate is satisfied by evidence. Baselining the architecture
+      is a human decision (specup.md s59) - the gate passing is a precondition for asking,
+      not a substitute for the answer.
+
+      Approve to baseline the architecture and enter Construction.
+    options: [reject, approve]
+    on_reject: abort
+
+  - id: advance-phase
+    command: speckit.openup.phase
+    integration: "{{ inputs.integration }}"
+    input:
+      args: "CONSTRUCTION"

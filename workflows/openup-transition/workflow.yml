@@ -1,0 +1,127 @@
+schema_version: "1.0"
+
+workflow:
+  id: "openup-transition"
+  name: "OpenUP Transition"
+  version: "0.1.0"
+  author: "SpecUP"
+  description: "Validate deployment, operations, security and acceptance, then hold the Product Release milestone against evidence."
+
+requires:
+  speckit_version: ">=0.8.5"
+
+# SECURITY: no `{{ inputs.* }}` value appears inside any `run:` field. See the note in
+# openup-inception/workflow.yml.
+#
+# specup.md s14: Transition exists because "code complete" is not "ready to release". Every
+# condition on GATE-PRODUCT_RELEASE is about operability and proof, not about whether the
+# code was written.
+
+inputs:
+  release:
+    type: string
+    required: true
+    prompt: "Which release is this (version or tag)?"
+  integration:
+    type: string
+    default: "auto"
+    prompt: "Integration to use ('auto' uses the project's initialized integration)"
+
+steps:
+  # -- final state of the graph -------------------------------------------
+  - id: final-audit
+    type: shell
+    run: "python3 .specify/extensions/openup/scripts/python/audit.py --json --out .specify/evidence/gates/final-audit.json"
+    continue_on_error: true
+    timeout: 900
+
+  - id: close-gaps
+    type: if
+    condition: "{{ steps.final-audit.output.exit_code == 1 }}"
+    then:
+      - id: fix-graph
+        command: speckit.openup.audit
+        integration: "{{ inputs.integration }}"
+        input:
+          args: "Close the gaps in .specify/evidence/gates/final-audit.json by fixing the graph. Do not fabricate evidence, approvals or edges; report anything that cannot be honestly closed."
+
+  # -- release artifacts ---------------------------------------------------
+  - id: release-readiness
+    command: speckit.plan
+    integration: "{{ inputs.integration }}"
+    input:
+      args: "Produce the Transition work products in .specify/lifecycle/: release-readiness.md, deployment-plan.md, operations.md, acceptance-report.md, and known-issues.md. Base acceptance-report.md on recorded evidence, not on expectation."
+
+  - id: trace-final
+    command: speckit.openup.trace
+    integration: "{{ inputs.integration }}"
+    input:
+      args: "Produce the final traceability view and coverage report. Include the derived/asserted/approved split; a coverage figure without it overstates what is known."
+
+  # -- the milestone -------------------------------------------------------
+  - id: evaluate-gate
+    type: shell
+    run: "python3 .specify/extensions/openup/scripts/python/evaluate_gate.py --gate GATE-PRODUCT_RELEASE --json --out .specify/evidence/gates/product-release.json"
+    continue_on_error: true
+    timeout: 1800
+
+  - id: halt-if-unevaluable
+    type: if
+    condition: "{{ steps.evaluate-gate.output.exit_code == 2 }}"
+    then:
+      - id: cannot-evaluate
+        type: shell
+        run: "echo 'GATE-PRODUCT_RELEASE could not be evaluated - the governed graph failed to load. This is a setup fault, not a governance failure. Fix it and re-run.' >&2; exit 2"
+
+  - id: enforce-gate
+    type: if
+    condition: "{{ steps.evaluate-gate.output.exit_code == 1 }}"
+    then:
+      - id: gate-failed
+        type: gate
+        message: |
+          GATE-PRODUCT_RELEASE FAILED.
+
+          {{ steps.evaluate-gate.output.stdout }}
+
+          Full verdict: .specify/evidence/gates/product-release.json
+
+          This gate includes `traceability_final`, which fails when most edges are merely
+          'asserted'. That is not a technicality: it means the coverage figures rest on
+          unverified claims rather than on anything reproducible.
+
+          'reject' stops the release. 'override' releases anyway and records the decision
+          and the failing verdict as evidence.
+        options: [reject, override]
+        on_reject: abort
+
+      - id: record-override
+        type: shell
+        run: "python3 .specify/extensions/openup/scripts/python/evaluate_gate.py --gate GATE-PRODUCT_RELEASE --json --out .specify/evidence/overrides/{{ context.run_id }}.json"
+        continue_on_error: true
+        timeout: 1800
+
+  # -- human release approval ---------------------------------------------
+  - id: release-approval
+    type: gate
+    message: |
+      The Product Release gate is satisfied by evidence for release {{ inputs.release }}.
+
+      Release approval is a human decision (specup.md s59). The gate establishes that the
+      evidence exists; it does not decide that shipping is the right call.
+
+      Approve to record the release milestone.
+    options: [reject, approve]
+    on_reject: abort
+
+  - id: record-release
+    type: shell
+    run: "python3 .specify/extensions/openup/scripts/python/audit.py --json --out .specify/evidence/gates/release-accepted.json"
+    continue_on_error: true
+    timeout: 900
+
+  - id: report
+    command: speckit.openup.audit
+    integration: "{{ inputs.integration }}"
+    input:
+      args: "Report the release: the milestone evidence, open known issues, residual risk, and any gate that was overridden along the way. An undocumented override is indistinguishable from a gate that never ran."

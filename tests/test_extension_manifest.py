@@ -165,3 +165,35 @@ def test_commands_reference_scripts_at_their_installed_path(manifest):
                         f"{command['file']} references a script by a path other than its "
                         f"installed one:\n  {line.strip()}"
                     )
+
+
+def test_python_dependencies_are_declared():
+    """Every third-party module the validators import must appear in requirements.txt.
+
+    A missing dependency makes every validator exit 2, which halts a workflow safely — but
+    it is a confusing way to discover the requirement, so keep the list honest.
+    """
+    import re
+
+    requirements = (EXTENSION_DIR / "requirements.txt").read_text().lower()
+    stdlib_or_local = {
+        "__future__", "argparse", "dataclasses", "fnmatch", "glob", "json", "pathlib",
+        "re", "shutil", "subprocess", "sys", "typing", "importlib",
+        "openup_model", "validate_wbs", "validate_risk", "validate_trace",
+        "evaluate_gate", "audit", "select_work", "init_openup",
+    }
+    package_names = {"yaml": "pyyaml", "jsonschema": "jsonschema", "referencing": "referencing"}
+
+    imported: set[str] = set()
+    for script in (EXTENSION_DIR / "scripts" / "python").glob("*.py"):
+        for line in script.read_text().splitlines():
+            match = re.match(r"\s*(?:from|import)\s+([a-z_][a-z0-9_]*)", line)
+            if match and match.group(1) not in stdlib_or_local:
+                imported.add(match.group(1))
+
+    for module in sorted(imported):
+        distribution = package_names.get(module, module)
+        assert distribution in requirements, (
+            f"{module!r} is imported by a validator but {distribution!r} is not in "
+            f"requirements.txt"
+        )

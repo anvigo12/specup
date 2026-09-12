@@ -119,9 +119,24 @@ class Verdict:
         return "\n".join(lines)
 
 
-def emit(verdict: Verdict, as_json: bool) -> int:
+def write_out(path: str | None, payload: dict[str, Any]) -> None:
+    """Persist a verdict to disk as durable evidence.
+
+    A workflow cannot capture stdout with `tee` without destroying the exit code the
+    pipeline depends on, so writing the file is the validator's job, not the shell's.
+    """
+    if not path:
+        return
+    target = pathlib.Path(path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(json.dumps(payload, indent=2) + "\n")
+
+
+def emit(verdict: Verdict, as_json: bool, out: str | None = None) -> int:
     """Print a verdict in the requested form and return the process exit code."""
-    print(json.dumps(verdict.to_dict(), indent=2) if as_json else verdict.render())
+    payload = verdict.to_dict()
+    write_out(out, payload)
+    print(json.dumps(payload, indent=2) if as_json else verdict.render())
     return verdict.exit_code
 
 
@@ -129,6 +144,8 @@ def base_parser(description: str) -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument("--root", default=".", help="project root (default: cwd)")
     parser.add_argument("--json", action="store_true", help="emit a JSON verdict on stdout")
+    parser.add_argument("--out", default=None, metavar="PATH",
+                        help="also write the JSON verdict here, as durable evidence")
     return parser
 
 
@@ -139,12 +156,13 @@ def run(main_fn, parser: argparse.ArgumentParser) -> int:
         verdict = main_fn(args)
     except GraphError as exc:
         payload = {"validator": parser.prog, "status": "ERROR", "error": str(exc)}
+        write_out(getattr(args, "out", None), payload)
         if args.json:
             print(json.dumps(payload, indent=2))
         else:
             print(f"ERROR: {exc}", file=sys.stderr)
         return 2
-    return emit(verdict, args.json)
+    return emit(verdict, args.json, getattr(args, "out", None))
 
 
 # --------------------------------------------------------------------------

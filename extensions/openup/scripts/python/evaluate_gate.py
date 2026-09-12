@@ -25,7 +25,7 @@ from typing import Any, Callable
 import validate_risk
 import validate_trace
 import validate_wbs
-from openup_model import GraphError, Verdict, base_parser, emit, load_graph
+from openup_model import GraphError, Verdict, base_parser, emit, load_graph, write_out
 
 CONDITIONS: dict[str, Callable[["GateContext"], tuple[bool, str, list[str]]]] = {}
 
@@ -336,11 +336,12 @@ def main() -> int:
         )
     except GraphError as exc:
         payload = {"validator": f"gate:{args.gate}", "status": "ERROR", "error": str(exc)}
+        write_out(args.out, payload)
         print(json.dumps(payload, indent=2) if args.json else f"ERROR: {exc}",
               file=sys.stdout if args.json else sys.stderr)
         return 2
 
-    return emit(evaluate(args.gate, ctx), args.json)
+    return emit(evaluate(args.gate, ctx), args.json, args.out)
 
 
 if __name__ == "__main__":

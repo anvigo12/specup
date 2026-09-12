@@ -21,7 +21,7 @@ import evaluate_gate
 import validate_risk
 import validate_trace
 import validate_wbs
-from openup_model import GraphError, Verdict, base_parser, load_graph
+from openup_model import GraphError, Verdict, base_parser, load_graph, write_out
 
 FAIL_CONDITIONS = {
     "broken_references": ("validate-trace", "TRC-002"),
@@ -166,11 +166,13 @@ def main() -> int:
         report, code = audit(args)
     except GraphError as exc:
         payload = {"validator": "audit", "status": "ERROR", "error": str(exc)}
+        write_out(args.out, payload)
         if args.json:
             print(json.dumps(payload, indent=2))
         else:
             print(f"ERROR: {exc}", file=sys.stderr)
         return 2
+    write_out(args.out, report)
     print(json.dumps(report, indent=2) if args.json else render(report))
     return code
 

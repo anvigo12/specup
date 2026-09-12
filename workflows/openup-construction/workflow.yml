@@ -1,0 +1,154 @@
+schema_version: "1.0"
+
+workflow:
+  id: "openup-construction"
+  name: "OpenUP Construction Iteration"
+  version: "0.1.0"
+  author: "SpecUP"
+  description: "Run one Construction iteration: select ready work risk-first, implement it task by task, verify, re-trace, then hold the iteration gate."
+
+requires:
+  speckit_version: ">=0.8.5"
+
+# SECURITY: no `{{ inputs.* }}` value appears inside any `run:` field. See the note in
+# openup-inception/workflow.yml.
+#
+# This workflow is ONE iteration (specup.md s38). Run it again for the next one. That is the
+# point: a single pass that implements everything is the "one large AI code-generation
+# exercise" s38 exists to prevent.
+
+inputs:
+  integration:
+    type: string
+    default: "auto"
+    prompt: "Integration to use ('auto' uses the project's initialized integration)"
+  iteration_goal:
+    type: string
+    required: true
+    prompt: "What is this iteration's goal?"
+
+steps:
+  - id: open-iteration
+    command: speckit.openup.iteration
+    integration: "{{ inputs.integration }}"
+    input:
+      args: "open"
+
+  - id: generate-tasks
+    command: speckit.tasks
+    integration: "{{ inputs.integration }}"
+    input:
+      args: "{{ inputs.iteration_goal }}"
+
+  # -- Definition of Ready, applied mechanically (s28) ---------------------
+  # select_work.py emits a bare JSON array of ready task ids, ordered highest-risk first
+  # (s39). Deriving the fan-out set from the graph rather than from model output keeps the
+  # iteration's scope reproducible.
+  - id: select-work
+    type: shell
+    run: "python3 .specify/extensions/openup/scripts/python/select_work.py --ids-only --out .specify/evidence/checks/selected-work.json"
+    timeout: 300
+
+  - id: confirm-scope
+    type: gate
+    message: |
+      Ready work for this iteration:
+
+      {{ steps.select-work.output.stdout }}
+
+      Blocked tasks and the reason each is blocked: .specify/evidence/checks/selected-work.json
+
+      An empty list means nothing satisfies the Definition of Ready - fix the blockers
+      rather than lowering the bar. Approve to implement the ready work.
+    options: [reject, approve]
+    on_reject: abort
+
+  # -- implement, one governed task at a time ------------------------------
+  - id: implement-ready-work
+    type: fan-out
+    items: "{{ steps.select-work.output.stdout | from_json }}"
+    step:
+      id: implement-task
+      command: speckit.implement
+      integration: "{{ inputs.integration }}"
+      input:
+        args: "{{ item }}"
+
+  - id: collect-implementation
+    type: fan-in
+    wait_for: [implement-ready-work]
+    output: {}
+
+  # -- verify --------------------------------------------------------------
+  - id: run-tests
+    type: shell
+    run: "python3 .specify/extensions/openup/scripts/python/validate_trace.py --json --out .specify/evidence/checks/trace.json"
+    continue_on_error: true
+    timeout: 900
+
+  - id: retrace
+    command: speckit.openup.trace
+    integration: "{{ inputs.integration }}"
+    input:
+      args: "Re-derive source-level edges from the filesystem after this iteration's changes, and record evidence for every task that reached done."
+
+  - id: reassess-risk
+    command: speckit.openup.risk
+    integration: "{{ inputs.integration }}"
+    input:
+      args: "Reassess every risk this iteration touched. Update residual probability and impact from what was actually learned, and attach the evidence. An iteration that changed no risk estimate usually means the reassessment was skipped."
+
+  # -- the iteration gate --------------------------------------------------
+  - id: evaluate-gate
+    type: shell
+    run: "python3 .specify/extensions/openup/scripts/python/evaluate_gate.py --gate GATE-INITIAL_OPERATIONAL_CAPABILITY --json --out .specify/evidence/gates/initial-operational-capability.json"
+    continue_on_error: true
+    timeout: 900
+
+  - id: halt-if-unevaluable
+    type: if
+    condition: "{{ steps.evaluate-gate.output.exit_code == 2 }}"
+    then:
+      - id: cannot-evaluate
+        type: shell
+        run: "echo 'GATE-INITIAL_OPERATIONAL_CAPABILITY could not be evaluated - the governed graph failed to load. This is a setup fault, not a governance failure. Fix it and re-run.' >&2; exit 2"
+
+  - id: enforce-gate
+    type: if
+    condition: "{{ steps.evaluate-gate.output.exit_code == 1 }}"
+    then:
+      - id: gate-failed
+        type: gate
+        message: |
+          GATE-INITIAL_OPERATIONAL_CAPABILITY FAILED.
+
+          {{ steps.evaluate-gate.output.stdout }}
+
+          Full verdict: .specify/evidence/gates/initial-operational-capability.json
+
+          A failing iteration gate is normal and useful - it usually means work carries to
+          the next iteration, not that something went wrong. Carrying work forward is the
+          honest response; making the gate pass is not.
+
+          'reject' stops so the graph can be fixed or the work re-planned.
+          'override' closes the iteration anyway and records the failing verdict.
+        options: [reject, override]
+        on_reject: abort
+
+      - id: record-override
+        type: shell
+        run: "python3 .specify/extensions/openup/scripts/python/evaluate_gate.py --gate GATE-INITIAL_OPERATIONAL_CAPABILITY --json --out .specify/evidence/overrides/{{ context.run_id }}.json"
+        continue_on_error: true
+        timeout: 900
+
+  - id: close-iteration
+    command: speckit.openup.iteration
+    integration: "{{ inputs.integration }}"
+    input:
+      args: "close"
+
+  - id: iteration-review
+    command: speckit.openup.audit
+    integration: "{{ inputs.integration }}"
+    input:
+      args: "Report the iteration outcome: what closed, what carried forward, how risk exposure moved, and the derived/asserted/approved split. State plainly if coverage is high but largely asserted."

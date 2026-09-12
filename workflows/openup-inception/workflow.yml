@@ -1,0 +1,138 @@
+schema_version: "1.0"
+
+workflow:
+  id: "openup-inception"
+  name: "OpenUP Inception"
+  version: "0.1.0"
+  author: "SpecUP"
+  description: "Establish intent, ownership, scope and initial risk, then hold the Lifecycle Objectives milestone against evidence."
+
+requires:
+  # 0.8.5 is the first release that resolves integration "auto" engine-side.
+  speckit_version: ">=0.8.5"
+
+# SECURITY: no `{{ inputs.* }}` value appears inside any `run:` field in this file.
+# Shell steps interpolate expressions as raw text with no quoting or escaping, so a value
+# the user supplies would be parsed as shell syntax. User input reaches commands through
+# `input.args`, which is the sanctioned path; shell steps use only fixed strings and
+# engine-controlled values such as `{{ context.run_id }}`.
+
+inputs:
+  idea:
+    type: string
+    required: true
+    prompt: "What should we build, and why?"
+  program:
+    type: string
+    required: true
+    prompt: "Program or product name (becomes the WBS L1 root)"
+  integration:
+    type: string
+    default: "auto"
+    prompt: "Integration to use ('auto' uses the project's initialized integration)"
+
+steps:
+  # -- establish the governed tree ----------------------------------------
+  - id: scaffold
+    type: shell
+    run: "python3 .specify/extensions/openup/scripts/python/init_openup.py --json"
+    timeout: 120
+
+  - id: register-intent
+    command: speckit.openup.init
+    integration: "{{ inputs.integration }}"
+    input:
+      args: "{{ inputs.program }}"
+
+  # -- capture what is being built ----------------------------------------
+  - id: constitution
+    command: speckit.constitution
+    integration: "{{ inputs.integration }}"
+    input:
+      args: "{{ inputs.idea }}"
+
+  - id: specify
+    command: speckit.specify
+    integration: "{{ inputs.integration }}"
+    input:
+      args: "{{ inputs.idea }}"
+
+  - id: review-scope
+    type: gate
+    message: |
+      Review the vision, stakeholders and specification before they are decomposed.
+
+      Scope and ownership are human approval boundaries (specup.md s59). Confirm that
+      every business objective has a named owner and that the out-of-scope section is
+      honest — an empty one usually means it was not considered.
+    options: [reject, approve]
+    on_reject: abort
+
+  # -- decompose and assess ------------------------------------------------
+  - id: wbs-skeleton
+    command: speckit.openup.wbs
+    integration: "{{ inputs.integration }}"
+    input:
+      args: "Build the L1-L3 skeleton only: program, the four OpenUP phases, and the first iteration of each. Do not decompose below L3 yet."
+
+  - id: initial-risks
+    command: speckit.openup.risk
+    integration: "{{ inputs.integration }}"
+    input:
+      args: "Register the initial risks: the assumptions in the vision that would invalidate the business case if wrong, plus the highest technical uncertainties."
+
+  - id: trace-intent
+    command: speckit.openup.trace
+    integration: "{{ inputs.integration }}"
+    input:
+      args: "Link every requirement to the business objective it refines."
+
+  # -- the milestone -------------------------------------------------------
+  # Note: the full WBS validator is deliberately NOT run here. An Inception WBS is a
+  # skeleton, and every L3 leaf would fail the leaf-depth rule. GATE-LIFECYCLE_OBJECTIVES
+  # checks `wbs_levels_1_to_3_valid` instead, which is the right question at this milestone.
+  - id: evaluate-gate
+    type: shell
+    run: "python3 .specify/extensions/openup/scripts/python/evaluate_gate.py --gate GATE-LIFECYCLE_OBJECTIVES --json --out .specify/evidence/gates/lifecycle-objectives.json"
+    continue_on_error: true
+    timeout: 900
+
+  - id: halt-if-unevaluable
+    type: if
+    condition: "{{ steps.evaluate-gate.output.exit_code == 2 }}"
+    then:
+      - id: cannot-evaluate
+        type: shell
+        run: "echo 'GATE-LIFECYCLE_OBJECTIVES could not be evaluated - the governed graph failed to load. This is a setup fault, not a governance failure. Fix it and re-run.' >&2; exit 2"
+
+  - id: enforce-gate
+    type: if
+    condition: "{{ steps.evaluate-gate.output.exit_code == 1 }}"
+    then:
+      - id: gate-failed
+        type: gate
+        message: |
+          GATE-LIFECYCLE_OBJECTIVES FAILED.
+
+          {{ steps.evaluate-gate.output.stdout }}
+
+          Full verdict: .specify/evidence/gates/lifecycle-objectives.json
+
+          'reject' stops the run so the failures can be fixed. This is the correct choice
+          unless you hold the authority to proceed without the milestone being met.
+          'override' proceeds and records the decision and the failing verdict as evidence.
+        options: [reject, override]
+        on_reject: abort
+
+      - id: record-override
+        type: shell
+        run: "python3 .specify/extensions/openup/scripts/python/evaluate_gate.py --gate GATE-LIFECYCLE_OBJECTIVES --json --out .specify/evidence/overrides/{{ context.run_id }}.json"
+        continue_on_error: true
+        timeout: 900
+
+  # -- advance -------------------------------------------------------------
+  - id: advance-phase
+    command: speckit.openup.phase
+    integration: "{{ inputs.integration }}"
+    input:
+      args: "ELABORATION"

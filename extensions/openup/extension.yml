@@ -19,6 +19,11 @@ requires:
     - name: python
       version: ">=3.10"
       required: true
+  # Python packages the validators need. Install with:
+  #   python3 -m pip install -r .specify/extensions/openup/requirements.txt
+  # into the interpreter the workflow shell steps invoke. If they are absent every
+  # validator exits 2, so a workflow halts on its setup-fault branch rather than
+  # treating the gate as passed.
 
 provides:
   commands:
@@ -111,6 +116,11 @@ provides:
     - name: validate-trace
       file: scripts/python/validate_trace.py
       description: "Validate the traceability graph, coverage, orphans, and provenance"
+      runtimes: [python]
+
+    - name: select-work
+      file: scripts/python/select_work.py
+      description: "Select Definition-of-Ready work for the current iteration, ordered risk-first"
       runtimes: [python]
 
     - name: evaluate-gate

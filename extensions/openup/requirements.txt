@@ -1,0 +1,14 @@
+# Python dependencies for the OpenUP validators.
+#
+# Install into the interpreter that the workflow shell steps invoke (`python3`), not only
+# into a project virtualenv — a workflow `run:` field executes in the system shell.
+#
+#     python3 -m pip install -r .specify/extensions/openup/requirements.txt
+#
+# If these are missing, every validator exits 2 (ERROR / could-not-evaluate) rather than 0,
+# so a workflow halts on the setup-fault branch instead of treating the gate as passed.
+# That is deliberate: a missing library must never silently disable a gate.
+
+PyYAML>=6.0
+jsonschema>=4.18
+referencing>=0.30
