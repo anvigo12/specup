@@ -1,0 +1,130 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://specup.dev/schemas/risk.schema.json",
+  "title": "SpecUP Risk Register",
+  "description": "Canonical risk register (specup.md s19). Risk here is executable engineering work, not passive documentation: every high-exposure risk must be mitigated by real WBS nodes and verified by real tests.",
+
+  "$defs": {
+    "probability": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "0..1 inclusive."
+    },
+    "exposure": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "DERIVED: probability x impact. specup.md states this only by example (0.6 x 0.9 = 0.54). If present it is recomputed and must match within 1e-9, otherwise validate_risk.py fails - a hand-edited exposure is how risk registers silently drift."
+    },
+    "verificationRef": {
+      "anyOf": [
+        { "$ref": "artifact.schema.json#/$defs/testCaseId" },
+        { "$ref": "artifact.schema.json#/$defs/unitTestId" },
+        { "$ref": "artifact.schema.json#/$defs/integrationTestId" },
+        { "$ref": "artifact.schema.json#/$defs/microcksTestId" },
+        { "$ref": "artifact.schema.json#/$defs/evidenceId" }
+      ]
+    },
+
+    "risk": {
+      "type": "object",
+      "required": ["id", "title", "category", "probability", "impact", "phase_identified", "status", "owner"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "artifact.schema.json#/$defs/riskId" },
+        "title": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "description": { "type": "string" },
+        "category": {
+          "type": "string",
+          "enum": ["technical", "architectural", "security", "schedule", "resource", "external", "operational", "compliance"]
+        },
+        "probability": { "$ref": "#/$defs/probability" },
+        "impact": { "$ref": "#/$defs/probability" },
+        "exposure": { "$ref": "#/$defs/exposure" },
+        "phase_identified": { "$ref": "artifact.schema.json#/$defs/phase" },
+        "iteration_identified": { "$ref": "artifact.schema.json#/$defs/iterationId" },
+        "status": {
+          "type": "string",
+          "enum": ["open", "mitigating", "mitigated", "accepted", "closed", "materialized"]
+        },
+        "owner": { "type": "string", "minLength": 1 },
+        "mitigation": {
+          "type": "array",
+          "items": { "$ref": "artifact.schema.json#/$defs/wbsId" },
+          "uniqueItems": true,
+          "description": "WBS nodes that reduce this risk. s19: every high-exposure risk must have at least one, and every mitigation node must produce evidence."
+        },
+        "verification": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/verificationRef" },
+          "uniqueItems": true
+        },
+        "residual_probability": { "$ref": "#/$defs/probability" },
+        "residual_impact": { "$ref": "#/$defs/probability" },
+        "residual_exposure": { "$ref": "#/$defs/exposure" },
+        "acceptance_approval": {
+          "$ref": "artifact.schema.json#/$defs/approval",
+          "description": "Required when status is 'accepted' - accepting a live risk is a human governance decision (s59), never an agent's."
+        },
+        "evidence": {
+          "type": "array",
+          "items": { "$ref": "artifact.schema.json#/$defs/evidenceId" },
+          "uniqueItems": true
+        },
+        "history": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["at", "note"],
+            "additionalProperties": false,
+            "properties": {
+              "at": { "type": "string", "format": "date-time" },
+              "note": { "type": "string", "minLength": 1 },
+              "probability": { "$ref": "#/$defs/probability" },
+              "impact": { "$ref": "#/$defs/probability" },
+              "by": { "type": "string" }
+            }
+          }
+        }
+      },
+
+      "allOf": [
+        {
+          "description": "An accepted risk requires a recorded human approval.",
+          "if": { "properties": { "status": { "const": "accepted" } }, "required": ["status"] },
+          "then": { "required": ["acceptance_approval"] }
+        },
+        {
+          "description": "Residual values come as a pair or not at all.",
+          "if": { "required": ["residual_probability"] },
+          "then": { "required": ["residual_impact"] }
+        },
+        {
+          "description": "A mitigated or closed risk must show what reduced it and what proved the reduction.",
+          "if": {
+            "properties": { "status": { "enum": ["mitigated", "closed"] } },
+            "required": ["status"]
+          },
+          "then": {
+            "required": ["mitigation", "verification", "residual_probability", "residual_impact"],
+            "properties": {
+              "mitigation": { "minItems": 1 },
+              "verification": { "minItems": 1 }
+            }
+          }
+        }
+      ]
+    }
+  },
+
+  "type": "object",
+  "required": ["schema_version", "risks"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "type": "string", "const": "1.0" },
+    "risks": { "type": "array", "items": { "$ref": "#/$defs/risk" } }
+  },
+
+  "$comment": "Graph-level invariants enforced by validate_risk.py: (1) exposure == probability*impact, and residual_exposure == residual_probability*residual_impact; (2) residual exposure never exceeds current exposure; (3) every risk at or above the high_exposure_threshold in openup-config.yml has >=1 mitigation WBS node that exists, and >=1 verification reference (s19, s32); (4) every mitigation WBS node has kind 'risk-mitigation' and lists this risk id back - the edge must agree from both ends; (5) every mitigation node produces evidence before the risk may reach status 'mitigated'."
+}

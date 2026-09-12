@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://specup.dev/schemas/traceability.schema.json",
+  "title": "SpecUP Traceability Graph",
+  "description": "Canonical relation store (specup.md s20-s22). Edges are stored ONCE in active voice; inverses are derived at load time, which is what makes bi-directional traversal mechanical rather than a second hand-maintained dataset. traceability.md and coverage.md are generated views (s47).",
+
+  "$defs": {
+    "edge": {
+      "type": "object",
+      "required": ["from", "relation", "to", "provenance"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "artifact.schema.json#/$defs/traceId" },
+        "from": { "$ref": "artifact.schema.json#/$defs/anyId" },
+        "relation": { "$ref": "artifact.schema.json#/$defs/relation" },
+        "to": { "$ref": "artifact.schema.json#/$defs/anyId" },
+        "provenance": { "$ref": "artifact.schema.json#/$defs/provenance" },
+        "status": {
+          "type": "string",
+          "enum": ["proposed", "active", "verified", "broken", "superseded"],
+          "default": "active"
+        },
+        "source_file": {
+          "$ref": "artifact.schema.json#/$defs/sourcePath",
+          "description": "File this edge is declared in."
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              { "$ref": "artifact.schema.json#/$defs/evidenceId" },
+              { "$ref": "artifact.schema.json#/$defs/sourcePath" }
+            ]
+          },
+          "uniqueItems": true
+        },
+        "derived_by": {
+          "type": "string",
+          "description": "Required when provenance is 'derived': the validator rule that produced this edge, so it can be reproduced or invalidated. Derived edges are regenerated on every run and must never be hand-edited."
+        },
+        "approval": {
+          "$ref": "artifact.schema.json#/$defs/approval",
+          "description": "Required when provenance is 'approved'."
+        },
+        "approved_endpoints_hash": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "SHA256 of the endpoint artifacts at approval time. If the endpoints change, the edge is downgraded to 'asserted' and the downgrade is recorded - approval does not survive a change to what was approved (ID-GRAMMAR.md s3)."
+        },
+        "note": { "type": "string" }
+      },
+
+      "allOf": [
+        {
+          "if": { "properties": { "provenance": { "const": "derived" } }, "required": ["provenance"] },
+          "then": { "required": ["derived_by"] }
+        },
+        {
+          "if": { "properties": { "provenance": { "const": "approved" } }, "required": ["provenance"] },
+          "then": { "required": ["approval", "approved_endpoints_hash"] }
+        }
+      ]
+    }
+  },
+
+  "type": "object",
+  "required": ["schema_version", "edges"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "type": "string", "const": "1.0" },
+    "scope": {
+      "type": "string",
+      "description": "Which slice of the project this file covers, e.g. 'specs/001-auth'. Per-feature matrices are merged into one graph at load time; see openup-config.yml traceability.stores."
+    },
+    "generated_at": { "type": "string", "format": "date-time" },
+    "edges": { "type": "array", "items": { "$ref": "#/$defs/edge" } }
+  },
+
+  "$comment": "Graph-level invariants enforced by validate_trace.py: (1) both endpoints resolve to an artifact that exists, or the edge is 'broken'; (2) relation is type-legal for its endpoints per the domain/range table in ID-GRAMMAR.md s2; (3) no duplicate (from, relation, to) triples across merged stores; (4) no cycles on contains, decomposes-to, refines, depends-on, supersedes; (5) forward coverage - every requirement reaches an implementing WBS node and a verifying acceptance criterion; (6) backward coverage - every source file inside the configured traceability perimeter is reachable from some requirement; (7) orphan detection per s54, scoped by the perimeter; (8) the derived:asserted:approved ratio is reported, so a graph that is overwhelmingly 'asserted' cannot present itself as 100% covered."
+}

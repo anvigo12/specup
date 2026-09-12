@@ -1,0 +1,140 @@
+# SpecUP / OpenUP extension configuration
+#
+# This file closes the values specup.md leaves undefined. Every threshold here is
+# referenced by a validator; nothing in this file is decorative. Project-local overrides
+# go in openup-config.local.yml (gitignored), per the Spec Kit extension config layering.
+
+schema_version: "1.0"
+
+lifecycle:
+  # Current position in the OpenUP lifecycle. /speckit.openup.phase updates this.
+  phase: INCEPTION
+  iteration: null
+
+wbs:
+  # semantic (default): levels keep fixed meanings (L1 Program .. L7 Task), but a leaf may
+  #   terminate above L7 when it declares terminal_reason. Resolves the contradiction between
+  #   specup.md s18 ("every leaf must be L7") and s65 ("do not create seven levels of narrative").
+  # strict: s18 read literally - every leaf must be L7, no exceptions.
+  depth_policy: semantic
+
+  # Levels at which a node may never be a leaf regardless of policy. L1-L3 are pure structure
+  # (Program / Phase / Iteration); a leaf there means the plan is empty, not concise.
+  never_terminal_above: 3
+
+  # Warn when a single parent has more children than this - usually a missing intermediate level.
+  max_children_warn: 25
+
+risk:
+  # exposure = probability x impact. specup.md states this only by example (0.6 x 0.9 = 0.54)
+  # and never defines "high", though s19/s32/s63 all gate on it. Defined here.
+  high_exposure_threshold: 0.40
+  critical_exposure_threshold: 0.65
+
+  # Risks at or above high_exposure_threshold must have >=1 mitigation WBS node and
+  # >=1 verification reference before the Elaboration gate passes.
+  require_mitigation_at_or_above: high
+  require_verification_at_or_above: high
+
+  # Reject a residual exposure that is not strictly lower than current exposure unless the
+  # risk is explicitly accepted - "mitigated" with unchanged exposure is a no-op.
+  require_residual_reduction: true
+
+traceability:
+  # Where relation stores live. All matching files are merged into ONE graph at load time.
+  # specup.md s5 puts WBS/risk/traceability at BOTH .specify/ and specs/<feature>/ without
+  # saying which is canonical; this setting is the answer - every listed store is canonical
+  # for its own scope, and a duplicate (from, relation, to) triple across stores is an error.
+  stores:
+    - .specify/traceability/traceability.yaml
+    - specs/*/traceability/matrix.yaml
+
+  # The traceability perimeter. s54 flags every untraced source file as an orphan, which at
+  # file granularity would require an edge for every util, config, and generated file.
+  # Only files matching include and not matching exclude are subject to backward coverage.
+  perimeter:
+    include:
+      - "src/**"
+      - "services/**"
+      - "apps/**"
+    exclude:
+      - "**/*.generated.*"
+      - "**/__snapshots__/**"
+      - "**/node_modules/**"
+      - "**/*.test.*"
+      - "**/*.spec.*"
+
+  coverage_thresholds:
+    forward: 1.00   # every requirement reaches implementation and verification
+    backward: 0.95  # every in-perimeter source file reaches a requirement
+
+  # Minimum provenance for edges touching a BASELINED artifact. Below this, the audit reports
+  # the coverage figure but the gate does not accept it as evidence.
+  baseline_min_provenance: approved
+
+gherkin:
+  features_glob: "specs/*/acceptance/**/*.feature"
+  # s24: every acceptance criterion has >=1 scenario, and every scenario maps back to an AC
+  # and a requirement. Scenario binding is by @TAG using the ID grammar.
+  require_ac_tag: true
+  require_requirement_tag: true
+
+contracts:
+  openapi_glob: "specs/*/contracts/*.openapi.{yaml,yml,json}"
+  asyncapi_glob: "specs/*/contracts/*.asyncapi.{yaml,yml,json}"
+  # v1 does static schema validation only. Microcks conformance is deferred to a later
+  # phase (specup.md's own Maturity Level 4, s64) because it needs a reachable server.
+  microcks:
+    enabled: false
+
+gates:
+  # Named predicates implemented in scripts/python/evaluate_gate.py. specup.md s30 names these
+  # but never defines them; the mapping from name to implementation lives in that module.
+  GATE-LIFECYCLE_OBJECTIVES:
+    phase: INCEPTION
+    conditions:
+      - vision_present
+      - stakeholders_identified
+      - initial_risks_registered
+      - wbs_levels_1_to_3_valid
+      - requirements_have_owners
+
+  GATE-LIFECYCLE_ARCHITECTURE:
+    phase: ELABORATION
+    conditions:
+      - architecture_baselined
+      - all_high_risks_have_mitigation
+      - requirements_traceable
+      - critical_contracts_defined
+      - security_review_complete
+      - wbs_valid
+
+  GATE-INITIAL_OPERATIONAL_CAPABILITY:
+    phase: CONSTRUCTION
+    conditions:
+      - wbs_valid
+      - forward_coverage_met
+      - backward_coverage_met
+      - acceptance_scenarios_passing
+      - no_open_critical_risks
+      - no_orphans
+
+  GATE-PRODUCT_RELEASE:
+    phase: TRANSITION
+    conditions:
+      - all_gates_passed
+      - release_evidence_complete
+      - no_open_high_risks
+      - traceability_final
+      - security_validation_passed
+
+audit:
+  # s33 report. Always emit the provenance mix - a graph that is overwhelmingly 'asserted'
+  # must not be able to present itself as fully covered.
+  report_provenance_mix: true
+  fail_on:
+    - broken_references
+    - orphan_requirements
+    - orphan_wbs_nodes
+    - unmitigated_high_risk
+    - coverage_below_threshold

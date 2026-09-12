@@ -1,0 +1,170 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://specup.dev/schemas/artifact.schema.json",
+  "title": "SpecUP Governed Artifact",
+  "description": "Base metadata for any governed artifact, plus the canonical $defs for identifiers, relations, provenance, and governance states. Other SpecUP schemas $ref these definitions; this file is the machine-readable form of ID-GRAMMAR.md.",
+
+  "$defs": {
+    "domain": {
+      "type": "string",
+      "pattern": "^[A-Z][A-Z0-9]{1,11}$",
+      "description": "Domain or capability tag, e.g. AUTH, BILLING."
+    },
+
+    "businessObjectiveId": { "type": "string", "pattern": "^BUS-OBJ-[0-9]{4}$" },
+    "requirementId": { "type": "string", "pattern": "^REQ-[A-Z][A-Z0-9]{1,11}-[0-9]{4}$" },
+    "nonFunctionalRequirementId": { "type": "string", "pattern": "^NON-FR-[A-Z][A-Z0-9]{1,11}-[0-9]{4}$" },
+    "featureId": { "type": "string", "pattern": "^FEAT-[0-9]{4}$" },
+    "userStoryId": { "type": "string", "pattern": "^USR-STR-[0-9]{4}$" },
+    "flowId": { "type": "string", "pattern": "^FLOW-[A-Z][A-Z0-9]{1,11}-[0-9]{4}-[0-9]{4}$" },
+    "acceptanceCriterionId": { "type": "string", "pattern": "^AC-[A-Z][A-Z0-9]{1,11}-[0-9]{4}-[0-9]{4}$" },
+    "scenarioId": { "type": "string", "pattern": "^SCEN-[A-Z][A-Z0-9]{1,11}-[0-9]{4}$" },
+    "wbsId": {
+      "type": "string",
+      "pattern": "^WBS-[1-9][0-9]*(\\.[1-9][0-9]*){0,6}$",
+      "description": "Dotted path of 1-7 segments. Segment count is the WBS level."
+    },
+    "taskId": { "type": "string", "pattern": "^TASK-[0-9]{4}$" },
+    "riskId": { "type": "string", "pattern": "^RISK-[0-9]{4}$" },
+    "traceId": { "type": "string", "pattern": "^TRACE-[0-9]{4}$" },
+    "adrId": { "type": "string", "pattern": "^ADR-[0-9]{4}$" },
+    "securityDecisionId": { "type": "string", "pattern": "^SECURE-[0-9]{4}$" },
+    "testCaseId": { "type": "string", "pattern": "^TC-[A-Z][A-Z0-9]{1,11}-[0-9]{4}$" },
+    "unitTestId": { "type": "string", "pattern": "^UNIT-[A-Z][A-Z0-9]{1,11}-[0-9]{4}$" },
+    "integrationTestId": { "type": "string", "pattern": "^INTG-[A-Z][A-Z0-9]{1,11}-[0-9]{4}$" },
+    "contractId": { "type": "string", "pattern": "^CONTRACT-[A-Z][A-Z0-9]{1,11}-[0-9]{4}$" },
+    "microcksTestId": { "type": "string", "pattern": "^MICROCKS-TEST-[0-9]{4}$" },
+    "evidenceId": { "type": "string", "pattern": "^EVID-[0-9]{4}$" },
+    "iterationId": {
+      "type": "string",
+      "pattern": "^ITER-[IECT]-[0-9]{2}$",
+      "description": "Phase letter (Inception/Elaboration/Construction/Transition) plus ordinal, e.g. ITER-E-02."
+    },
+    "gateId": { "type": "string", "pattern": "^GATE-[A-Z][A-Z0-9_]*$" },
+    "sourcePath": {
+      "type": "string",
+      "pattern": "^(?!/)(?!.*//)(?!.*\\.\\./)[^\\\\\\u0000]+$",
+      "description": "Repo-relative POSIX path. The path is the identity; there is no synthetic source ID."
+    },
+
+    "anyId": {
+      "description": "Any governed identifier, including a source path.",
+      "anyOf": [
+        { "$ref": "#/$defs/businessObjectiveId" },
+        { "$ref": "#/$defs/requirementId" },
+        { "$ref": "#/$defs/nonFunctionalRequirementId" },
+        { "$ref": "#/$defs/featureId" },
+        { "$ref": "#/$defs/userStoryId" },
+        { "$ref": "#/$defs/flowId" },
+        { "$ref": "#/$defs/acceptanceCriterionId" },
+        { "$ref": "#/$defs/scenarioId" },
+        { "$ref": "#/$defs/wbsId" },
+        { "$ref": "#/$defs/taskId" },
+        { "$ref": "#/$defs/riskId" },
+        { "$ref": "#/$defs/adrId" },
+        { "$ref": "#/$defs/securityDecisionId" },
+        { "$ref": "#/$defs/testCaseId" },
+        { "$ref": "#/$defs/unitTestId" },
+        { "$ref": "#/$defs/integrationTestId" },
+        { "$ref": "#/$defs/contractId" },
+        { "$ref": "#/$defs/microcksTestId" },
+        { "$ref": "#/$defs/evidenceId" },
+        { "$ref": "#/$defs/iterationId" },
+        { "$ref": "#/$defs/gateId" },
+        { "$ref": "#/$defs/sourcePath" }
+      ]
+    },
+
+    "artifactType": {
+      "type": "string",
+      "enum": [
+        "business-objective", "requirement", "non-functional-requirement", "feature",
+        "user-story", "flow", "acceptance-criterion", "scenario", "wbs-node", "task",
+        "risk", "architecture-decision", "security-decision", "test-case", "unit-test",
+        "integration-test", "contract", "microcks-test", "evidence", "iteration", "gate",
+        "source-artifact"
+      ]
+    },
+
+    "phase": {
+      "type": "string",
+      "enum": ["INCEPTION", "ELABORATION", "CONSTRUCTION", "TRANSITION"]
+    },
+
+    "governanceState": {
+      "type": "string",
+      "enum": ["DRAFT", "REVIEW", "APPROVED", "BASELINED", "IMPLEMENTED", "VERIFIED", "ACCEPTED"],
+      "description": "Per specup.md s31. Artifacts created by a command always enter at DRAFT - generated does not mean approved."
+    },
+
+    "provenance": {
+      "type": "string",
+      "enum": ["derived", "asserted", "approved"],
+      "description": "derived = recomputed by a validator from the filesystem; asserted = claimed by an agent or author; approved = asserted plus a named human sign-off."
+    },
+
+    "relation": {
+      "type": "string",
+      "enum": [
+        "refines", "contains", "decomposes-to", "implements", "modifies", "verifies",
+        "executes", "tests", "conforms-to", "validates", "mitigates", "evidences",
+        "depends-on", "belongs-to", "approves", "supersedes"
+      ],
+      "description": "Closed set, active voice. Inverses are derived at load time and never stored."
+    },
+
+    "priority": { "type": "string", "enum": ["critical", "high", "medium", "low"] },
+
+    "approval": {
+      "type": "object",
+      "required": ["by", "at"],
+      "additionalProperties": false,
+      "properties": {
+        "by": { "type": "string", "minLength": 1, "description": "Named human or role accountable for the approval." },
+        "at": { "type": "string", "format": "date-time" },
+        "commit": { "type": "string", "pattern": "^[0-9a-f]{7,40}$", "description": "Commit the approval was recorded in; a signed commit is the strongest available binding." },
+        "note": { "type": "string" }
+      }
+    }
+  },
+
+  "type": "object",
+  "required": ["id", "type", "title", "status"],
+  "additionalProperties": true,
+  "properties": {
+    "id": { "$ref": "#/$defs/anyId" },
+    "type": { "$ref": "#/$defs/artifactType" },
+    "title": { "type": "string", "minLength": 1, "maxLength": 200 },
+    "status": { "$ref": "#/$defs/governanceState" },
+    "owner": { "type": "string", "minLength": 1 },
+    "priority": { "$ref": "#/$defs/priority" },
+    "phase": { "$ref": "#/$defs/phase" },
+    "iteration": { "$ref": "#/$defs/iterationId" },
+    "source": { "$ref": "#/$defs/sourcePath", "description": "File the artifact is authored in." },
+    "baseline": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": { "version": { "type": "integer", "minimum": 1 } },
+      "required": ["version"]
+    },
+    "approvals": { "type": "array", "items": { "$ref": "#/$defs/approval" } },
+    "supersedes": { "$ref": "#/$defs/anyId" },
+    "tags": { "type": "array", "items": { "type": "string" }, "uniqueItems": true }
+  },
+
+  "allOf": [
+    {
+      "description": "BASELINED and beyond require at least one recorded approval.",
+      "if": {
+        "properties": {
+          "status": { "enum": ["BASELINED", "IMPLEMENTED", "VERIFIED", "ACCEPTED"] }
+        },
+        "required": ["status"]
+      },
+      "then": {
+        "required": ["approvals", "owner"],
+        "properties": { "approvals": { "minItems": 1 } }
+      }
+    }
+  ]
+}
