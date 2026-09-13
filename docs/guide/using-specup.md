@@ -157,8 +157,10 @@ archive is pinned by SHA-256 and the install aborts if the bytes do not match.
 
 The bundle installs the extension, then the preset, then the four workflows. **The order is
 load-bearing.** The preset's guidance instructs agents to run validators the *extension*
-ships, and Spec Kit has no preset→extension dependency mechanism. Installed alone, the
-preset reads as fully authoritative while every check it names silently does not run.
+ships. The preset declares that dependency, so installing it alone does warn — but the
+warning is all it is: Spec Kit checks after the install has succeeded, installs nothing, and
+refuses nothing. Installed alone, the preset reads as fully authoritative while every check
+it names silently does not run.
 
 To install a working tree instead of a release — developing SpecUP, needing an unreleased
 change, or with no network — use the repository's own installer:

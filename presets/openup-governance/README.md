@@ -20,15 +20,29 @@ requires a preset.
 
 ## Install
 
+The intended route is the whole stack at once, through the `specup` bundle, because this
+preset is only half of it — see [It expects the openup extension](#it-expects-the-openup-extension):
+
 ```bash
+specify bundle install specup
+```
+
+That needs SpecUP's catalogs registered first; [`bundles/specup/README.md`](../../bundles/specup/README.md)
+has the four one-time `catalog add` commands.
+
+To install only this preset, from the release or from this working tree:
+
+```bash
+specify preset add --from https://github.com/anvigo12/specup/releases/download/v0.1.0/openup-governance-0.1.0.zip
 specify preset add --dev ./presets/openup-governance
+```
+
+Either way, confirm it composed rather than assuming it did:
+
+```bash
 specify preset list
 specify preset resolve spec-template     # see the composition chain
 ```
-
-That `--dev` route installs this working tree. The intended route is the whole stack at once
-through the `specup` bundle — `specify bundle install specup`, after registering SpecUP's
-catalog. See [`bundles/specup/README.md`](../../bundles/specup/README.md).
 
 ## It expects the openup extension
 
@@ -37,8 +51,24 @@ references validators that ship with the `openup` extension
 (`.specify/extensions/openup/scripts/python/`). Without the extension those commands are not
 present and the instructions become advice with nothing behind them.
 
-Spec Kit has no preset→extension dependency mechanism, so the bundle is what guarantees they
-arrive together.
+`preset.yml` declares that dependency, so Spec Kit says so rather than leaving you to find out
+from behaviour. Installing this preset into a project without the extension prints:
+
+```
+!  This preset depends on extensions that are not satisfied:
+    openup is not installed
+      Install with: specify extension add openup
+
+The preset is installed.
+Anything relying on an unavailable extension does nothing until that is resolved.
+```
+
+That is a warning, not a refusal — and the distinction is the point. The overrides still fall
+through to the core workflow, so nothing breaks; the preset simply does less than its
+instructions promise, which is the failure a silent install would hide.
+
+Declaring the dependency does not install it. Nothing in Spec Kit's preset machinery does.
+The bundle is still what guarantees the two arrive together.
 
 ## What it deliberately does not ship
 

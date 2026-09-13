@@ -83,9 +83,10 @@ bundles/specup/            ← COHESION. Not a fourth layer — the only place S
 ```
 
 That last one is load-bearing rather than convenience packaging. The preset instructs an
-agent to run validators the *extension* installs, and Spec Kit has no preset→extension
-dependency mechanism. Installed alone, the preset reads as fully authoritative while every
-check it names silently does not run.
+agent to run validators the *extension* installs. It declares that dependency, so Spec Kit
+warns when the extension is absent — but a warning is the whole of what Spec Kit offers here:
+it installs nothing and refuses nothing. Installed alone, the preset still reads as fully
+authoritative while every check it names silently does not run.
 
 A useful consequence: **the path an agent runs and the path a workflow runs are the same
 string.** Extension commands get no `{SCRIPT}` substitution, so they reference

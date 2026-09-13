@@ -16,14 +16,18 @@ Installs the whole OpenUP governance stack as one unit: the `openup` extension, 
 
 The preset tells an agent to run validators at
 `.specify/extensions/openup/scripts/python/`. Those files are installed by the extension.
-Spec Kit has **no preset→extension dependency mechanism** — a preset manifest cannot
-declare that it needs an extension, and nothing stops you installing one without the
-other.
 
-Installed alone, the preset is a set of instructions pointing at files that are not
-there. Every governance instruction still reads as authoritative, and every check it
-names silently does not run. A bundle is the only place in Spec Kit where "these three
-things go together, at these versions" can be stated at all.
+A preset manifest **can** say it needs one: `openup-governance` declares
+`requires.extensions: [openup]`, and Spec Kit prints a named warning with the command that
+resolves it. What it cannot do is act on that. The check runs *after* the install has already
+succeeded, it never installs the dependency, and nothing refuses. **Declaring is not
+enforcing.**
+
+Installed alone, the preset is still a set of instructions pointing at files that are not
+there. Every governance instruction reads as authoritative and every check it names silently
+does not run — now with a warning somewhere above it in the scrollback. A bundle is the only
+place in Spec Kit where "these three things go together, at these versions" is both stated
+*and* acted on.
 
 Install order matters and is not ours to choose: `BundleManifest.components` fixes it as
 extensions → presets → steps → workflows, which is the order needed here.

@@ -76,6 +76,27 @@ def test_preset_block_is_complete(manifest):
     assert len(preset["description"]) < 200, "description must be under 200 characters"
 
 
+def test_the_openup_extension_is_declared_as_a_dependency(manifest):
+    """Without this the preset installs silently into a project that cannot run any check
+    it names.
+
+    `requires.extensions` does not install the extension and does not refuse — it makes
+    Spec Kit print the missing id and the command that fixes it, after the install. That
+    warning is the only signal a user gets on the standalone `preset add` route, where the
+    bundle's guarantee does not apply.
+
+    Asserted without a version constraint on purpose: only 0.1.0 has been exercised, and a
+    range we have not tested would report every later extension release as unsatisfied.
+    The failure being guarded against is absence, which no range affects.
+    """
+    declared = manifest.get("requires", {}).get("extensions") or []
+    ids = {e["id"] if isinstance(e, dict) else e for e in declared}
+    assert "openup" in ids, (
+        "preset.yml must declare requires.extensions: [openup] — the guidance calls "
+        "validators that only the openup extension installs"
+    )
+
+
 def test_everything_is_declared_under_provides_templates(manifest):
     """Presets use ONE list discriminated by `type`, unlike extensions which use separate
     commands/templates/scripts lists. Getting this wrong makes the preset install as empty."""

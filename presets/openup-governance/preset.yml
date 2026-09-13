@@ -13,6 +13,18 @@ requires:
   # Matches the extension and the bundle: 1.0.6 is the only version exercised.
   speckit_version: ">=1.0.0,<2.0.0"
 
+  # Declared as presence, deliberately without a version range. The command overrides below
+  # call validators that ship with the openup extension; without it they fall through to the
+  # core workflow and quietly do less than the instructions promise. Spec Kit checks this
+  # after the install and names the command that resolves it — it does not install the
+  # dependency, which is what the specup bundle is for.
+  #
+  # No range, because only 0.1.0 has been exercised and a constraint we have not tested would
+  # turn every future extension release into a spurious "does not satisfy" warning. The
+  # failure this guards against is the extension being absent, which no range affects.
+  extensions:
+    - id: openup
+
 # This preset changes Spec Kit's OWN artifacts. It deliberately ships no WBS, risk or
 # traceability templates: those belong to the openup extension, and duplicating them here
 # would create exactly the two-sources-of-truth drift the governance model exists to prevent.

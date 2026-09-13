@@ -181,10 +181,13 @@ def test_the_preset_never_ships_without_its_extension(components):
     """The bundle's whole purpose.
 
     The preset's guidance tells an agent to run validators at
-    `.specify/extensions/openup/scripts/python/`, which the extension installs. Spec Kit
-    has no preset->extension dependency mechanism, so this manifest is the only place the
-    pairing can be stated. A bundle carrying the preset alone would ship instructions
-    pointing at files that are not there — every check named, none of them running.
+    `.specify/extensions/openup/scripts/python/`, which the extension installs.
+
+    `preset.yml` declares that dependency, but a declaration only produces a warning after
+    the install has already succeeded — Spec Kit never installs the extension and never
+    refuses. This manifest is the only place the pairing is acted on. A bundle carrying the
+    preset alone would ship instructions pointing at files that are not there: every check
+    named, none of them running.
     """
     kinds = {kind: {e["id"] for _, e in [(k, e) for k, e in components if k == kind]} for kind in COMPONENT_KINDS}
     if "openup-governance" in kinds["presets"]:

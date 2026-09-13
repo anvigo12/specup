@@ -11,7 +11,7 @@
       "license": "MIT",
       "repository": "https://github.com/anvigo12/specup",
       "download_url": "https://github.com/anvigo12/specup/releases/download/v0.1.0/openup-governance-0.1.0.zip",
-      "sha256": "2a4c44ae62bbeb1ce00bef2bc24b26cb110fbd50bd3c12b71c3716b2f51747c5",
+      "sha256": "c9bce34220773f07596e2e02e8b23f86886d4f7c3a0d38e22b1039ad2fe50137",
       "requires": {
         "speckit_version": ">=1.0.0,<2.0.0"
       },

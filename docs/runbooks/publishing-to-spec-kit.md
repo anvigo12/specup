@@ -157,6 +157,44 @@ https://github.com/<owner>/specup/releases/download/v0.1.0/openup-0.1.0.zip
 replaced asset makes every install fail the integrity check, which is the system working
 correctly and will still look like an outage.
 
+### Re-cutting a tag that has already been pushed
+
+Deleting the release *and* the tag and re-creating both at a new commit is a different act
+from replacing an asset under a tag that stays put, and it is occasionally the right one —
+when a release is hours old and a fix belongs *in* it rather than in a patch version nobody
+needed. 0.1.0 was re-cut exactly once, to add the preset's `requires.extensions` declaration.
+
+The precondition is checkable rather than a matter of judgement:
+
+```bash
+gh api repos/anvigo12/specup/releases/tags/v0.1.0 \
+  --jq '.assets[] | "\(.name) \(.download_count)"'
+```
+
+If those counts are not fully accounted for by your own verification runs, someone is holding
+the old bytes and you ship a new version instead. A digest that was correct yesterday and
+differs today is indistinguishable from a compromise, and the integrity check cannot tell
+which one it is looking at.
+
+Order matters — release first, because a tag whose release is gone is inert:
+
+```bash
+gh release delete v0.1.0 --yes
+git push origin :refs/tags/v0.1.0
+git tag -d v0.1.0
+git tag -a v0.1.0 -m "SpecUP 0.1.0"
+git push origin v0.1.0
+gh release create v0.1.0 dist/*.zip dist/SHA256SUMS --title … --notes-file …
+```
+
+Then **re-run step 5 in full**. The previous verification record describes bytes that no
+longer exist, and a re-cut release nobody re-verified is worse than a patch release: the
+version number still claims it was checked.
+
+One thing you cannot fix from here — anyone who already fetched the old tag keeps it, because
+`git fetch` will not delete a local tag whose remote is gone. `git fetch --prune-tags` does,
+and is what to tell a collaborator.
+
 ---
 
 ## 4. Publish the catalog files
@@ -301,15 +339,51 @@ the combination `bundle.yml` exists to prevent.
 
 ## 7. Optional — submit for discovery
 
-Open a PR against `github/spec-kit` adding SpecUP to:
+Being listed in Spec Kit's own community catalogs makes SpecUP **findable, not installable**.
+Those catalogs are discovery-only (section 0), so someone who finds SpecUP there still
+registers our catalog to install it. Say that in the submission rather than letting them meet
+it at the error message.
 
-- `extensions/catalog.community.json`
-- `presets/catalog.community.json`
-- `workflows/catalog.community.json`
+### Do not open a catalog pull request
 
-Model the entry on `adrkit`. Remember this makes SpecUP **findable, not installable** — users
-still register our catalog to install. Say so in the entry's `documentation` link rather than
-letting them discover it at the error message.
+An earlier draft of this step said to open one. That is wrong, and `CONTRIBUTING.md` says so
+in as many words: a hand-edited catalog PR *"bypasses that validation and will be closed with
+a pointer back to the issue flow."*
+
+The route is a **submission issue** per primitive. A maintainer applies the
+`extension-submission` / `preset-submission` / `bundle-submission` label during triage, which
+starts an agentic workflow (`.github/workflows/add-community-*.md`) that validates the release,
+verifies the `download_url` and digest, and opens the catalog PR itself. Do not apply the label
+yourself and do not ask for it.
+
+This applies to **new entries, version bumps and repairs alike** — an update is still an
+update and gets the same validation.
+
+### Three submissions, not four
+
+| Primitive | Issue template | Lands in |
+|---|---|---|
+| extension `openup` | `[Extension]` | `extensions/catalog.community.json` |
+| preset `openup-governance` | `[Preset]` | `presets/catalog.community.json` |
+| bundle `specup` | `[Bundle]` | `bundles/catalog.community.json` |
+| the four `openup-*` workflows | **none exists** | `workflows/catalog.community.json` |
+
+`workflows/catalog.community.json` is real and populated, but there is no workflow submission
+template and no `add-community-workflow` automation — so there is no documented route for the
+four phase workflows. Leave them out. They install from our catalog either way, the bundle
+submission lists them under *Components Provided*, and hand-editing that file to close the gap
+is exactly the pull request the policy above rejects.
+
+### Prepared bodies
+
+[`community-submission/`](community-submission/) holds one file per submission with every field
+filled from the release, and records which claims were verified by running them. The figures are
+version-stamped; re-derive them at each update instead of resubmitting the previous release's.
+
+### Pin `download_url` to a tag, never to `latest`
+
+CONTRIBUTING requires `…/releases/download/<tag>/…`. `catalog/*.json` is already generated that
+way, so copy the URL and digest from there rather than retyping either.
 
 ---
 
