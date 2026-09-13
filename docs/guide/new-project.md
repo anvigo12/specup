@@ -34,11 +34,16 @@ mkdir my-product && cd my-product && git init
 specify init --here --integration claude      # or your agent of choice
 ```
 
-Then install the stack. Once SpecUP is published to a catalog this is
-`specify bundle install specup`; until then, from a clone of this repo:
+Then register SpecUP's catalog — one time, per machine — and install the stack:
 
 ```bash
-python3 /path/to/specup/bundles/specup/install.py --project .
+BASE=https://raw.githubusercontent.com/anvigo12/specup/main/catalog
+specify extension catalog add $BASE/extensions.json --name specup --install-allowed --priority 0
+specify preset    catalog add $BASE/presets.json    --name specup --install-allowed --priority 0
+specify workflow  catalog add $BASE/workflows.json  --name specup
+specify bundle    catalog add $BASE/bundles.json    --policy install-allowed --priority 0
+
+specify bundle install specup
 python3 -m pip install -r .specify/extensions/openup/requirements.txt
 ```
 

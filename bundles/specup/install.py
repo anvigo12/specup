@@ -1,46 +1,58 @@
 #!/usr/bin/env python3
-"""Install the SpecUP bundle into a Spec Kit project from this repository.
+"""Install the SpecUP bundle into a Spec Kit project from *this working tree*.
 
-WHY THIS EXISTS
----------------
-`specify bundle install ./bundle.yml` cannot install SpecUP today, and the reason
-is structural rather than a bug to work around.
+WHICH INSTALLER TO USE
+----------------------
+This one installs the working tree. `specify bundle install specup` installs a
+release. They are not alternatives -- they answer different questions:
 
+    this script              the code in front of you, unreleased, offline
+    specify bundle install   a published version, digest-verified, networked
+
+Use the published route for real projects. Use this one when you are developing
+SpecUP itself, when you need a change that is not released yet, or when the
+machine cannot reach raw.githubusercontent.com and github.com.
+
+WHY THE PUBLISHED ROUTE CANNOT COVER THIS CASE
+----------------------------------------------
 A bundle manifest references components by *id*. The bundler resolves each id
 through `specify_cli._assets._locate_bundled_{extension,preset,workflow}`, which
 looks in exactly two places: the assets shipped inside the Spec Kit wheel
 (`specify_cli/core_pack/`), and a Spec Kit *source checkout* rooted at the
 installed package's grandparent. Neither can ever contain a third-party project.
-When both miss, the installer falls through to the published catalogs.
+When both miss, the installer falls through to the published catalogs -- which
+serve released archives pinned by digest, so by construction they cannot serve an
+edit you have not released.
 
 The manifest's `source:` key looks like the escape hatch and is not: it is parsed
-into `ComponentRef.source` and then read by nothing in the install path.
+into `ComponentRef.source` and then read by nothing in the install path. A local
+catalog is not one either: catalog URLs are checked by
+`is_https_or_localhost_http`, so a `file://` catalog is rejected outright.
 
-So for an unpublished project there are exactly two real outcomes, both verified:
+Running `specify bundle install ./bundle.yml` against an unreleased tree has two
+outcomes, both verified against spec-kit 1.0.6:
 
     components absent   -> "Extension 'openup' not found in any catalog." (exit 1)
     components present  -> "Installed 'specup' (0 added, 6 already present)."
 
-The second is the trap this script exists to prevent someone walking into. It
-exits 0 and looks like success, but the recorded bundle has
-`contributed_components: []`, because Spec Kit deliberately refuses to claim
-components it did not itself install (FR-022, the collateral-removal guard). The
-bundle is then a label over an install it does not own, and `bundle remove specup`
-removes nothing.
-
-Local catalogs are not an alternative: catalog URLs are checked by
-`is_https_or_localhost_http`, so a `file://` catalog is rejected outright.
+The second is the trap. It exits 0 and looks like success, but the recorded
+bundle has `contributed_components: []`, because Spec Kit deliberately refuses to
+claim components it did not itself install (FR-022, the collateral-removal
+guard). The bundle is then a label over an install it does not own, and
+`bundle remove specup` removes nothing. That is Spec Kit behaving correctly, and
+a confusing thing to discover; steering around it is part of why this exists.
 
 WHAT THIS SCRIPT DOES
 ---------------------
 Performs the install the manifest describes, in the manifest's own order, and
-enforces the one guarantee the bundler would enforce if these components were
-published: that the version on disk matches the version the manifest pins. That
-check is the actual point. A bundle whose pins have drifted from its components
-is worse than no bundle, because it documents a combination that was never built.
+enforces the one guarantee the bundler would enforce if these components had come
+from a catalog: that the version on disk matches the version the manifest pins. A
+bundle whose pins have drifted from its components is worse than no bundle,
+because it documents a combination that was never built.
 
-This is a development installer. When SpecUP is published to a catalog,
-`specify bundle install specup` becomes the real route and this file should go.
+`tools/build_catalog.py` applies the same check when a release is generated. This
+one runs earlier -- at the moment you install the tree you are editing, which is
+where the drift is introduced and cheapest to fix.
 """
 
 from __future__ import annotations

@@ -139,17 +139,38 @@ reachable and legible — not to *be* the checks.
 
 ```bash
 specify init --here --integration claude          # if not already a Spec Kit project
-python3 /path/to/specup/bundles/specup/install.py --project .
+
+BASE=https://raw.githubusercontent.com/anvigo12/specup/main/catalog
+specify extension catalog add $BASE/extensions.json --name specup --install-allowed --priority 0
+specify preset    catalog add $BASE/presets.json    --name specup --install-allowed --priority 0
+specify workflow  catalog add $BASE/workflows.json  --name specup
+specify bundle    catalog add $BASE/bundles.json    --policy install-allowed --priority 0
+
+specify bundle install specup
 python3 -m pip install -r .specify/extensions/openup/requirements.txt
 ```
 
-`install.py` installs the extension, then the preset, then the four workflows. **The order
-is load-bearing.** The preset's guidance instructs agents to run validators the *extension*
+The four `catalog add` commands are one-time, per machine. Spec Kit's `default` catalog
+holds only components vendored into the Spec Kit wheel, so every third-party project
+publishes its own catalog; registering it is the supported route, not a workaround. Each
+archive is pinned by SHA-256 and the install aborts if the bytes do not match.
+
+The bundle installs the extension, then the preset, then the four workflows. **The order is
+load-bearing.** The preset's guidance instructs agents to run validators the *extension*
 ships, and Spec Kit has no preset→extension dependency mechanism. Installed alone, the
 preset reads as fully authoritative while every check it names silently does not run.
 
+To install a working tree instead of a release — developing SpecUP, needing an unreleased
+change, or with no network — use the repository's own installer:
+
+```bash
+python3 /path/to/specup/bundles/specup/install.py --project .
+```
+
 Useful flags: `--dry-run` prints what would happen and checks the version pins without
-touching anything; `--skip-record` omits the final provenance-recording call.
+touching anything; `--skip-record` omits the final provenance-recording call. After that
+route `specify bundle list` shows 0 components, which is correct and explained in
+[`bundles/specup/README.md`](../../bundles/specup/README.md#why-the-two-cannot-be-collapsed).
 
 **The `pip install` line is not optional.** Without `PyYAML`, `jsonschema` and `referencing`
 every validator exits `2`, and your workflows halt on the setup-fault branch instead of

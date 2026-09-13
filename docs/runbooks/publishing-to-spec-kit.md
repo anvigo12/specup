@@ -266,26 +266,36 @@ resolving. A correct catalog install reports six.
 
 ---
 
-## 6. Demote the development installer
+## 6. Confirm the documentation matches what shipped
 
-Once step 5 passes from a clean project, the catalog is the install route and the docs must
-say so:
+Done once, for 0.1.0, and worth re-reading at each release rather than assuming:
 
-1. Lead with `catalog add` + `bundle install specup` in `README.md` and
-   `bundles/specup/README.md`.
-2. Drop the "specify bundle install cannot install this bundle" bullet from the README's
-   Limitations. It stops being true the moment the catalog is live, and leaving it there
-   tells users the supported route does not work.
+1. `README.md`, `bundles/specup/README.md`, `docs/guide/using-specup.md`,
+   `new-project.md` and `existing-project.md` all lead with `catalog add` +
+   `specify bundle install specup`.
+2. The README's Limitations bullet says `specify bundle install` cannot reach an *unreleased
+   working tree* — not that it cannot install the bundle. The second stopped being true the
+   moment the catalog went live, and leaving it there tells users the supported route does
+   not work.
+3. The README's **Verified behavior** table records only what has actually been run. After
+   step 5 passes, add the catalog-install row. Before it, the table must say the catalog
+   route is not yet exercised.
 
-**Keep `bundles/specup/install.py`.** An earlier draft of this runbook said to delete it, and
-that is wrong for two reasons. It is the only way to install an unreleased working tree, which
-is what anyone developing SpecUP needs and what `task install PROJECT=…` calls. And it is the
-only offline route — the catalog path needs network access to `raw.githubusercontent.com` and
-`github.com`, which some environments do not have.
+**`bundles/specup/install.py` stays.** An earlier draft of this runbook said to delete it once
+a catalog existed. That is wrong, because the two installers answer different questions:
 
-Its docstring does need rewriting: it currently argues that catalog installation is impossible,
-which the catalog itself disproves. The honest version is "this installs from a working tree;
-`specify bundle install specup` installs a release".
+| | `install.py` | `specify bundle install specup` |
+|---|---|---|
+| Installs | this working tree, unreleased edits included | a published version |
+| Integrity | version pins checked against each component manifest | SHA-256 per archive, plus the pins |
+| Network | none | `raw.githubusercontent.com`, `github.com` |
+| Bundle record | owns 0 components | owns 6 |
+| Used by | `task install PROJECT=…`, SpecUP's own development | every real project |
+
+A catalog serves released archives pinned by digest, so by construction it cannot serve an
+edit nobody has released. Deleting `install.py` would leave SpecUP's own developers running
+four `specify … add --dev` commands by hand, in the right order, with no pin check — which is
+the combination `bundle.yml` exists to prevent.
 
 ---
 

@@ -26,7 +26,9 @@ specify preset list
 specify preset resolve spec-template     # see the composition chain
 ```
 
-Or install the whole stack at once through the `specup` bundle, which is the intended route.
+That `--dev` route installs this working tree. The intended route is the whole stack at once
+through the `specup` bundle — `specify bundle install specup`, after registering SpecUP's
+catalog. See [`bundles/specup/README.md`](../../bundles/specup/README.md).
 
 ## It expects the openup extension
 

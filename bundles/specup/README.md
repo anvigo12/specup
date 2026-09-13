@@ -28,7 +28,29 @@ things go together, at these versions" can be stated at all.
 Install order matters and is not ours to choose: `BundleManifest.components` fixes it as
 extensions → presets → steps → workflows, which is the order needed here.
 
-## Install
+## Install a release
+
+The supported route. Register SpecUP's catalog once, then install by id:
+
+```bash
+BASE=https://raw.githubusercontent.com/anvigo12/specup/main/catalog
+specify extension catalog add $BASE/extensions.json --name specup --install-allowed --priority 0
+specify preset    catalog add $BASE/presets.json    --name specup --install-allowed --priority 0
+specify workflow  catalog add $BASE/workflows.json  --name specup
+specify bundle    catalog add $BASE/bundles.json    --policy install-allowed --priority 0
+
+specify bundle install specup
+python3 -m pip install -r .specify/extensions/openup/requirements.txt
+```
+
+Spec Kit's `default` catalog holds only components vendored into the Spec Kit wheel, so
+every third-party project publishes its own catalog. Registering it is the supported
+route, not a workaround. Each archive is pinned by SHA-256 and the install aborts if the
+bytes do not match.
+
+## Install a working tree
+
+`install.py` installs *this checkout*, unreleased edits and all:
 
 ```bash
 python3 bundles/specup/install.py --project /path/to/your/spec-kit-project
@@ -37,10 +59,23 @@ python3 -m pip install -r /path/to/your/spec-kit-project/.specify/extensions/ope
 
 Add `--dry-run` to see the commands and the version-pin check without changing anything.
 
-## Why not `specify bundle install`
+Use it when you are developing SpecUP, when you need a change that is not released, or
+when the machine cannot reach `raw.githubusercontent.com` and `github.com`. `task install
+PROJECT=…` calls it.
 
-Because it cannot work for an unpublished project, and it fails in two different ways
-depending on what is already installed. Both were verified against spec-kit 1.0.6:
+### Why the two cannot be collapsed
+
+A bundle manifest references components by **id**, and ids resolve only against assets
+shipped inside the Spec Kit wheel or a published catalog —
+`specify_cli._assets._locate_bundled_{extension,preset,workflow}`. There is no `--dev` for
+bundles. The manifest's `source:` key looks like the escape hatch, but it is parsed into
+`ComponentRef.source` and then read by nothing in the install path. A local catalog is not
+a way around it either: catalog URLs are checked by `is_https_or_localhost_http`, so
+`file://` is rejected.
+
+A catalog therefore serves released archives pinned by digest, which by construction is
+not the tree you are editing. Pointing `specify bundle install` at a local `bundle.yml`
+does not fill the gap — it fails in two ways, both verified against spec-kit 1.0.6:
 
 ```
 components absent    Error: Extension 'openup' not found in any catalog.   (exit 1)
@@ -54,23 +89,24 @@ itself, so that removing a bundle can never uninstall something you installed se
 (the collateral-removal guard). The consequence is that `specify bundle remove specup`
 removes nothing.
 
-The cause is that a bundle manifest references components by **id**, and ids resolve only
-against assets shipped inside the Spec Kit wheel or a published catalog —
-`specify_cli._assets._locate_bundled_{extension,preset,workflow}`. There is no `--dev` for
-bundles. The manifest's `source:` key looks like the escape hatch, but it is parsed into
-`ComponentRef.source` and then read by nothing in the install path. A local catalog is not
-a way around it either: catalog URLs are checked by `is_https_or_localhost_http`, so
-`file://` is rejected.
-
 `install.py` performs the install the manifest describes, in the manifest's order, and
-enforces the version pins the bundler would have enforced had these components been
-published. That pin check is the part worth having — it fails the install when
-`bundle.yml` and a component's own manifest disagree, so the bundle can never document a
-combination that was never built.
+enforces the version pins the bundler enforces on the catalog route. That pin check is the
+part worth having — it fails the install when `bundle.yml` and a component's own manifest
+disagree, so the bundle can never document a combination that was never built.
+`tools/build_catalog.py` applies the same check at release time; `install.py` applies it at
+the moment the drift is introduced.
 
 ## Uninstall
 
-Because the bundle record owns nothing, remove the components directly:
+After a **catalog install**, the bundle record owns its components and one command is
+enough:
+
+```bash
+specify bundle remove specup
+```
+
+After an **`install.py` install**, the record owns nothing, so remove the components
+directly:
 
 ```bash
 specify preset remove openup-governance
@@ -81,12 +117,15 @@ done
 specify bundle remove specup        # drops the record
 ```
 
-## Publishing
+`specify bundle list` tells the two apart: a catalog install lists 6 components, an
+`install.py` install lists 0.
 
-When SpecUP reaches a catalog, `specify bundle install specup` becomes the real route,
-`install.py` should be deleted, and this section replaced with the bundle id. Nothing in
-`bundle.yml` needs to change — it is already what a catalog would serve.
+## Publishing a new version
 
-The one thing to re-check first is `requires.speckit_version`. It pins `>=1.0.0,<2.0.0`,
-which is narrower than the components' own `>=0.9.0`/`>=0.8.5` floors, because 1.0.6 is
-the only version this has been exercised against.
+Nothing in `bundle.yml` changes shape — it is already what the catalog serves. Bump the
+versions, rebuild, regenerate, and cut the release:
+[`docs/runbooks/publishing-to-spec-kit.md`](../../docs/runbooks/publishing-to-spec-kit.md).
+
+Re-check `requires.speckit_version` each time. It pins `>=1.0.0,<2.0.0`, which is narrower
+than the components' own `>=0.9.0`/`>=0.8.5` floors, because 1.0.6 is the only version this
+has been exercised against.

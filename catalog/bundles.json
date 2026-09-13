@@ -11,7 +11,7 @@
       "author": "Aniket Gore",
       "license": "MIT",
       "download_url": "https://github.com/anvigo12/specup/releases/download/v0.1.0/specup-0.1.0.zip",
-      "sha256": "09b757fe2565255b7a460af6adc0be237307d4312403e9ee963e640e84f67532",
+      "sha256": "a3a88eeb33b132d4fcb74543bd1208586b0ad013e515ff1db823cba0fd640f12",
       "requires": {
         "speckit_version": ">=1.0.0,<2.0.0"
       },

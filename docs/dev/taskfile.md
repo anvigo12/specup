@@ -84,12 +84,20 @@ error: Version pins disagree with the components in this repo:
 
 | Task | What it runs |
 |---|---|
-| `task release:archives` | six reproducible zips + `dist/SHA256SUMS` |
-| `task release:check` | both suites, validate, build, archives — the pre-tag gate |
+| `task release:archives` | seven reproducible zips + `dist/SHA256SUMS` |
+| `task release:catalog` | the four `catalog/*.json` documents, from those digests |
+| `task release:check` | both suites, validate, build, archives, catalog — the pre-tag gate |
 
 `release:archives` calls [`tools/build_archives.py`](../../tools/build_archives.py), which
 reads the component list from `bundle.yml` rather than restating it, so a component added to
-the bundle cannot be forgotten at release time.
+the bundle cannot be forgotten at release time. Six archives are the components; the seventh
+is the bundle artifact `specify bundle build` produces, which is why `release:archives`
+depends on `bundle:build`.
+
+`release:catalog` calls [`tools/build_catalog.py`](../../tools/build_catalog.py), which
+re-verifies every digest against the bytes on disk and refuses when `bundle.yml`'s pin
+disagrees with a component's own manifest. The generated catalog is a pure function of the
+release: running it twice reports "0 written, 4 already current".
 
 The archives are byte-reproducible — fixed member timestamps, sorted entries, normalized
 permissions, mirroring Spec Kit's own packager. Rebuilding an unchanged component yields an

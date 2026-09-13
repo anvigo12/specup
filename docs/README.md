@@ -12,8 +12,8 @@
 
 Component-level docs live next to the components:
 
-- [`bundles/specup/README.md`](../bundles/specup/README.md) — why the bundle exists and why
-  `specify bundle install` cannot install it yet
+- [`bundles/specup/README.md`](../bundles/specup/README.md) — why the bundle exists, and the
+  two install routes: a release from the catalog, or this working tree
 - [`workflows/README.md`](../workflows/README.md) — the enforcement pattern
 - [`presets/openup-governance/README.md`](../presets/openup-governance/README.md) — the wrap
   and append contracts

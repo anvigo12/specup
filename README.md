@@ -8,11 +8,11 @@ phase workflows that enforce an [Eclipse OpenUP](https://www.eclipse.org/epf/)-s
 lifecycle with a seven-level WBS, an executable risk register, and bi-directional
 traceability.
 
-> **Status:** Complete and verified against spec-kit **1.0.6**. All three layers plus the
-> `specup` bundle that ships them as one unit. `specify bundle install` cannot install
-> unpublished components, so the bundle installs through
-> [`bundles/specup/install.py`](bundles/specup/install.py) — see
-> [Why not `specify bundle install`](bundles/specup/README.md#why-not-specify-bundle-install).
+> **Status:** 0.1.0, verified against spec-kit **1.0.6**. All three layers plus the `specup`
+> bundle that ships them as one unit, installed by registering SpecUP's own catalog — see
+> [Quick start](#quick-start). Spec Kit's `default` catalog carries only components vendored
+> into its wheel, so a self-hosted catalog is the supported route for any third-party project,
+> not a workaround.
 
 ---
 
@@ -21,9 +21,11 @@ traceability.
 | | |
 |---|---|
 | [Guide](docs/guide/README.md) | What SpecUP is, the data model, the lifecycle, the commands |
+| [Using SpecUP](docs/guide/using-specup.md) | The operating manual — every command, every check id, every config key |
 | [New project](docs/guide/new-project.md) | Greenfield adoption |
 | [Existing project](docs/guide/existing-project.md) | Brownfield adoption, where intent has to be recovered |
-| [Publishing runbook](docs/runbooks/publishing-to-spec-kit.md) | Cutting a release; why a self-hosted catalog is the only route |
+| [Release notes 0.1.0](docs/runbooks/release-notes-0.1.0.md) | What ships, what is enforced, what is not |
+| [Publishing runbook](docs/runbooks/publishing-to-spec-kit.md) | Cutting a release and keeping the catalog honest |
 | [Taskfile](docs/dev/taskfile.md) | The task runner, and the boundary it must not cross |
 
 ---
@@ -98,19 +100,31 @@ workflow `shell` steps invoke. There is no second thing to keep in sync.
 # 1. A Spec Kit project
 specify init --here --integration claude
 
-# 2. All three layers, in dependency order, with the version pins checked
-python3 /path/to/specup/bundles/specup/install.py --project .
+# 2. Register SpecUP's catalog — one time, per machine
+BASE=https://raw.githubusercontent.com/anvigo12/specup/main/catalog
+specify extension catalog add $BASE/extensions.json --name specup --install-allowed --priority 0
+specify preset    catalog add $BASE/presets.json    --name specup --install-allowed --priority 0
+specify workflow  catalog add $BASE/workflows.json  --name specup
+specify bundle    catalog add $BASE/bundles.json    --policy install-allowed --priority 0
+
+# 3. All three layers, in dependency order, each archive verified against its digest
+specify bundle install specup
 python3 -m pip install -r .specify/extensions/openup/requirements.txt
 
-# 3. Scaffold the governance tree
+# 4. Scaffold the governance tree
 python3 .specify/extensions/openup/scripts/python/init_openup.py --program "My Product"
 
-# 4. See where you stand (it will FAIL — an empty plan is not a valid plan)
+# 5. See where you stand (it will FAIL — an empty plan is not a valid plan)
 python3 .specify/extensions/openup/scripts/python/audit.py
 ```
 
-Step 2 installs the extension, then the preset, then the four workflows. The order is not
+Step 3 installs the extension, then the preset, then the four workflows. The order is not
 cosmetic: the preset's guidance calls validators the extension installs.
+
+**Do not skip the `pip install`.** Without those packages every validator exits 2, and a
+workflow then halts on its setup-fault branch rather than passing a gate it could not
+evaluate. That is the designed behaviour, and a confusing way to discover a missing
+dependency.
 
 Then drive a phase:
 
@@ -118,6 +132,11 @@ Then drive a phase:
 specify workflow run ./workflows/openup-inception/workflow.yml \
   --input idea="..." --input program="My Product"
 ```
+
+To install this repository instead of a release — developing SpecUP, needing an unreleased
+change, or working offline — use
+[`bundles/specup/install.py`](bundles/specup/README.md#install-a-working-tree) in place of
+steps 2 and 3.
 
 ---
 
@@ -366,7 +385,9 @@ Run against spec-kit 1.0.6 with the real engine, using `tests/fixtures/good`:
 | High-exposure risk stripped of its mitigation | `Status: paused` at `[gate-failed]` — **final step never reached** |
 | `wbs.yaml` corrupted so the graph cannot load | `Status: failed`, `exited with code 2` |
 
-And the bundle, into a clean `specify init` project:
+And the bundle, into a clean `specify init` project. The catalog route has not been exercised
+end to end yet — it needs the 0.1.0 release assets to exist — so what is recorded below is
+the working-tree installer only:
 
 | Step | Result |
 |---|---|
@@ -397,7 +418,7 @@ extensions/openup/
   openup-config.yml                thresholds, perimeter, gate definitions
 presets/openup-governance/         4 append addenda + 2 wrap overlays
 workflows/openup-{phase}/          the four phase workflows
-bundles/specup/                    bundle.yml + the local installer
+bundles/specup/                    bundle.yml + the working-tree installer
 catalog/                           the four published catalog documents (generated)
 tools/                             archive + catalog generators
 tests/                             248 tests + fixtures
@@ -480,13 +501,13 @@ evidence fails two.
 
 ## Limitations
 
-- **`specify bundle install` cannot install this bundle.** Not a defect in the manifest —
-  spec-kit resolves component ids only against assets shipped in its own wheel or a
-  published catalog, and there is no `--dev` for bundles. With the components absent it
-  errors; with them present it exits 0 having installed nothing and records
-  `contributed_components: []`, so `bundle remove` is then a no-op.
-  [`install.py`](bundles/specup/install.py) does the install and enforces the version pins
-  spec-kit would have enforced. Publishing to a catalog is what retires it.
+- **`specify bundle install` cannot install an unreleased working tree.** Spec-kit resolves
+  component ids only against assets shipped in its own wheel or a published catalog, and
+  there is no `--dev` for bundles. That is fine for a release — the catalog route in the
+  Quick start is exactly this — but it means an edit you have not released is unreachable
+  through it. [`install.py`](bundles/specup/install.py) covers that case, and is also the
+  only offline route. See
+  [Why the two cannot be collapsed](bundles/specup/README.md#why-the-two-cannot-be-collapsed).
 - **Nothing validates a contract document.** `MICROCKS-TEST-*` ids and the `validates`
   relation are reserved in the grammar so nothing has to be renamed later, but no contract
   checking runs at all: `contracts.microcks.enabled`, `openapi_glob` and `asyncapi_glob`

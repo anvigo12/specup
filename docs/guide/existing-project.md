@@ -54,7 +54,14 @@ OpenAPI spec and 70% test coverage, and the team lead will own risks." That is a
 ```bash
 cd existing-repo
 specify init --here --integration claude    # if Spec Kit is not already set up
-python3 /path/to/specup/bundles/specup/install.py --project .
+
+BASE=https://raw.githubusercontent.com/anvigo12/specup/main/catalog
+specify extension catalog add $BASE/extensions.json --name specup --install-allowed --priority 0
+specify preset    catalog add $BASE/presets.json    --name specup --install-allowed --priority 0
+specify workflow  catalog add $BASE/workflows.json  --name specup
+specify bundle    catalog add $BASE/bundles.json    --policy install-allowed --priority 0
+
+specify bundle install specup
 python3 -m pip install -r .specify/extensions/openup/requirements.txt
 python3 .specify/extensions/openup/scripts/python/init_openup.py --program "Existing System"
 ```
