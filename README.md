@@ -8,11 +8,11 @@ phase workflows that enforce an [Eclipse OpenUP](https://www.eclipse.org/epf/)-s
 lifecycle with a seven-level WBS, an executable risk register, and bi-directional
 traceability.
 
-> **Status:** 0.1.0, verified against spec-kit **1.0.6**. All three layers plus the `specup`
-> bundle that ships them as one unit, installed by registering SpecUP's own catalog — see
-> [Quick start](#quick-start). Spec Kit's `default` catalog carries only components vendored
-> into its wheel, so a self-hosted catalog is the supported route for any third-party project,
-> not a workaround.
+> **Status:** [0.1.0 released](https://github.com/anvigo12/specup/releases/tag/v0.1.0),
+> verified against spec-kit **1.0.6**, and installed end to end from the published catalog
+> into a clean project — see [Quick start](#quick-start). Spec Kit's `default` catalog carries
+> only components vendored into its wheel, so a self-hosted catalog is the supported route for
+> any third-party project, not a workaround.
 
 ---
 
@@ -385,18 +385,26 @@ Run against spec-kit 1.0.6 with the real engine, using `tests/fixtures/good`:
 | High-exposure risk stripped of its mitigation | `Status: paused` at `[gate-failed]` — **final step never reached** |
 | `wbs.yaml` corrupted so the graph cannot load | `Status: failed`, `exited with code 2` |
 
-And the bundle, into a clean `specify init` project. The catalog route has not been exercised
-end to end yet — it needs the 0.1.0 release assets to exist — so what is recorded below is
-the working-tree installer only:
+And the bundle, into a clean `specify init` project — both routes:
 
 | Step | Result |
 |---|---|
+| 4 × `catalog add` against the published catalog | all four registered; workflows resolve through `url`, the rest through `download_url` |
+| `specify bundle install specup` | `✓ Installed 'specup' (6 added, 0 already present)` |
+| `specify bundle list` after that | `specup v0.1.0 (6 components)` — a non-zero count is the proof the install was real |
+| Published archive digests | `openup`, `openup-governance` and `specup` each hash identically as downloaded, as built locally, and as pinned in `catalog/` |
 | `install.py --project <clean project>` | 6 components installed in manifest order, pins checked |
 | `specify preset resolve spec-template` | `[append] openup-governance v0.1.0` composed onto core |
 | 9 `speckit.openup.*` skills | registered under `.claude/skills/` |
 | `audit.py` on the fresh scaffold | exit **1** — `initial_risks_registered`, `wbs_levels_1_to_3_valid` and `requirements_have_owners` all FAIL, correctly |
 | `specify bundle build` | `specup-0.1.0.zip`, 3 files, fixed timestamps |
 | A pin bumped to `0.2.0` in `bundle.yml` | install refuses before touching the project |
+
+One gap in that record, stated rather than glossed: the verification host already had `PyYAML`
+and `jsonschema` present, so the `pip install -r requirements.txt` step was not exercised from
+a genuinely bare interpreter. The `exit 1` above is a real governance verdict rather than a
+masked setup fault — the audit named `WBS-004`, `TRC-000` and three failing gate conditions —
+but the missing-dependency path itself is covered only by the validators' own exit-2 contract.
 
 The preset was likewise installed into a real `specify init` project: all four core templates
 gained their `[append]` layer, the composed `speckit-tasks` skill had zero literal
