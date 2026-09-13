@@ -99,9 +99,25 @@ steps:
     continue_on_error: true
     timeout: 600
 
+  # CTX-002: an index.md naming an artifact that no longer exists. Checked here rather than
+  # at the gate because the fix is cheap while the feature is still being elaborated.
+  - id: check-context
+    type: shell
+    run: "python3 .specify/extensions/openup/scripts/python/validate_context.py --json --out .specify/evidence/checks/context.json"
+    continue_on_error: true
+    timeout: 600
+
+  # The Markdown views are generated, not written. Regenerating them here is what keeps s47
+  # true in practice: a view is never a second copy of the data that can drift from it.
+  - id: render-views
+    type: shell
+    run: "python3 .specify/extensions/openup/scripts/python/render_views.py --write"
+    continue_on_error: true
+    timeout: 600
+
   - id: repair
     type: if
-    condition: "{{ steps.check-wbs.output.exit_code != 0 or steps.check-risk.output.exit_code != 0 or steps.check-trace.output.exit_code != 0 }}"
+    condition: "{{ steps.check-wbs.output.exit_code != 0 or steps.check-risk.output.exit_code != 0 or steps.check-trace.output.exit_code != 0 or steps.check-context.output.exit_code != 0 }}"
     then:
       - id: fix-graph
         command: speckit.openup.audit

@@ -68,4 +68,8 @@ mitigation nodes, and whether verification exists. Call out separately:
 
 ## Generated view
 
-`risk-register.md` is a generated view. Regenerate it; never hand-edit it.
+`risk-register.md` is a generated view of `risk-register.yaml`. Do not write it yourself:
+
+```bash
+python3 .specify/extensions/openup/scripts/python/render_views.py --write
+```

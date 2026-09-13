@@ -18,29 +18,35 @@ import sys
 from typing import Any
 
 import derivers
-from openup_model import ACYCLIC, SKIP, Verdict, base_parser, load_graph, run, schema_errors
+from openup_model import (
+    ACYCLIC, SKIP, Verdict, approval_hash, base_parser, load_graph, run, schema_errors,
+)
 
 REQUIREMENT_TYPES = {"requirement", "non-functional-requirement"}
 TEST_TYPES = {"test-case", "unit-test", "integration-test"}
-WORK_TYPES = {"wbs-node", "task"}
+WORK_TYPES = {"wbs-node"}
 
 # Domain and range for each relation (ID-GRAMMAR.md s2). None means "any type".
 SIGNATURES: dict[str, tuple[set[str] | None, set[str] | None]] = {
-    "refines": ({"requirement", "non-functional-requirement", "user-story", "feature"},
-                {"business-objective", "requirement", "feature"}),
+    # architecture-decision is a domain here so an ADR can attach to the requirement it
+    # answers. Without it no signature admitted an ADR at either end, so ADR-* was registrable
+    # and unreachable — s20 puts Design Decision in the chain and s57 wants the "relevant
+    # architecture decision" in an L7 task's context, and neither was expressible.
+    "refines": ({"requirement", "non-functional-requirement", "user-story", "feature",
+                 "architecture-decision", "security-decision"},
+                {"business-objective", "requirement", "non-functional-requirement", "feature"}),
     "contains": ({"wbs-node", "feature"}, {"wbs-node", "requirement"}),
-    "decomposes-to": ({"wbs-node"}, {"wbs-node", "task"}),
-    "implements": (WORK_TYPES | {"source-artifact"}, REQUIREMENT_TYPES),
-    "modifies": ({"task"}, {"source-artifact"}),
+    "implements": (WORK_TYPES | {"source-artifact"},
+                   REQUIREMENT_TYPES | {"architecture-decision", "security-decision"}),
     "verifies": ({"acceptance-criterion"} | TEST_TYPES, REQUIREMENT_TYPES),
     "executes": ({"scenario"}, {"acceptance-criterion"}),
     "tests": (TEST_TYPES, {"source-artifact"}),
     "conforms-to": ({"source-artifact"}, {"contract"}),
     "validates": ({"microcks-test"}, {"contract"}),
     "mitigates": (WORK_TYPES, {"risk"}),
-    "evidences": ({"evidence"}, {"task", "gate", "risk", "wbs-node"}),
-    "depends-on": ({"task", "wbs-node"}, {"task", "wbs-node"}),
-    "belongs-to": ({"wbs-node", "task"}, {"iteration"}),
+    "evidences": ({"evidence"}, {"gate", "risk", "wbs-node"}),
+    "depends-on": ({"wbs-node"}, {"wbs-node"}),
+    "belongs-to": ({"wbs-node"}, {"iteration"}),
     "approves": (None, None),  # the subject is a human actor, which has no id form
     "supersedes": (None, None),
 }
@@ -57,24 +63,21 @@ def validate(args: Any) -> Verdict:
         verdict.metrics = {"edges": 0}
         return verdict
 
-    for path in set(e.source_file for e in graph.edges if e.source_file):
-        document = {
-            "schema_version": "1.0",
-            "edges": [
-                {k: v for k, v in {
-                    "from": e.from_id, "relation": e.relation, "to": e.to_id,
-                    "provenance": e.provenance, "status": e.status,
-                    "derived_by": e.derived_by, "evidence": e.evidence or None,
-                }.items() if v is not None}
-                for e in graph.edges if e.source_file == path
-            ],
-        }
-        errors = schema_errors(document, "traceability.schema.json")
-        if errors:
-            verdict.fail("TRC-000", f"{path} violates the schema ({len(errors)} error(s))", errors)
-            break
-    else:
-        verdict.ok("TRC-000", "all traceability stores conform to traceability.schema.json")
+    # TRC-000 — the stores, as written, conform to the schema.
+    #
+    # This validates the parsed documents themselves. It used to validate a document
+    # rebuilt from the in-memory Edge objects, which checked something nobody had
+    # authored: fields the loader dropped could not satisfy a schema that required them
+    # (which made `provenance: approved` unusable), and `additionalProperties: false`
+    # could never fire, because a hand-built dict has no room for a stray key.
+    #
+    # Every store is reported, not just the first: one-at-a-time reporting turns a single
+    # fix-validate cycle into several for no benefit.
+    schema_failures: list[str] = []
+    for rel, doc in sorted(graph.raw_stores.items()):
+        schema_failures += [f"{rel}: {err}" for err in schema_errors(doc, "traceability.schema.json")]
+    _record(verdict, "TRC-000", schema_failures,
+            f"all {len(graph.raw_stores)} traceability store(s) conform to traceability.schema.json")
 
     # TRC-001 — duplicate triples across merged stores
     if graph.duplicate_edges:
@@ -162,6 +165,17 @@ def validate(args: Any) -> Verdict:
     ]
     orphans += [f"orphan scenario: {a}" for a in graph.artifacts
                 if grammar.type_of(a) == "scenario" and not graph.follow(a, "executes")]
+    # A registered test that neither verifies a requirement nor tests a file proves nothing
+    # about the graph — the commonest way a suite grows without the coverage figure moving.
+    orphans += [f"orphan test: {a}" for a in graph.artifacts
+                if grammar.type_of(a) in TEST_TYPES
+                and not graph.follow(a, "verifies") and not graph.follow(a, "tests")]
+    # A contract nothing conforms to or validates is a published interface with no code
+    # claiming to honour it.
+    orphans += [f"orphan contract: {a}" for a in graph.artifacts
+                if grammar.type_of(a) == "contract"
+                and not graph.follow(a, "conforms-to", reverse=True)
+                and not graph.follow(a, "validates", reverse=True)]
     _record(verdict, "TRC-008", orphans, "no orphan artifacts")
 
     # TRC-009 — provenance of edges touching baselined artifacts
@@ -227,6 +241,35 @@ def validate(args: Any) -> Verdict:
         _record(verdict, "TRC-012", uncovered,
                 f"all {len(criteria)} acceptance criterion(s) have at least one scenario")
 
+    # TRC-013 — is 'approved' still about the content that was approved?
+    #
+    # WARN, not FAIL. A stale hash after a legitimate edit is a normal event in a live
+    # project, not a governance violation: the correct response is that the edge stops
+    # counting as approved until someone re-approves it, which is what the template
+    # already promises. Failing the whole validator would make people avoid `approved`
+    # entirely, which is how the feature dies a second time. The downgrade lands in the
+    # metrics below, where the release gate reads it.
+    stale: list[str] = []
+    for edge in graph.edges:
+        if edge.provenance != "approved":
+            continue
+        expected = approval_hash(graph, edge)
+        if edge.approved_endpoints_hash != expected:
+            stale.append(
+                f"{edge}: approved_endpoints_hash does not match its endpoints — the approval "
+                f"was given for different content and no longer applies "
+                f"(stored {str(edge.approved_endpoints_hash)[:12]}…, computed {expected[:12]}…)"
+            )
+    if stale:
+        verdict.warn("TRC-013", f"{len(stale)} approved edge(s) no longer match what was approved", stale)
+    else:
+        verdict.ok("TRC-013", "every approved edge still matches the content it was approved for")
+
+    # Reported, not gated: an untested file is a finding for a human, and a threshold here
+    # would reward writing a test file named after something rather than testing it.
+    tested = [path for path in perimeter if graph.follow(path, "tests", reverse=True)]
+    code_test_coverage = _ratio(len(tested), len(perimeter))
+
     mix = {level: sum(1 for e in graph.edges if e.provenance == level)
            for level in ("derived", "asserted", "approved")}
     verdict.metrics = {
@@ -244,8 +287,16 @@ def validate(args: Any) -> Verdict:
         # present an unimplemented rule as machine-checkable evidence.
         "derived_verified": verified,
         "derived_unverified": unverified,
+        # The same split for 'approved': a signature that still matches its endpoints, and
+        # one that was given for content since edited. Gates must read approved_verified —
+        # provenance_mix['approved'] counts the label, not the binding.
+        "approved_verified": mix["approved"] - len(stale),
+        "approved_stale": len(stale),
         "acceptance_criteria": len(criteria),
         "scenario_coverage": round(scenario_coverage, 4),
+        # s53's code->test ratio. Derivable from what test-file-naming-convention already
+        # produces, so unlike most of s53's nine it costs nothing to report honestly.
+        "code_test_coverage": round(code_test_coverage, 4),
     }
     return verdict
 

@@ -25,6 +25,13 @@ def validate(args: Any) -> Verdict:
     critical = thresholds.get("critical_exposure_threshold", 0.65)
     require_reduction = thresholds.get("require_residual_reduction", True)
 
+    # Which band a rule applies from. These were declared in openup-config.yml and read by
+    # nothing, so both checks silently used `high` whatever the config said — a setting that
+    # does not move a verdict is worse than an absent one, because a reader trusts it.
+    bands = {"high": high, "critical": critical}
+    mitigate_at = bands.get(thresholds.get("require_mitigation_at_or_above", "high"), high)
+    verify_at = bands.get(thresholds.get("require_verification_at_or_above", "high"), high)
+
     if not graph.risks:
         verdict.warn("RISK-000", "no risk register found; risk-driven planning (s39) is inactive")
         verdict.metrics = {"total": 0}
@@ -77,25 +84,26 @@ def validate(args: Any) -> Verdict:
     # RISK-004 — high-exposure risks must be mitigated by real WBS work
     unmitigated = []
     for rid, risk in graph.risks.items():
-        if exposures[rid] < high or risk.get("status") in {"closed", "accepted"}:
+        if exposures[rid] < mitigate_at or risk.get("status") in {"closed", "accepted"}:
             continue
         mitigations = risk.get("mitigation", []) or []
         if not mitigations:
-            unmitigated.append(f"{rid}: exposure {exposures[rid]:.2f} >= {high} but has no mitigation")
+            unmitigated.append(
+                f"{rid}: exposure {exposures[rid]:.2f} >= {mitigate_at} but has no mitigation")
             continue
         for wbs_id in mitigations:
             if wbs_id not in graph.wbs:
                 unmitigated.append(f"{rid}: mitigation {wbs_id} does not exist in the WBS")
     _record(
         verdict, "RISK-004", unmitigated,
-        f"every open risk at or above exposure {high} has existing mitigation work",
+        f"every open risk at or above exposure {mitigate_at} has existing mitigation work",
     )
 
     # RISK-005 — high-exposure risks must be verifiable
     unverified = [
-        f"{rid}: exposure {exposures[rid]:.2f} >= {high} but has no verification reference"
+        f"{rid}: exposure {exposures[rid]:.2f} >= {verify_at} but has no verification reference"
         for rid, risk in graph.risks.items()
-        if exposures[rid] >= high
+        if exposures[rid] >= verify_at
         and risk.get("status") not in {"closed", "accepted"}
         and not (risk.get("verification", []) or [])
     ]
@@ -139,16 +147,29 @@ def validate(args: Any) -> Verdict:
         for rid, risk in graph.risks.items()
         if risk.get("status") not in {"closed", "accepted"}
     }
+    # s53 asks for risk→mitigation and risk→evidence as coverage ratios, not only as the
+    # boolean checks above. A boolean tells you whether you are compliant right now; a ratio
+    # tells you whether you are getting better, which is what a trend is for. Both are over
+    # OPEN risks: a closed or accepted risk with no mitigation is a decision, not a gap.
+    with_mitigation = sum(1 for rid in open_risks if graph.risks[rid].get("mitigation"))
+    with_evidence = sum(1 for rid in open_risks if graph.risks[rid].get("evidence"))
+
     verdict.metrics = {
         "total": len(graph.risks),
         "open": len(open_risks),
         "open_critical": sum(1 for e in open_risks.values() if e >= critical),
         "open_high": sum(1 for e in open_risks.values() if high <= e < critical),
         "unmitigated_high": len([c for c in unmitigated if "no mitigation" in c]),
+        "mitigation_coverage": round(_ratio(with_mitigation, len(open_risks)), 4),
+        "evidence_coverage": round(_ratio(with_evidence, len(open_risks)), 4),
         "high_exposure_threshold": high,
         "critical_exposure_threshold": critical,
     }
     return verdict
+
+
+def _ratio(numerator: int, denominator: int) -> float:
+    return 1.0 if denominator == 0 else numerator / denominator
 
 
 def _record(verdict: Verdict, check_id: str, failures: list[str], ok_message: str) -> None:

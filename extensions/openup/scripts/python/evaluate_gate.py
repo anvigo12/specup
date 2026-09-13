@@ -22,6 +22,7 @@ import sys
 from dataclasses import dataclass
 from typing import Any, Callable
 
+import validate_done
 import validate_risk
 import validate_trace
 import validate_wbs
@@ -29,10 +30,17 @@ from openup_model import GraphError, Verdict, base_parser, emit, load_graph, wri
 
 CONDITIONS: dict[str, Callable[["GateContext"], tuple[bool, str, list[str]]]] = {}
 
+# What each condition actually checks, in one line. render_views.py renders
+# .specify/governance/quality-gates.md from this, so the document describing a gate and the
+# code deciding it are the same statement — a hand-written gate description that overstates
+# what a check does is how a gate stops meaning what people think it means.
+DESCRIPTIONS: dict[str, str] = {}
 
-def condition(name: str):
+
+def condition(name: str, description: str):
     def register(fn):
         CONDITIONS[name] = fn
+        DESCRIPTIONS[name] = description
         return fn
     return register
 
@@ -51,6 +59,7 @@ class GateContext:
     wbs: Verdict
     risk: Verdict
     trace: Verdict
+    done: Verdict
     _depth: int = 0
 
     def check(self, verdict: Verdict, check_id: str) -> tuple[bool, list[str]]:
@@ -79,21 +88,24 @@ class GateContext:
 # -- document presence -----------------------------------------------------
 
 
-@condition("vision_present")
+@condition("vision_present",
+           'A vision document exists (.specify/lifecycle/vision.md).')
 def _vision(ctx: GateContext):
     found = ctx.doc(".specify/lifecycle/vision.md", "docs/vision.md", "specs/*/vision.md")
     return bool(found), f"vision document {'found at ' + str(found.name) if found else 'not found'}", \
         [] if found else ["expected .specify/lifecycle/vision.md"]
 
 
-@condition("stakeholders_identified")
+@condition("stakeholders_identified",
+           'A stakeholder document exists, naming who approves what.')
 def _stakeholders(ctx: GateContext):
     found = ctx.doc(".specify/lifecycle/stakeholders.md", "docs/stakeholders.md")
     return bool(found), "stakeholders documented" if found else "no stakeholder document", \
         [] if found else ["expected .specify/lifecycle/stakeholders.md"]
 
 
-@condition("architecture_baselined")
+@condition("architecture_baselined",
+           'An architecture document exists and every registered ADR is APPROVED or beyond.')
 def _architecture(ctx: GateContext):
     doc = ctx.doc(".specify/architecture/architecture.md", "docs/architecture.md", "specs/*/architecture.md")
     adrs = {aid: a for aid, a in ctx.graph.artifacts.items()
@@ -109,7 +121,8 @@ def _architecture(ctx: GateContext):
     return not problems, f"{len(adrs)} ADR(s), {len(unapproved)} not yet approved", problems
 
 
-@condition("critical_contracts_defined")
+@condition("critical_contracts_defined",
+           'At least one CONTRACT-* artifact is registered and its declared source file exists. NOTE: the OpenAPI/AsyncAPI document itself is never parsed.')
 def _contracts(ctx: GateContext):
     contracts = {aid: a for aid, a in ctx.graph.artifacts.items()
                  if ctx.graph.grammar.type_of(aid) == "contract"}
@@ -121,7 +134,8 @@ def _contracts(ctx: GateContext):
     return not missing, f"{len(contracts)} contract(s) registered", missing
 
 
-@condition("release_evidence_complete")
+@condition("release_evidence_complete",
+           'All four release documents are present: release-readiness, deployment-plan, operations, acceptance-report.')
 def _release_evidence(ctx: GateContext):
     required = ["release-readiness.md", "deployment-plan.md", "operations.md", "acceptance-report.md"]
     missing = [name for name in required
@@ -133,7 +147,8 @@ def _release_evidence(ctx: GateContext):
 # -- evidence-backed -------------------------------------------------------
 
 
-@condition("security_review_complete")
+@condition("security_review_complete",
+           "A security review record exists and its status is 'passed'. A missing record FAILS.")
 def _security_review(ctx: GateContext):
     report = ctx.evidence_json("security-review.json")
     if report is None:
@@ -145,7 +160,8 @@ def _security_review(ctx: GateContext):
         [] if ok else [json.dumps(report)[:200]]
 
 
-@condition("security_validation_passed")
+@condition("security_validation_passed",
+           'A security validation record exists, passed, with zero critical findings.')
 def _security_validation(ctx: GateContext):
     report = ctx.evidence_json("security-validation.json")
     if report is None:
@@ -158,7 +174,8 @@ def _security_validation(ctx: GateContext):
         [] if ok else [json.dumps(report)[:200]]
 
 
-@condition("acceptance_scenarios_passing")
+@condition("acceptance_scenarios_passing",
+           'An acceptance test record exists with at least one scenario and zero failures.')
 def _acceptance(ctx: GateContext):
     report = ctx.evidence_json("acceptance-results.json")
     if report is None:
@@ -175,13 +192,15 @@ def _acceptance(ctx: GateContext):
 # -- graph-derived ---------------------------------------------------------
 
 
-@condition("initial_risks_registered")
+@condition("initial_risks_registered",
+           'The risk register is not empty.')
 def _initial_risks(ctx: GateContext):
     count = len(ctx.graph.risks)
     return count > 0, f"{count} risk(s) registered", [] if count else ["the risk register is empty"]
 
 
-@condition("requirements_have_owners")
+@condition("requirements_have_owners",
+           'Every registered requirement names an owner.')
 def _requirement_owners(ctx: GateContext):
     requirements = ctx.graph.requirements()
     missing = [f"{rid}: no owner" for rid, art in requirements.items() if not art.get("owner")]
@@ -190,7 +209,8 @@ def _requirement_owners(ctx: GateContext):
     return not missing, f"{len(requirements) - len(missing)}/{len(requirements)} requirements have owners", missing
 
 
-@condition("wbs_levels_1_to_3_valid")
+@condition("wbs_levels_1_to_3_valid",
+           'The WBS skeleton exists (Program, Phase, Iteration) and passes WBS-001..003.')
 def _wbs_skeleton(ctx: GateContext):
     from openup_model import wbs_level
     levels = {level: sum(1 for nid in ctx.graph.wbs if wbs_level(nid) == level) for level in (1, 2, 3)}
@@ -203,28 +223,32 @@ def _wbs_skeleton(ctx: GateContext):
     return not problems, f"WBS skeleton L1={levels[1]} L2={levels[2]} L3={levels[3]}", problems
 
 
-@condition("wbs_valid")
+@condition("wbs_valid",
+           'validate_wbs.py reports no FAIL.')
 def _wbs_valid(ctx: GateContext):
     ok = ctx.wbs.status != "FAIL"
     failures = [f"{c.id}: {c.message}" for c in ctx.wbs.checks if c.status == "FAIL"]
     return ok, f"WBS validation {ctx.wbs.status}", failures
 
 
-@condition("all_high_risks_have_mitigation")
+@condition("all_high_risks_have_mitigation",
+           'Every high-exposure risk has mitigation work and a verification reference (RISK-004, RISK-005).')
 def _high_risks(ctx: GateContext):
     ok, evidence = ctx.check(ctx.risk, "RISK-004")
     ok2, evidence2 = ctx.check(ctx.risk, "RISK-005")
     return ok and ok2, "high-exposure risks are mitigated and verifiable", evidence + evidence2
 
 
-@condition("no_open_critical_risks")
+@condition("no_open_critical_risks",
+           'No risk at or above the critical exposure threshold is still open.')
 def _no_critical(ctx: GateContext):
     count = ctx.risk.metrics.get("open_critical", 0)
     return count == 0, f"{count} open critical risk(s)", \
         [] if not count else [f"{count} risk(s) at or above the critical exposure threshold"]
 
 
-@condition("no_open_high_risks")
+@condition("no_open_high_risks",
+           'No risk at or above the high exposure threshold is still open.')
 def _no_high(ctx: GateContext):
     high = ctx.risk.metrics.get("open_high", 0)
     critical = ctx.risk.metrics.get("open_critical", 0)
@@ -232,32 +256,37 @@ def _no_high(ctx: GateContext):
         [] if high + critical == 0 else [f"{high + critical} risk(s) still open above the high threshold"]
 
 
-@condition("requirements_traceable")
+@condition("requirements_traceable",
+           'Every requirement is both implemented and verified (TRC-005, TRC-006).')
 def _traceable(ctx: GateContext):
     ok1, ev1 = ctx.check(ctx.trace, "TRC-005")
     ok2, ev2 = ctx.check(ctx.trace, "TRC-006")
     return ok1 and ok2, "every requirement is implemented and verified", ev1 + ev2
 
 
-@condition("forward_coverage_met")
+@condition("forward_coverage_met",
+           'Requirement-to-implementation coverage meets its configured threshold.')
 def _forward(ctx: GateContext):
     ok, evidence = ctx.check(ctx.trace, "TRC-005")
     return ok, f"forward coverage {ctx.trace.metrics.get('forward_coverage', 0):.0%}", evidence
 
 
-@condition("backward_coverage_met")
+@condition("backward_coverage_met",
+           'Every in-perimeter source file is reachable from a requirement.')
 def _backward(ctx: GateContext):
     ok, evidence = ctx.check(ctx.trace, "TRC-007")
     return ok, f"backward coverage {ctx.trace.metrics.get('backward_coverage', 0):.0%}", evidence
 
 
-@condition("no_orphans")
+@condition("no_orphans",
+           'No orphan artifacts (s54).')
 def _no_orphans(ctx: GateContext):
     ok, evidence = ctx.check(ctx.trace, "TRC-008")
     return ok, f"{ctx.trace.metrics.get('orphans', 0)} orphan artifact(s)", evidence
 
 
-@condition("traceability_final")
+@condition("traceability_final",
+           'validate_trace.py reports no FAIL, AND at least half of all edges are independently verifiable — reproduced by a derivation rule, or approved with a signature that still matches its endpoints.')
 def _trace_final(ctx: GateContext):
     ok = ctx.trace.status != "FAIL"
     failures = [f"{c.id}: {c.message}" for c in ctx.trace.checks if c.status == "FAIL"]
@@ -265,26 +294,44 @@ def _trace_final(ctx: GateContext):
     edges = metrics.get("edges", 0)
     mix = metrics.get("provenance_mix", {})
     reproduced = metrics.get("derived_verified", 0)
-    approved = mix.get("approved", 0)
+    approved = metrics.get("approved_verified", 0)
 
     # What a third party could check without taking anyone's word for it: an edge a derivation
-    # rule actually reproduces from the filesystem, or one a human signed off on. This used to
-    # measure the 'asserted' share instead, which an agent could improve by relabelling its own
-    # claims 'derived' — the label was free, and the metric moved. Counting only reproduced
-    # derivations closes that: the rule has to run, and TRC-010 fails the edge if it disagrees.
+    # rule actually reproduces from the filesystem, or one a human signed off on whose signature
+    # still matches the content it was given for. This used to measure the 'asserted' share
+    # instead, which an agent could improve by relabelling its own claims 'derived' — the label
+    # was free, and the metric moved. Counting only reproduced derivations closed that; counting
+    # approved_verified rather than provenance_mix['approved'] closes the same hole one level up,
+    # where 'approved' was a string anyone could type (TRC-013 owns the binding).
     verifiable = (reproduced + approved) / edges if edges else 0.0
     if ok and verifiable < 0.5:
+        stale = metrics.get("approved_stale", 0)
         failures.append(
             f"only {verifiable:.0%} of edges are independently verifiable — {reproduced} "
             f"reproduced by a derivation rule, {approved} human-approved, against "
-            f"{mix.get('asserted', 0)} asserted and {metrics.get('derived_unverified', 0)} "
-            f"claiming a rule that is not implemented"
+            f"{mix.get('asserted', 0)} asserted, {metrics.get('derived_unverified', 0)} "
+            f"claiming a rule that is not implemented, and {stale} approved for content "
+            f"that has since changed"
         )
         ok = False
     return ok, f"traceability {ctx.trace.status}, {verifiable:.0%} independently verifiable", failures
 
 
-@condition("all_gates_passed")
+@condition("definition_of_done_met",
+           'Every WBS node marked done survives the Definition of Done: evidence resolves, '
+           'linked requirements are implemented and verified, acceptance criteria have '
+           'scenarios, mitigated risks were reassessed with evidence.')
+def _definition_of_done(ctx: GateContext):
+    failures = [f"{c.id}: {c.message}" for c in ctx.done.checks if c.status == "FAIL"]
+    evidence = [item for c in ctx.done.checks if c.status == "FAIL" for item in c.evidence]
+    claimed = ctx.done.metrics.get("done_claimed", 0)
+    verified = ctx.done.metrics.get("done_verified", 0)
+    return not failures, f"{verified}/{claimed} node(s) marked done are actually done", \
+        failures + evidence[:10]
+
+
+@condition("all_gates_passed",
+           'Every prior (non-TRANSITION) gate in openup-config.yml passes.')
 def _all_gates(ctx: GateContext):
     if ctx._depth > 0:
         return True, "nested gate evaluation skipped", []
@@ -347,6 +394,7 @@ def main() -> int:
             wbs=validate_wbs.validate(sub),
             risk=validate_risk.validate(sub),
             trace=validate_trace.validate(sub),
+            done=validate_done.validate(sub),
         )
     except GraphError as exc:
         payload = {"validator": f"gate:{args.gate}", "status": "ERROR", "error": str(exc)}

@@ -18,6 +18,8 @@ from dataclasses import dataclass
 from typing import Any
 
 import evaluate_gate
+import validate_context
+import validate_done
 import validate_risk
 import validate_trace
 import validate_wbs
@@ -45,6 +47,8 @@ def audit(args: Any) -> tuple[dict[str, Any], int]:
     wbs = validate_wbs.validate(sub)
     risk = validate_risk.validate(sub)
     trace = validate_trace.validate(sub)
+    done = validate_done.validate(sub)
+    context = validate_context.validate(sub)
 
     phase = config["lifecycle"].get("phase")
     iteration = config["lifecycle"].get("iteration")
@@ -56,7 +60,8 @@ def audit(args: Any) -> tuple[dict[str, Any], int]:
     gate: Verdict | None = None
     if gate_name:
         ctx = evaluate_gate.GateContext(
-            root=graph.root, graph=graph, config=config, wbs=wbs, risk=risk, trace=trace
+            root=graph.root, graph=graph, config=config,
+            wbs=wbs, risk=risk, trace=trace, done=done,
         )
         gate = evaluate_gate.evaluate(gate_name, ctx)
 
@@ -66,12 +71,14 @@ def audit(args: Any) -> tuple[dict[str, Any], int]:
         if not target:
             continue
         validator, check_id = target
-        verdict = {"validate-wbs": wbs, "validate-risk": risk, "validate-trace": trace}[validator]
+        verdict = {"validate-wbs": wbs, "validate-risk": risk, "validate-trace": trace,
+                   "validate-done": done, "validate-context": context}[validator]
         failing = next((c for c in verdict.checks if c.id == check_id and c.status == "FAIL"), None)
         if failing:
             reasons.append(f"{check_id} {name}: {failing.message}")
 
-    sections = {"wbs": wbs, "risk": risk, "traceability": trace}
+    sections = {"wbs": wbs, "risk": risk, "traceability": trace, "done": done,
+                "context": context}
     if gate:
         sections["gate"] = gate
 
@@ -135,19 +142,49 @@ def render(report: dict[str, Any]) -> str:
         "",
     ]
 
+    # Claimed vs verified, not a count of 'done'. s29 asks for done to be a computed state,
+    # so the report has to show the two numbers separately or it repeats the claim it checks.
+    done = sections["done"]["metrics"]
+    claimed = done.get("done_claimed", 0)
+    lines += [
+        "Definition of Done",
+        f"  Claimed done:  {claimed}",
+        f"  Verified done: {done.get('done_verified', 0)}",
+        f"  Status: {sections['done']['status']}",
+        "",
+    ]
+
     mix = trace.get("provenance_mix", {})
     total = sum(mix.values()) or 1
-    # 'derived' is split, because the label alone proves nothing: an edge is machine-checkable
-    # only if the rule it names exists and reproduces it (TRC-010). The rest is a claim that
-    # happens to be wearing a rule name.
+    # Both signed labels are split, because neither proves anything on its own. An edge is
+    # machine-checkable only if the rule it names exists and reproduces it (TRC-010), and an
+    # approval counts only while its hash still matches the endpoints it was given for
+    # (TRC-013). What is left over in each case is a claim wearing a better label.
     reproduced = trace.get("derived_verified", 0)
     unreproduced = trace.get("derived_unverified", 0)
+    approved = trace.get("approved_verified", 0)
+    stale = trace.get("approved_stale", 0)
     lines += [
         "Evidence quality",
         f"  derived:   {reproduced:>4}  ({reproduced / total:.0%})  reproduced by a rule",
         f"  unverified:{unreproduced:>4}  ({unreproduced / total:.0%})  claims a rule that is not implemented",
         f"  asserted:  {mix.get('asserted', 0):>4}  ({mix.get('asserted', 0) / total:.0%})  agent claim only",
-        f"  approved:  {mix.get('approved', 0):>4}  ({mix.get('approved', 0) / total:.0%})  human sign-off",
+        f"  approved:  {approved:>4}  ({approved / total:.0%})  signed off, and still matching what was signed",
+        f"  stale:     {stale:>4}  ({stale / total:.0%})  approved for content that has since changed",
+        "",
+    ]
+
+    # s33 says the audit inspects the "AGENTS.md hierarchy -> index.md hierarchy". It did
+    # neither until validate_context existed. CTX-002 is the one that matters: a context map
+    # pointing at a deleted requirement misleads the agent reading it.
+    ctx = sections["context"]["metrics"]
+    lines += [
+        "Context hierarchy",
+        f"  index.md files:  {ctx.get('index_files', 0)} over "
+        f"{ctx.get('governed_directories', 0)} governed directory(s)",
+        f"  Skills:          {', '.join(ctx.get('skills', [])) or '-'}",
+        f"  Dangling refs:   {ctx.get('dangling_references', 0)}",
+        f"  Status: {sections['context']['status']}",
         "",
     ]
 

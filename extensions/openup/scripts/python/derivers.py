@@ -263,9 +263,8 @@ RULES: dict[str, Callable[[Any], Derivation]] = {
 # Named in speckit.openup.trace.md but not implemented. An edge may still declare one of
 # these; TRC-010 reports it as unverified instead of accepting it as machine-checkable.
 UNIMPLEMENTED_RULES: dict[str, str] = {
-    "task-modifies-closure": "source file --implements--> requirement, via the task that modifies it",
     "openapi-operation-scan": "source file --conforms-to--> CONTRACT-*",
-    "evidence-manifest-scan": "EVID-* --evidences--> task / risk / gate",
+    "evidence-manifest-scan": "EVID-* --evidences--> WBS node / risk / gate",
 }
 
 KNOWN_RULES = frozenset(RULES) | frozenset(UNIMPLEMENTED_RULES)

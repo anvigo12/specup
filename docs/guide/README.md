@@ -219,7 +219,7 @@ A closed set of sixteen, each stored **once, in active voice**. The inverse is d
 time and never written, because two hand-maintained directions are two things that can
 disagree — and disagreement is what traceability exists to prevent.
 
-`refines` · `contains` · `decomposes-to` · `implements` · `modifies` · `verifies` ·
+`refines` · `contains` · `implements` · `verifies` ·
 `executes` · `tests` · `conforms-to` · `validates` · `mitigates` · `evidences` ·
 `depends-on` · `belongs-to` · `approves` · `supersedes`
 

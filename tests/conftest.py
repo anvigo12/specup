@@ -7,8 +7,10 @@ twenty, and each test states exactly which invariant it is breaking.
 
 from __future__ import annotations
 
+import json
 import pathlib
 import shutil
+import subprocess
 import sys
 from typing import Any, Callable
 
@@ -96,23 +98,75 @@ class Project:
     def add_edge(self, **edge: Any) -> None:
         self.edges(lambda document: document["edges"].append(edge))
 
+    def asserted_edges_touching(self, artifact_id: str) -> list[tuple[str, str, str]]:
+        """The triples TRC-009 would demand an approval on — derived edges are exempt."""
+        document = yaml.safe_load((self.root / ".specify/traceability/traceability.yaml").read_text())
+        return [(e["from"], e["relation"], e["to"]) for e in document["edges"]
+                if artifact_id in (e["from"], e["to"]) and e["provenance"] == "asserted"]
+
+    # -- approval ---------------------------------------------------------
+
+    def approve_rc(self, from_id: str, relation: str, to_id: str, **options: str) -> int:
+        """Run approve_edge.py the way a person would, and return its exit code.
+
+        Out of process on purpose: the hash it writes has to survive a real YAML round-trip
+        through the file, not just agree with an in-memory value.
+        """
+        argv = ["--root", str(self.root), "--from", from_id, "--relation", relation, "--to", to_id]
+        for key, value in options.items():
+            argv += [f"--{key}", value]
+        return subprocess.run(
+            [sys.executable, str(SCRIPTS / "approve_edge.py"), *argv],
+            capture_output=True, text=True,
+        ).returncode
+
+    def approve(self, from_id: str, relation: str, to_id: str, **options: str) -> None:
+        code = self.approve_rc(from_id, relation, to_id, **options)
+        assert code == 0, f"approve_edge.py refused {from_id} --{relation}--> {to_id} (exit {code})"
+
+    # -- the write-mode and report CLIs -----------------------------------
+
+    def _script(self, name: str, *argv: str) -> subprocess.CompletedProcess:
+        return subprocess.run(
+            [sys.executable, str(SCRIPTS / name), "--root", str(self.root), *argv],
+            capture_output=True, text=True,
+        )
+
+    def render_views(self) -> None:
+        result = self._script("render_views.py", "--write")
+        assert result.returncode == 0, f"render_views.py --write failed: {result.stderr}"
+
+    def impact_rc(self, identifier: str) -> int:
+        return self._script("impact.py", "--of", identifier, "--json").returncode
+
+    def impact(self, identifier: str) -> dict:
+        result = self._script("impact.py", "--of", identifier, "--json")
+        assert result.returncode == 0, f"impact.py failed: {result.stderr}"
+        return json.loads(result.stdout)
+
     # -- running ----------------------------------------------------------
 
     def run(self, module_name: str, **kwargs: Any):
-        """Run a validator in-process and return its Verdict."""
+        """Run a validator in-process and return its Verdict.
+
+        `validate` is the convention; select_work.py predates it and calls its entry point
+        `select`, which reads better for a selector than for a check.
+        """
         import importlib
 
         module = importlib.import_module(module_name)
+        entry = getattr(module, "validate", None) or module.select
 
         class Args:
             root = str(self.root)
             json = False
         for key, value in kwargs.items():
             setattr(Args, key, value)
-        return module.validate(Args())
+        return entry(Args())
 
     def gate(self, gate_name: str):
         import evaluate_gate
+        import validate_done
         import validate_risk
         import validate_trace
         import validate_wbs
@@ -128,6 +182,7 @@ class Project:
             wbs=validate_wbs.validate(Args()),
             risk=validate_risk.validate(Args()),
             trace=validate_trace.validate(Args()),
+            done=validate_done.validate(Args()),
         )
         return evaluate_gate.evaluate(gate_name, ctx)
 

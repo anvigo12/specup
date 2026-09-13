@@ -25,6 +25,9 @@ wbs:
   # Warn when a single parent has more children than this - usually a missing intermediate level.
   max_children_warn: 25
 
+  # The canonical WBS document.
+  store: .specify/wbs/wbs.yaml
+
 risk:
   # exposure = probability x impact. specup.md states this only by example (0.6 x 0.9 = 0.54)
   # and never defines "high", though s19/s32/s63 all gate on it. Defined here.
@@ -39,6 +42,19 @@ risk:
   # Reject a residual exposure that is not strictly lower than current exposure unless the
   # risk is explicitly accepted - "mitigated" with unchanged exposure is a no-op.
   require_residual_reduction: true
+
+artifacts:
+  # Where the governed artifact REGISTRY lives - requirements, business objectives, user
+  # stories, acceptance criteria, ADRs, contracts, tests, evidence. Everything an edge can
+  # point at that is not a WBS node, a risk, or a source path is registered in one of these.
+  #
+  # This block used to exist only as a default inside openup_model.py, so the most-edited
+  # store in the system had its location nowhere a reader of this file could find it.
+  stores:
+    - .specify/traceability/requirements.yaml
+    # Per-feature registries, merged into the same graph at load time. An artifact defined in
+    # one feature is visible to all of them: the graph is one graph.
+    - specs/*/artifacts.yaml
 
 traceability:
   # Where relation stores live. All matching files are merged into ONE graph at load time.
@@ -61,6 +77,11 @@ traceability:
       - "src/**"
       - "services/**"
       - "apps/**"
+    #
+    # AGENTS.md, index.md and SKILL.md are ALWAYS outside the perimeter and are not listed
+    # here: the governance layer is not implementation, and an exclude list replaces rather
+    # than merges, so a project with its own list would otherwise start failing backward
+    # coverage the moment it adopted the s7/s9 context hierarchy.
     exclude:
       - "**/*.generated.*"
       - "**/__snapshots__/**"
@@ -147,6 +168,7 @@ gates:
       - forward_coverage_met
       - backward_coverage_met
       - acceptance_scenarios_passing
+      - definition_of_done_met
       - no_open_critical_risks
       - no_orphans
 
@@ -160,9 +182,9 @@ gates:
       - security_validation_passed
 
 audit:
-  # s33 report. Always emit the provenance mix - a graph that is overwhelmingly 'asserted'
-  # must not be able to present itself as fully covered.
-  report_provenance_mix: true
+  # s33 report. The provenance mix is always emitted and is deliberately NOT configurable:
+  # a graph that is overwhelmingly 'asserted' must not be able to present itself as fully
+  # covered, and a flag to suppress that would be a switch for turning off the honesty.
   fail_on:
     - broken_references
     - orphan_requirements

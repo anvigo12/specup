@@ -5,9 +5,9 @@
 # disagree, and disagreement is exactly what traceability exists to prevent.
 #
 # Closed vocabulary (a relation outside it is an error). Inverse shown in brackets:
-#   refines [refined-by]        contains [contained-by]     decomposes-to [decomposed-from]
-#   implements [implemented-by] modifies [modified-by]      verifies [verified-by]
-#   executes [executed-by]      tests [tested-by]           conforms-to [conformed-by]
+#   refines [refined-by]        contains [contained-by]     implements [implemented-by]
+#   verifies [verified-by]      executes [executed-by]      tests [tested-by]
+#   conforms-to [conformed-by]
 #   validates [validated-by]    mitigates [mitigated-by]    evidences [evidenced-by]
 #   depends-on [depended-on-by] belongs-to [owns]           approves [approved-by]
 #   supersedes [superseded-by]
@@ -19,8 +19,12 @@
 #             writing one here by hand cannot make it true; it only makes the graph fail.
 #   asserted  claimed by an agent or author. Not independently reproducible. This is the
 #             correct label for everything in this file.
-#   approved  asserted, then signed off by a named human. Requires approval and
-#             approved_endpoints_hash, so editing an endpoint downgrades the edge.
+#   approved  asserted, then signed off by a named human. Do NOT hand-write one: the required
+#             approved_endpoints_hash binds the signature to the endpoints as they stand, and
+#             TRC-013 recomputes it, so editing either endpoint downgrades the edge out of the
+#             count the release gate scores. Record one with:
+#               python3 .specify/extensions/openup/scripts/python/approve_edge.py \
+#                 --from REQ-DOMAIN-0001 --relation refines --to BUS-OBJ-0001 --by product-owner
 
 schema_version: "1.0"
 scope: ".specify"

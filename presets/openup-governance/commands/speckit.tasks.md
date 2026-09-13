@@ -56,7 +56,6 @@ Rewrite every generated task into the governed contract form, with its ids drawn
 artifacts you read — never minted here:
 
 ```text
-[TASK-nnnn]
 [WBS-<node>]
 [REQ-<DOMAIN>-nnnn]
 [RISK-nnnn]            (only when the task mitigates one)
@@ -72,6 +71,9 @@ Exit criteria:   <the conditions that make it done>
 
 Rules:
 
+- **The WBS node id is the task id.** There is no separate `TASK-nnnn`: s15 defines WBS L7 as
+  the Executable Task, so the node *is* the task. Minting a second identity for one thing is
+  the drift this whole model exists to prevent, and an id nothing registers cannot be checked.
 - **Every bracketed id must resolve.** If you cannot resolve one, stop and report it rather
   than writing a plausible id. An unresolvable id is worse than a missing task because it
   looks traced.

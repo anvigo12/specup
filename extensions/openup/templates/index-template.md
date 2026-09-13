@@ -22,11 +22,18 @@ One sentence on what this scope covers.
 | Artifacts | `.specify/traceability/requirements.yaml` | — |
 | Traceability | `.specify/traceability/traceability.yaml` | `traceability.md`, `coverage.md` |
 | Evidence | `.specify/evidence/` | — |
+| Governance | `openup-config.yml`, the validators | `definition-of-ready.md`, `definition-of-done.md`, `quality-gates.md` |
 
-Never edit a generated view; regenerate it with `/speckit.openup.wbs`,
-`/speckit.openup.risk`, or `/speckit.openup.trace`.
+Never edit a generated view. Regenerate them all:
+
+```bash
+python3 .specify/extensions/openup/scripts/python/render_views.py --write
+```
 
 ## Key identifiers in this scope
+
+Every id listed here must resolve: `CTX-002` fails on one that does not, because a map
+pointing at something that is not there sends an agent looking for it.
 
 - Business objectives:
 - Requirements:

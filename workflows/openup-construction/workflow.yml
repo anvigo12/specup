@@ -106,6 +106,21 @@ steps:
     input:
       args: "Reassess every risk this iteration touched. Update residual probability and impact from what was actually learned, and attach the evidence. An iteration that changed no risk estimate usually means the reassessment was skipped."
 
+  # The Definition of Done, computed rather than declared (s29). This runs before the gate
+  # so the gate's definition_of_done_met condition is reading a check that just executed,
+  # and so a task marked done without evidence is reported as work, not as completion.
+  - id: check-done
+    type: shell
+    run: "python3 .specify/extensions/openup/scripts/python/validate_done.py --json --out .specify/evidence/checks/done.json"
+    continue_on_error: true
+    timeout: 600
+
+  - id: render-views
+    type: shell
+    run: "python3 .specify/extensions/openup/scripts/python/render_views.py --write"
+    continue_on_error: true
+    timeout: 600
+
   # -- the iteration gate --------------------------------------------------
   - id: evaluate-gate
     type: shell

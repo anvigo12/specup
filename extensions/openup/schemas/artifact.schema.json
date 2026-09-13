@@ -24,7 +24,6 @@
       "pattern": "^WBS-[1-9][0-9]*(\\.[1-9][0-9]*){0,6}$",
       "description": "Dotted path of 1-7 segments. Segment count is the WBS level."
     },
-    "taskId": { "type": "string", "pattern": "^TASK-[0-9]{4}$" },
     "riskId": { "type": "string", "pattern": "^RISK-[0-9]{4}$" },
     "traceId": { "type": "string", "pattern": "^TRACE-[0-9]{4}$" },
     "adrId": { "type": "string", "pattern": "^ADR-[0-9]{4}$" },
@@ -59,7 +58,6 @@
         { "$ref": "#/$defs/acceptanceCriterionId" },
         { "$ref": "#/$defs/scenarioId" },
         { "$ref": "#/$defs/wbsId" },
-        { "$ref": "#/$defs/taskId" },
         { "$ref": "#/$defs/riskId" },
         { "$ref": "#/$defs/adrId" },
         { "$ref": "#/$defs/securityDecisionId" },
@@ -79,7 +77,7 @@
       "type": "string",
       "enum": [
         "business-objective", "requirement", "non-functional-requirement", "feature",
-        "user-story", "flow", "acceptance-criterion", "scenario", "wbs-node", "task",
+        "user-story", "flow", "acceptance-criterion", "scenario", "wbs-node",
         "risk", "architecture-decision", "security-decision", "test-case", "unit-test",
         "integration-test", "contract", "microcks-test", "evidence", "iteration", "gate",
         "source-artifact"
@@ -106,7 +104,7 @@
     "relation": {
       "type": "string",
       "enum": [
-        "refines", "contains", "decomposes-to", "implements", "modifies", "verifies",
+        "refines", "contains", "implements", "verifies",
         "executes", "tests", "conforms-to", "validates", "mitigates", "evidences",
         "depends-on", "belongs-to", "approves", "supersedes"
       ],

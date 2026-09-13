@@ -177,10 +177,11 @@ def test_python_dependencies_are_declared():
 
     requirements = (EXTENSION_DIR / "requirements.txt").read_text().lower()
     stdlib_or_local = {
-        "__future__", "argparse", "dataclasses", "datetime", "fnmatch", "glob", "json",
-        "pathlib", "re", "shutil", "subprocess", "sys", "typing", "importlib",
+        "__future__", "argparse", "dataclasses", "datetime", "fnmatch", "glob", "hashlib",
+        "json", "pathlib", "re", "shutil", "subprocess", "sys", "typing", "importlib",
         "openup_model", "validate_wbs", "validate_risk", "validate_trace",
         "evaluate_gate", "audit", "select_work", "init_openup", "derivers", "derive_edges",
+        "approve_edge", "render_views", "impact", "validate_done", "validate_context",
     }
     package_names = {"yaml": "pyyaml", "jsonschema": "jsonschema", "referencing": "referencing"}
 

@@ -21,6 +21,7 @@ from __future__ import annotations
 import argparse
 import fnmatch
 import glob
+import hashlib
 import json
 import pathlib
 import re
@@ -216,9 +217,7 @@ class Grammar:
 INVERSE = {
     "refines": "refined-by",
     "contains": "contained-by",
-    "decomposes-to": "decomposed-from",
     "implements": "implemented-by",
-    "modifies": "modified-by",
     "verifies": "verified-by",
     "executes": "executed-by",
     "tests": "tested-by",
@@ -233,7 +232,7 @@ INVERSE = {
 }
 
 # Relations that must not contain a cycle.
-ACYCLIC = ("contains", "decomposes-to", "refines", "depends-on", "supersedes")
+ACYCLIC = ("contains", "refines", "depends-on", "supersedes")
 
 
 # --------------------------------------------------------------------------
@@ -259,6 +258,14 @@ def wbs_parent_id(wbs_id: str) -> str | None:
 # Config
 # --------------------------------------------------------------------------
 
+# Never inside the traceability perimeter, whatever the config says. These are the governance
+# layer (s7, s9), not implementation: an AGENTS.md seeded into a source tree is not a file that
+# needs an edge to a requirement. This is hard-coded rather than a config default because an
+# exclude list REPLACES rather than merges, so a project carrying its own list would start
+# failing backward coverage the moment it adopted the context hierarchy — a check punishing
+# the very thing another part of the design asks for.
+GOVERNANCE_FILES = ("AGENTS.md", "index.md", "SKILL.md")
+
 DEFAULT_CONFIG: dict[str, Any] = {
     "lifecycle": {"phase": "INCEPTION", "iteration": None},
     "wbs": {"depth_policy": "semantic", "never_terminal_above": 3, "max_children_warn": 25,
@@ -279,7 +286,7 @@ DEFAULT_CONFIG: dict[str, Any] = {
     "testing": {"stem_suffixes": [".test", ".spec", "_test", "_spec", "-test", "Test"],
                 "stem_prefixes": ["test_", "test-"]},
     "gates": {},
-    "audit": {"report_provenance_mix": True, "fail_on": []},
+    "audit": {"fail_on": []},
 }
 
 
@@ -315,6 +322,14 @@ def load_config(root: pathlib.Path) -> dict[str, Any]:
 
 @dataclass
 class Edge:
+    """One stored relation.
+
+    Every field the schema allows is carried here. That is not tidiness: a loader that
+    drops fields is a projection, and validating a projection against the schema checks
+    a document nobody wrote (which is exactly how `approved` became unusable — the schema
+    demanded the fields the loader had just discarded).
+    """
+
     from_id: str
     relation: str
     to_id: str
@@ -323,6 +338,10 @@ class Edge:
     source_file: str | None = None
     evidence: list[str] = field(default_factory=list)
     derived_by: str | None = None
+    edge_id: str | None = None
+    approval: dict[str, Any] | None = None
+    approved_endpoints_hash: str | None = None
+    note: str | None = None
 
     @property
     def triple(self) -> tuple[str, str, str]:
@@ -372,6 +391,9 @@ class Graph:
         self.duplicate_edges: list[Edge] = []
         self.wbs_doc: dict[str, Any] = {}
         self.loaded_files: list[str] = []
+        # Relative path -> the traceability document exactly as parsed. Schema checks run
+        # against these, never against anything rebuilt from the Edge objects.
+        self.raw_stores: dict[str, dict] = {}
 
         self._load_wbs()
         self._load_risks()
@@ -425,8 +447,10 @@ class Graph:
     def _load_edges(self) -> None:
         seen: dict[tuple[str, str, str], Edge] = {}
         for path in expand_paths(self.root, self.config["traceability"]["stores"]):
-            self.loaded_files.append(self._rel(path))
+            rel = self._rel(path)
+            self.loaded_files.append(rel)
             doc = _load_yaml(path)
+            self.raw_stores[rel] = doc
             for raw in doc.get("edges", []) or []:
                 edge = Edge(
                     from_id=raw.get("from", ""),
@@ -434,9 +458,13 @@ class Graph:
                     to_id=raw.get("to", ""),
                     provenance=raw.get("provenance", "asserted"),
                     status=raw.get("status", "active"),
-                    source_file=raw.get("source_file") or self._rel(path),
+                    source_file=raw.get("source_file") or rel,
                     evidence=list(raw.get("evidence", []) or []),
                     derived_by=raw.get("derived_by"),
+                    edge_id=raw.get("id"),
+                    approval=raw.get("approval"),
+                    approved_endpoints_hash=raw.get("approved_endpoints_hash"),
+                    note=raw.get("note"),
                 )
                 if edge.triple in seen:
                     self.duplicate_edges.append(edge)
@@ -502,6 +530,8 @@ class Graph:
         return seen
 
     def in_perimeter(self, path: str) -> bool:
+        if path.rsplit("/", 1)[-1] in GOVERNANCE_FILES:
+            return False
         perimeter = self.config["traceability"]["perimeter"]
         included = any(fnmatch.fnmatch(path, pat) for pat in perimeter.get("include", []))
         excluded = any(fnmatch.fnmatch(path, pat) for pat in perimeter.get("exclude", []))
@@ -543,6 +573,47 @@ class Graph:
                 else:
                     colour[node] = 2
         return None
+
+
+# --------------------------------------------------------------------------
+# Approval binding
+# --------------------------------------------------------------------------
+
+# Lifecycle bookkeeping, excluded from the fingerprint. An approval is about WHAT was
+# approved, not where the artifact currently sits in s31's state machine: advancing
+# APPROVED -> BASELINED must not void a signature, but editing the requirement must.
+LIFECYCLE_KEYS = {"status", "approvals", "baseline"}
+
+
+def endpoint_fingerprint(graph: "Graph", identifier: str) -> str:
+    """Canonical text for one endpoint of an approved edge.
+
+    A source path fingerprints as the path itself, not as the bytes at that path. An
+    approved edge to a file records *which file was approved for this role*; source churn
+    is continuous and expected, and hashing content would void every approval on every
+    commit until nobody used approvals at all. Whether the file is still correct is what
+    tests and TRC-010 derivation are for. (ID-GRAMMAR.md s3 states this externally, because
+    the two behaviours are indistinguishable from outside.)
+    """
+    for store in (graph.artifacts, graph.wbs, graph.risks):
+        if identifier in store:
+            body = {k: v for k, v in store[identifier].items() if k not in LIFECYCLE_KEYS}
+            return json.dumps(body, sort_keys=True, separators=(",", ":"))
+    return identifier
+
+
+def approval_hash(graph: "Graph", edge: Edge) -> str:
+    """SHA256 binding an approval to the exact content it was given for.
+
+    The relation is inside the hash deliberately: re-pointing an approved edge at a
+    different relation must void the approval, not inherit it.
+    """
+    payload = "\x00".join((
+        endpoint_fingerprint(graph, edge.from_id),
+        edge.relation,
+        endpoint_fingerprint(graph, edge.to_id),
+    ))
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
 def schema_errors(instance: Any, schema_name: str, schema_dir: pathlib.Path = SCHEMA_DIR) -> list[str]:

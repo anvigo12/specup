@@ -36,6 +36,9 @@ nodes:
 
   # An L7 executable task. These requirements are enforced, not advisory:
   #   owner, iteration, and at least one requirement are mandatory at L7.
+  #
+  # `skills:` names the capability contracts this work needs (s8, s28) — the directories under
+  # skills/. A named skill that does not exist blocks the task (DOR-009) and fails CTX-004.
   # - id: WBS-1.1.1.1.1.1.1
   #   name: "Implement X"
   #   level: 7

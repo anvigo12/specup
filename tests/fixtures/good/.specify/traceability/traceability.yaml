@@ -22,6 +22,12 @@ edges:
     to: REQ-AUTH-0014
     provenance: asserted
 
+  # design decision: the ADR answers the requirement it was taken for (s20)
+  - from: ADR-0019
+    relation: refines
+    to: REQ-AUTH-0014
+    provenance: asserted
+
   # work chain
   - from: WBS-1.2.3.4.1.1.1
     relation: implements
@@ -58,11 +64,16 @@ edges:
     provenance: asserted
 
   # implementation chain
+  #
+  # These two are `asserted`, not `derived`. They used to name `task-modifies-closure` — a rule
+  # that closed source -> requirement through the task that modified the file. There is no task
+  # layer: s15 already defines WBS L7 as the executable task, and a parallel TASK-* identity was
+  # a second name for one thing. With the layer gone the rule is not merely unimplemented, it is
+  # unwritable, so the honest label for "this file implements this requirement" is a claim.
   - from: src/security/certificate_validator.ts
     relation: implements
     to: REQ-AUTH-0014
-    provenance: derived
-    derived_by: task-modifies-closure
+    provenance: asserted
   - from: src/security/certificate_validator.ts
     relation: conforms-to
     to: CONTRACT-AUTH-0001
@@ -71,8 +82,7 @@ edges:
   - from: src/auth/authentication_service.ts
     relation: implements
     to: REQ-AUTH-0014
-    provenance: derived
-    derived_by: task-modifies-closure
+    provenance: asserted
 
   # evidence
   - from: EVID-0001

@@ -70,9 +70,18 @@ Fix every `FAIL` before reporting success. The common ones:
 
 ## Generated view
 
-`wbs.md` is a **generated** view of `wbs.yaml` (s47). Regenerate it from the YAML; never
-hand-edit it, and never let the two drift. Render the tree with id, name, owner, iteration,
-status, and linked requirement and risk ids.
+`wbs.md` is a **generated** view of `wbs.yaml` (s47). Do not write it yourself — run the
+renderer:
+
+```bash
+python3 .specify/extensions/openup/scripts/python/render_views.py --write
+```
+
+Transcribing YAML into Markdown by hand is the manual maintenance s47 exists to remove, and
+doing it as an agent adds a failure mode rather than removing one: the output is
+non-deterministic, every regeneration is a fresh diff, and nothing stops it from quietly
+disagreeing with the canonical data. Without `--write` the same script reports which views
+are stale (`VIEW-001`), so a workflow can fail on a drifted view.
 
 ## Then
 

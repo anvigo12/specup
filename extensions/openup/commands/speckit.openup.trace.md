@@ -29,7 +29,20 @@ disagreement is what traceability exists to prevent.
 |---|---|---|
 | `derived` | Recomputed from the filesystem by a stated rule. Requires `derived_by`, and the rule is re-run to check it. | Anything mechanically recoverable: test-file naming, codegen output, Gherkin tags |
 | `asserted` | Claimed by you or the author. Not reproducible. | Judgment links: which requirement a WBS node implements |
-| `approved` | Asserted, then signed off by a named human. Requires `approval` and `approved_endpoints_hash`. | Baseline-level edges on `BASELINED`+ requirements |
+| `approved` | Asserted, then signed off by a named human. Never hand-written — see below. | Baseline-level edges on `BASELINED`+ requirements |
+
+To record an approval, run the tool; the required `approved_endpoints_hash` cannot be produced
+by hand, and a wrong one downgrades the edge on the next run:
+
+```bash
+python3 .specify/extensions/openup/scripts/python/approve_edge.py \
+  --from REQ-AUTH-0014 --relation refines --to BUS-OBJ-0017 --by product-owner
+```
+
+`TRC-013` recomputes that hash from the endpoints as they now stand. If either endpoint has been
+edited since, the edge is WARNed and drops out of `approved_verified` — the count
+`traceability_final` actually scores — until someone approves it again. An approval binds the
+*content* it was given for; it does not prove a human ran the command.
 
 This exists because you are writing both the code and the proof that it was traced. Marking a
 judgment call `derived` to make the audit look better defeats the only mechanism that
@@ -42,7 +55,7 @@ score. **When in doubt, mark it `asserted`.**
 A relation outside this set is rejected (`TRC-000`), and each has a legal domain and range
 (`TRC-003`):
 
-`refines` · `contains` · `decomposes-to` · `implements` · `modifies` · `verifies` ·
+`refines` · `contains` · `implements` · `verifies` ·
 `executes` · `tests` · `conforms-to` · `validates` · `mitigates` · `evidences` ·
 `depends-on` · `belongs-to` · `approves` · `supersedes`
 
@@ -64,11 +77,10 @@ python .specify/extensions/openup/scripts/python/derive_edges.py --write
 | `test-file-naming-convention` | `UNIT-*`/`TC-*`/`INTG-*` → `tests` → the file its `source` is named after | implemented |
 | `wbs-iteration-field` | WBS node → `belongs-to` → iteration, from the node's `iteration` field | implemented |
 | `openapi-operation-scan` | source file → `conforms-to` → `CONTRACT-*` | **not implemented** |
-| `task-modifies-closure` | source file → `implements` → requirement, via the task that modifies it | **not implemented** |
-| `evidence-manifest-scan` | `EVID-*` → `evidences` → task / risk / gate | **not implemented** |
+| `evidence-manifest-scan` | `EVID-*` → `evidences` → WBS node / risk / gate | **not implemented** |
 
 An implemented rule is re-run by `TRC-010`, so a `derived` edge it does not reproduce fails.
-An edge naming one of the three unimplemented rules cannot be reproduced at all: it is reported
+An edge naming one of the two unimplemented rules cannot be reproduced at all: it is reported
 as **unverified** and does not count as evidence at the release gate. Do not add more of them —
 if a rule is not implemented, the honest label is `asserted`.
 
@@ -91,6 +103,7 @@ python .specify/extensions/openup/scripts/python/validate_trace.py --json
 | `TRC-010` | an edge claims a rule that does not reproduce it, or a rule that does not exist |
 | `TRC-011` | a rule produces an edge no store declares — run `derive_edges.py --write` |
 | `TRC-012` | an acceptance criterion has no scenario executing it (s24) |
+| `TRC-013` | an approved edge no longer matches what was approved — WARN, and it stops counting as evidence until re-approved |
 
 `TRC-011` is the only one of these with a mechanical fix: regenerate. `TRC-010` never is —
 it means a claim was wrong, so correct the claim or the filesystem, never the label.
@@ -100,8 +113,14 @@ If `TRC-007` fails for files that should not be governed, fix the **perimeter** 
 
 ## Generated views
 
-`traceability.md` and `coverage.md` are generated from the YAML. Include the provenance mix
-in `coverage.md` — a coverage number without it overstates what is actually known.
+`traceability.md` and `coverage.md` are generated from the YAML. Do not write either by hand:
+
+```bash
+python3 .specify/extensions/openup/scripts/python/render_views.py --write
+```
+
+`coverage.md` carries the provenance mix alongside the coverage figures, because a coverage
+number without it overstates what is actually known.
 
 ## Reporting
 

@@ -92,6 +92,29 @@ provides:
       file: templates/index-template.md
       description: "Directory context map for progressive disclosure"
 
+    # The other three governance documents (definition-of-ready, definition-of-done,
+    # quality-gates) have no template on purpose: render_views.py generates them from the
+    # code that enforces them, so the document and the check cannot drift.
+    - name: openup-approval-matrix
+      file: templates/approval-matrix-template.md
+      description: "Who may approve what, per s59's human approval boundaries"
+
+    - name: openup-change-control
+      file: templates/change-control-template.md
+      description: "How a change to a baselined artifact is assessed, approved and absorbed"
+
+    - name: openup-agents-root
+      file: templates/agents-root-template.md
+      description: "s7 agent operating contract for the repository root"
+
+    - name: openup-agents-specify
+      file: templates/agents-specify-template.md
+      description: "s7 operating contract scoped to the .specify governance tree"
+
+    - name: openup-agents-src
+      file: templates/agents-src-template.md
+      description: "s7 operating contract scoped to implementation code"
+
   scripts:
     - name: openup-init
       file: scripts/python/init_openup.py
@@ -126,6 +149,31 @@ provides:
     - name: derive-edges
       file: scripts/python/derive_edges.py
       description: "Report or regenerate the machine-derivable traceability edges"
+      runtimes: [python]
+
+    - name: approve-edge
+      file: scripts/python/approve_edge.py
+      description: "Record a human approval on one edge, binding it to the content approved"
+      runtimes: [python]
+
+    - name: render-views
+      file: scripts/python/render_views.py
+      description: "Generate wbs.md, risk-register.md, traceability.md, coverage.md and the governance documents from the canonical YAML"
+      runtimes: [python]
+
+    - name: impact
+      file: scripts/python/impact.py
+      description: "Report what a change to one artifact reaches, in both directions (s52)"
+      runtimes: [python]
+
+    - name: validate-context
+      file: scripts/python/validate_context.py
+      description: "Validate the AGENTS.md / index.md / SKILL.md hierarchy and its references"
+      runtimes: [python]
+
+    - name: validate-done
+      file: scripts/python/validate_done.py
+      description: "Check the Definition of Done against the graph for every node claiming done"
       runtimes: [python]
 
     - name: select-work

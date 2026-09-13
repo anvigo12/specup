@@ -2,10 +2,10 @@
 
 A task is an execution contract for an agent, not a line item. Each one carries the
 governance that bounds it, so the agent working on it needs the task and its linked artifacts
-rather than the whole repository.
+rather than the whole repository. The **WBS L7 node id is the task id** — s15 already defines
+L7 as the Executable Task, so there is no separate `TASK-nnnn` to keep in step with it.
 
 ```text
-[TASK-0042]
 [WBS-1.2.3.4.1.1.2]
 [REQ-AUTH-0014]
 [RISK-0007]
@@ -14,7 +14,7 @@ rather than the whole repository.
 Implement certificate validation.
 
 Preconditions:
-- TASK-0041 complete
+- WBS-1.2.3.4.1.1.1 complete
 - Certificate schema approved
 
 Files:

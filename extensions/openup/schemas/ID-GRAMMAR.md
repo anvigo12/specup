@@ -36,7 +36,6 @@ the edges of the knowledge graph (§48), so renaming one breaks traceability. Su
 | AcceptanceCriterion | `AC` | `AC-<DOMAIN>-<NNNN>-<NNNN>` | `AC-AUTH-0014-0003` |
 | Scenario (Gherkin) | `SCEN` | `SCEN-<DOMAIN>-<NNNN>` | `SCEN-AUTH-0031` |
 | WBSNode | `WBS` | `WBS-<DOTTED>` | `WBS-1.2.3.4.1.2` |
-| Task | `TASK` | `TASK-<NNNN>` | `TASK-0042` |
 | Risk | `RISK` | `RISK-<NNNN>` | `RISK-0007` |
 | TraceRelation | `TRACE` | `TRACE-<NNNN>` | `TRACE-0007` |
 | ArchitectureDecision | `ADR` | `ADR-<NNNN>` | `ADR-0019` |
@@ -58,7 +57,19 @@ Notes:
 - **Phase** is an enum, not an ID: `INCEPTION | ELABORATION | CONSTRUCTION | TRANSITION`.
 - **SourceArtifact** has no synthetic ID — the path *is* the identity, so traceability survives a
   validator rebuild. Paths are repo-relative, POSIX-separated, never absolute.
-- Every prefix listed in §48 is used above. None is defined and left unused.
+- **Modelled prefixes** — every one above is a node the graph can reach: an edge may start or
+  end at it, and a validator resolves it. `SourceArtifact` included.
+- **Deliberately absent: `TASK`.** §48 lists it and §21/§26/§44/§67 route through it, but §15
+  already defines WBS **L7** as the Executable Task. A parallel `TASK-*` identity would be a
+  second name for one thing, which is precisely the drift this model exists to prevent, so the
+  WBS node *is* the task. The `modifies` and `decomposes-to` relations went with it: `modifies`
+  had no domain left, and WBS decomposition is already encoded in the id (`WBS-1.2.3` is the
+  parent of `WBS-1.2.3.4`), so storing it as an edge would be a second representation of the
+  same fact.
+- **Reserved but unmodelled: `FLOW`, `TRACE`, `SECURE`.** These have patterns and are accepted
+  as ids, but no relation signature admits them, so no edge can reach one today. They are
+  reserved so that adding them later renames nothing. Until a signature admits them, do not
+  read their presence in the grammar as a claim that the model uses them.
 
 ---
 
@@ -74,27 +85,31 @@ hand-maintained dataset.
 
 | Relation | Inverse (derived) | Typical domain → range |
 |---|---|---|
-| `refines` | `refined-by` | Requirement → BusinessObjective; UserStory → Requirement |
+| `refines` | `refined-by` | Requirement → BusinessObjective; UserStory → Requirement; ADR / SecurityDecision → Requirement |
 | `contains` | `contained-by` | WBSNode → WBSNode; Feature → Requirement |
-| `decomposes-to` | `decomposed-from` | WBSNode → Task |
-| `implements` | `implemented-by` | WBSNode / Task → Requirement |
-| `modifies` | `modified-by` | Task → SourceArtifact |
+| `implements` | `implemented-by` | WBSNode / SourceArtifact → Requirement / ADR / SecurityDecision |
 | `verifies` | `verified-by` | AcceptanceCriterion / TestCase → Requirement |
 | `executes` | `executed-by` | Scenario → AcceptanceCriterion |
 | `tests` | `tested-by` | UnitTest / IntegrationTest → SourceArtifact |
 | `conforms-to` | `conformed-by` | SourceArtifact → Contract |
 | `validates` | `validated-by` | MicrocksTest → Contract |
-| `mitigates` | `mitigated-by` | WBSNode / Task → Risk |
-| `evidences` | `evidenced-by` | Evidence → Task / Gate / Risk |
-| `depends-on` | `depended-on-by` | Task → Task; WBSNode → WBSNode |
+| `mitigates` | `mitigated-by` | WBSNode → Risk |
+| `evidences` | `evidenced-by` | Evidence → WBSNode / Gate / Risk |
+| `depends-on` | `depended-on-by` | WBSNode → WBSNode |
 | `belongs-to` | `owns` | WBSNode → Iteration |
 | `approves` | `approved-by` | Actor → any governed artifact |
-| `supersedes` | `superseded-by` | ADR → ADR; Requirement → Requirement |
+| `supersedes` | `superseded-by` | any → any (see below) |
+
+**`approves` and `supersedes` accept any type at both ends, on purpose.** `approves` starts at
+a human actor, which has no id form at all. `supersedes` is genuinely open: a contract supersedes
+a contract, an ADR an ADR, a requirement a requirement — and across types when a decision replaces
+the thing it was made about. Constraining it to the two pairs §21 happens to mention would reject
+legitimate history for no benefit. Every other relation has a checked domain and range (`TRC-003`).
 
 **Dropped as duplicates:** `implemented-by` (§21) — store `implements` and derive it. `satisfies`
 (§67) — same edge as `implements`. `validated-by` (§21, as the stored form) — store `validates`.
 
-**Cycles** are an error on `contains`, `decomposes-to`, `refines`, `depends-on`, and `supersedes`.
+**Cycles** are an error on `contains`, `refines`, `depends-on`, and `supersedes`.
 
 ---
 
@@ -115,8 +130,22 @@ Rules:
 1. A validator may create and overwrite `derived` edges freely; it must never silently modify
    `asserted` or `approved` edges. Derived edges live in their own machine-owned store
    (`.specify/traceability/derived.yaml`), which `derive_edges.py --write` rewrites in full.
-2. Editing the endpoints of an `approved` edge downgrades it to `asserted` and records the
-   downgrade — approval does not survive a change to what was approved.
+2. Editing the endpoints of an `approved` edge downgrades it: `TRC-013` recomputes
+   `approved_endpoints_hash` from the endpoints as they now stand and, when it disagrees, WARNs
+   and moves the edge out of `approved_verified`, which is the count `traceability_final` scores.
+   Approval does not survive a change to what was approved. The hash covers the two endpoint
+   bodies **and the relation**, so re-pointing an approved edge at a different relation voids the
+   signature rather than inheriting it.
+   - **`status`, `approvals` and `baseline` are excluded** from the fingerprint. An approval is
+     about *what* was approved, not where the artifact sits in §31's state machine: advancing
+     `APPROVED → BASELINED` must not void a signature, but editing the requirement must.
+   - **A source-path endpoint fingerprints as the path, not the file's bytes.** An approved edge
+     to a file records which file was approved for this role; source churn is continuous, and
+     hashing content would void every approval on every commit until nobody used approvals at
+     all. Whether the file is still *correct* is what tests and `TRC-010` derivation are for.
+     This is stated here because the two behaviours are indistinguishable from outside.
+   - Nobody can compute this hash by hand, so `approve_edge.py` is the supported way to write
+     one. A required field with no tool to produce it is the same defect in a new place.
 3. Gates may require a minimum provenance level. Baseline gates (§30, §59) require `approved` for
    requirement-level edges.
 4. `audit.py` reports the derived : asserted : approved ratio. A graph that is overwhelmingly

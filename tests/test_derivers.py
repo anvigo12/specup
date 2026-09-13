@@ -116,7 +116,9 @@ def test_the_fixture_is_reproducible_end_to_end(project):
     verdict = project.run("validate_trace")
     assert verdict.status == "PASS", sorted(failing(verdict))
     assert verdict.metrics["derived_verified"] == 10
-    assert verdict.metrics["derived_unverified"] == 5
+    # 3: one openapi-operation-scan, two evidence-manifest-scan. The two that named
+    # task-modifies-closure became `asserted` when the task layer was removed.
+    assert verdict.metrics["derived_unverified"] == 3
 
 
 def test_gherkin_scan_binds_scenarios_to_their_criteria(project):
@@ -181,9 +183,9 @@ def test_relabelling_an_assertion_as_derived_is_caught(project):
                           "to": "REQ-AUTH-0014"})
     project.add_edge(**{"from": "WBS-1.2.3.4.1.1.1", "relation": "implements",
                         "to": "REQ-AUTH-0014", "provenance": "derived",
-                        "derived_by": "task-modifies-closure"})
+                        "derived_by": "evidence-manifest-scan"})
     # An unimplemented rule cannot be checked, so it must not be counted as evidence either.
-    assert project.run("validate_trace").metrics["derived_unverified"] == 6
+    assert project.run("validate_trace").metrics["derived_unverified"] == 4
 
     project.drop_edges(**{"from": "WBS-1.2.3.4.1.1.1", "relation": "implements",
                           "to": "REQ-AUTH-0014"})

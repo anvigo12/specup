@@ -196,7 +196,7 @@ python3 .specify/extensions/openup/scripts/python/validate_trace.py --json
 Every edge a rule can recompute is one you never have to defend in a review.
 
 **Source → contract and evidence → task are not implemented.** `openapi-operation-scan`,
-`task-modifies-closure` and `evidence-manifest-scan` are declared but have no code behind them,
+`openapi-operation-scan` and `evidence-manifest-scan` are declared but have no code behind them,
 so an edge naming one cannot be reproduced and is reported as `derived_unverified` rather than
 counted as evidence. Write those links as `asserted` instead; the label is accurate, and a
 false `derived` costs you the audit's only real signal.

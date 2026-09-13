@@ -77,6 +77,7 @@ gates:
       - forward_coverage_met
       - backward_coverage_met
       - acceptance_scenarios_passing
+      - definition_of_done_met
       - no_open_critical_risks
       - no_orphans
 

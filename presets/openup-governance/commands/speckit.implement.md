@@ -42,6 +42,23 @@ Confirm the task is genuinely ready:
 python3 .specify/extensions/openup/scripts/python/select_work.py --json
 ```
 
+### Before touching a baselined artifact, compute the impact
+
+If the work changes a requirement, contract or ADR that is `BASELINED` or beyond, ask the
+graph what the change reaches before you make it (s52) — never assess impact from memory or by
+reading around the code:
+
+```bash
+python3 .specify/extensions/openup/scripts/python/impact.py --of REQ-AUTH-0014
+```
+
+Present that fan-out to the user and let them decide. Traversal is undirected, so the same
+command answers the reverse question from a file:
+`impact.py --of src/auth/authentication_service.ts`. If the fan-out looks implausibly small,
+the missing edges are the finding — report them rather than proceeding on a graph that cannot
+see its own consequences. Changing a baselined artifact is a change-control event; follow
+`.specify/governance/change-control.md`.
+
 {CORE_TEMPLATE}
 
 ## OpenUP Post-Execution: Produce Evidence, Then Update the Graph
