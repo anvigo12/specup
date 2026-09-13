@@ -401,6 +401,17 @@ And the bundle, into a clean `specify init` project — both routes:
 | `specify bundle build` | `specup-0.1.0.zip`, 3 files, fixed timestamps |
 | A pin bumped to `0.2.0` in `bundle.yml` | install refuses before touching the project |
 
+The three single-component routes, which the community-catalog submissions attest to, were
+exercised separately against the published release:
+
+| Step | Result |
+|---|---|
+| `specify extension add openup --from <release url>` | exit 0, 9 commands registered |
+| `specify preset add --from <release url>` | exit 0, `spec-template` resolves to `[append] openup-governance v0.1.0` |
+| `specify bundle install ./specup-0.1.0.zip` (downloaded artifact) | `6 added, 0 already present` |
+| `specify bundle validate --path bundles/specup` | `✓ specup is well-formed and valid` |
+| `preset add` into a project with no `openup` extension | warns `openup is not installed`, names `specify extension add openup`, installs anyway |
+
 One gap in that record, stated rather than glossed: the verification host already had `PyYAML`
 and `jsonschema` present, so the `pip install -r requirements.txt` step was not exercised from
 a genuinely bare interpreter. The `exit 1` above is a real governance verdict rather than a
