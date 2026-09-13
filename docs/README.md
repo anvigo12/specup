@@ -3,6 +3,7 @@
 | | |
 |---|---|
 | **[Guide](guide/README.md)** | What SpecUP is, the data model, the lifecycle, the commands |
+| ↳ [Using SpecUP](guide/using-specup.md) | The operating manual — every command, every check id, every config key |
 | ↳ [New project](guide/new-project.md) | Greenfield adoption, governed from the first commit |
 | ↳ [Existing project](guide/existing-project.md) | Brownfield adoption, where intent has to be recovered |
 | **[Runbook: publishing](runbooks/publishing-to-spec-kit.md)** | Cutting a release and getting `specify bundle install specup` to work |

@@ -12,6 +12,10 @@
 8. [Adoption](#adoption) → [new repo](new-project.md) · [existing repo](existing-project.md)
 9. [When *not* to use SpecUP](#when-not-to-use-specup)
 
+> Already installed and looking for the operating manual — what a check id means, what to
+> type, what a config key does? That is **[Using SpecUP](using-specup.md)**. This page is the
+> *why*; that one is the *how*.
+
 ---
 
 ## What SpecUP is
@@ -215,7 +219,7 @@ traceability survives a validator rebuild and never drifts from the filesystem.
 
 ### Relations
 
-A closed set of sixteen, each stored **once, in active voice**. The inverse is derived at load
+A closed set of fourteen, each stored **once, in active voice**. The inverse is derived at load
 time and never written, because two hand-maintained directions are two things that can
 disagree — and disagreement is what traceability exists to prevent.
 
@@ -412,6 +416,7 @@ tractable, and getting it wrong is the most common reason a first audit is unusa
 - **[New project](new-project.md)** — greenfield, governed from the first commit.
 - **[Existing project](existing-project.md)** — brownfield, where the code already exists and
   the intent behind it has to be recovered.
+- **[Using SpecUP](using-specup.md)** — the operating manual, for once either of those is done.
 
 They are genuinely different problems. In a new repo the graph grows with the code. In an
 existing one you are reconstructing a graph for work already done, and the honest starting
