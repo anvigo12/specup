@@ -19,11 +19,31 @@ Provided*; do not hand-edit the workflow catalog to close the gap.
 **Do not open a pull request.** Spec Kit's `CONTRIBUTING.md` is explicit that a hand-edited
 catalog PR bypasses validation and is closed with a pointer back to the issue flow.
 
-1. Open the issue from the template and paste the field values from the matching file.
+1. File the issue. Each file here **is** the issue body, written in the format GitHub renders an
+   issue form into — `### <field label>` followed by the value, and literal `- [x]` checkboxes.
+   So either paste field by field into the web form, or file it directly:
+
+   ```bash
+   gh issue create --repo github/spec-kit \
+     --title "[Extension]: Add openup — OpenUP Governed Lifecycle" \
+     --body-file docs/runbooks/community-submission/extension-openup.md
+   ```
+
 2. A maintainer applies the `extension-submission` / `preset-submission` / `bundle-submission`
    label during triage. Do not apply it yourself and do not ask for it.
 3. That label starts an agentic workflow which validates the release, verifies the
-   `download_url` and digest, and opens the catalog PR.
+   `download_url` and digest, checks that every required box is ticked, and opens the catalog PR.
+
+The heading structure is load-bearing: the workflow parses the body by field label, and checks
+the required boxes are literally `[x]`. A free-form body will not validate.
+
+Titles:
+
+| File | Title |
+|---|---|
+| `extension-openup.md` | `[Extension]: Add openup — OpenUP Governed Lifecycle` |
+| `preset-openup-governance.md` | `[Preset]: Add openup-governance — OpenUP Governance` |
+| `bundle-specup.md` | `[Bundle]: Add specup — SpecUP OpenUP Governed Lifecycle` |
 
 A version bump or a repair is an update and needs the same flow — there is no lighter path for
 changing an entry that already exists.
