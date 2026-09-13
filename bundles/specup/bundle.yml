@@ -8,15 +8,16 @@ bundle:
   description: "Installs the full OpenUP governance stack: the openup extension (validators, schemas, commands), the openup-governance preset, and the four phase workflows whose gates halt a run on a failing verdict."
   author: "Aniket Gore"
   license: "MIT"
+  repository: "https://github.com/anvigo12/specup"
 
 requires:
-  # Deliberately narrower than the components' own `>=0.9.0` / `>=0.8.5` floors.
-  # Those are the versions each primitive's own manifest schema needs; this is the
-  # version the bundle has actually been exercised against. The bundler surface
+  # The same floor every component declares, and for the same reason. 1.0.6 is the
+  # only Spec Kit any of this has been run against. The bundler surface
   # (`bundle.yml` schema_version "1.0", the install/validate/build commands, the
-  # preset priority+strategy requirement) was verified on 1.0.6 and nothing older
-  # was ever run, so claiming support for 0.9.x would be an untested assertion —
-  # the exact thing this project's gates exist to reject.
+  # preset priority+strategy requirement) was verified there and nothing older was
+  # ever exercised, so an earlier floor would state what might work rather than what
+  # was tested — the exact defect this project's gates exist to reject. Widen it
+  # after testing the wider range, not before.
   speckit_version: ">=1.0.0,<2.0.0"
   # Surfaced as an install-time warning, not a check. The validators exit 2 without
   # these, which halts a workflow on its setup-fault branch rather than passing a

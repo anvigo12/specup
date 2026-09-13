@@ -61,12 +61,28 @@ testable without publishing anything):
 
 ## 1. Pre-flight
 
+`specify` must be on PATH for the verification in step 5, which runs as a user would. The
+build steps do not need it — the Taskfile uses `.venv/bin/specify`, created by `task venv` —
+but step 5 deliberately does not, because a verification that borrows this repo's venv is not
+verifying what a user gets.
+
+```bash
+uv tool install specify-cli --from git+https://github.com/github/spec-kit.git
+specify --version
+```
+
 ```bash
 task release:check
 ```
 
 That runs both test suites, validates `bundle.yml` with Spec Kit's own validator, builds the
-bundle artifact, and builds the release archives. Do not continue past a red.
+bundle artifact, builds the release archives, and regenerates `catalog/`. Do not continue past
+a red.
+
+`tests/test_catalog.py` is the one to read the failure of carefully. It rebuilds every
+component from the working tree and compares the digest against the committed catalog, so it
+fails when content has changed under an unchanged version — the one defect that installs
+cleanly and leaves two different `0.1.0`s in the world.
 
 Confirm the version pins are what you intend to publish. `bundle.yml` pins each component and
 `tests/test_bundle.py::test_pinned_versions_match_the_components` fails if a pin has drifted
@@ -82,13 +98,20 @@ actually testing the wider range**, not because a user asked.
 
 ---
 
-## 2. Build the release archives
+## 2. Build the archives and generate the catalog
 
 ```bash
-task release:archives
+task release:catalog
 ```
 
-Produces `dist/<component>-<version>.zip` for all six components and `dist/SHA256SUMS`.
+That chains the whole build: `bundle:build` produces `dist/specup-<version>.zip`,
+`release:archives` produces `dist/<component>-<version>.zip` for all six components plus
+`dist/SHA256SUMS`, and `build_catalog.py` writes the four files under `catalog/`.
+
+`dist/SHA256SUMS` holds **seven** digests, not six. The bundle artifact is in there because
+`bundles.json` pins a `sha256` exactly as the component catalogs do; without it,
+`specify bundle install specup` fails with `Catalog entry 'specup' has no download_url;
+cannot resolve its manifest`, which names neither the digest nor the missing archive.
 
 Two properties matter:
 
@@ -102,12 +125,19 @@ Two properties matter:
 Verify reproducibility if you have any doubt:
 
 ```bash
-cp dist/SHA256SUMS /tmp/sums1 && task release:archives && diff /tmp/sums1 dist/SHA256SUMS
+cp dist/SHA256SUMS /tmp/sums1 && task --force release:archives && diff /tmp/sums1 dist/SHA256SUMS
 ```
+
+`--force` is needed because the task is fingerprinted by `sources:` and will otherwise report
+itself up to date, which is exactly the wrong answer to the question you are asking.
 
 ---
 
 ## 3. Cut the GitHub release
+
+The assets go up before the catalog does. Step 2 has already generated `catalog/` against the
+URLs this step creates, but those files stay uncommitted until step 4 — a catalog on `main`
+pointing at assets that do not exist yet is live and broken.
 
 ```bash
 VERSION=0.1.0
@@ -129,101 +159,83 @@ correctly and will still look like an outage.
 
 ---
 
-## 4. Generate the catalog files
+## 4. Publish the catalog files
 
-Four JSON files, one per primitive, committed to the repo under `catalog/` and served over
-HTTPS from `raw.githubusercontent.com`.
+Four JSON files, one per primitive, committed under `catalog/` and served over HTTPS from
+`raw.githubusercontent.com`. They are **generated** by `tools/build_catalog.py` — do not
+hand-edit them, and do not hand-copy a digest.
 
-| File | Root key | Consumed by |
-|---|---|---|
-| `catalog/extensions.json` | `extensions` | `specify extension add` |
-| `catalog/presets.json` | `presets` | `specify preset add` |
-| `catalog/workflows.json` | `workflows` | `specify workflow add` |
-| `catalog/bundles.json` | `bundles` | `specify bundle install` |
+| File | Root key | Archive URL key | Consumed by |
+|---|---|---|---|
+| `catalog/extensions.json` | `extensions` | `download_url` | `specify extension add` |
+| `catalog/presets.json` | `presets` | `download_url` | `specify preset add` |
+| `catalog/workflows.json` | `workflows` | **`url`** | `specify workflow add` |
+| `catalog/bundles.json` | `bundles` | `download_url` | `specify bundle install` |
 
-**Take the `sha256` values from `dist/SHA256SUMS`. Never type one by hand.** The digest in the
-catalog must be the digest of the asset actually attached to the release; if they diverge,
-every install fails at the integrity check.
+**The workflow catalog is the odd one out.** `workflows/_commands.py:2224` reads
+`info.get("url")`, and nothing falls back to `download_url`. A workflow entry written like the
+other three fails with `Workflow 'openup-inception' does not have an install URL in the
+catalog` while the file visibly contains a URL. The generator handles this; a hand-edit will
+not. `tests/test_catalog.py::test_each_kind_uses_the_url_key_its_installer_actually_reads`
+locks it in.
+
+The enclosing key **is** the authoritative id — an entry whose inner `id` disagrees with its
+key is rejected, so a malformed catalog cannot advertise one id and serve another.
 
 `sha256` is technically optional — `verify_archive_sha256` skips a `None` — and omitting it is
 indefensible. It is verified *after* download, so it catches a swapped or corrupted release
-asset even though the transport was HTTPS.
+asset even though the transport was HTTPS. The generator refuses to emit an entry without one.
 
-### `catalog/extensions.json`
+Push the catalog **after** step 3, never before. The digests point at release assets; a
+catalog on `main` whose assets do not exist yet is a live catalog that fails every install.
 
-```json
-{
-  "schema_version": "1.0",
-  "updated_at": "2026-09-12T00:00:00Z",
-  "catalog_url": "https://raw.githubusercontent.com/<owner>/specup/main/catalog/extensions.json",
-  "extensions": {
-    "openup": {
-      "id": "openup",
-      "name": "OpenUP Governed Lifecycle",
-      "version": "0.1.0",
-      "description": "Adds the OpenUP lifecycle to Spec Kit: phases, iterations, a seven-level WBS, an executable risk register, bi-directional traceability, and machine-checkable milestone gates.",
-      "author": "Aniket Gore",
-      "repository": "https://github.com/<owner>/specup",
-      "license": "MIT",
-      "category": "process",
-      "effect": "read-write",
-      "download_url": "https://github.com/<owner>/specup/releases/download/v0.1.0/openup-0.1.0.zip",
-      "sha256": "<from dist/SHA256SUMS>",
-      "requires": { "speckit_version": ">=1.0.0,<2.0.0" },
-      "provides": { "commands": 9, "hooks": 4 },
-      "tags": ["governance", "openup", "lifecycle", "traceability"],
-      "verified": false
-    }
-  }
-}
-```
-
-`presets.json` and `workflows.json` follow the same shape under their own root key. The
-enclosing key **is** the authoritative id — an entry whose inner `id` disagrees with its key is
-rejected, so a malformed catalog cannot advertise one id and serve another.
-
-### `catalog/bundles.json`
-
-This is the file that makes `specify bundle install specup` work. Its entry mirrors
-`bundles/specup/bundle.yml`; the components are resolved from the three catalogs above.
-
-```json
-{
-  "schema_version": "1.0",
-  "bundles": {
-    "specup": {
-      "id": "specup",
-      "name": "SpecUP — OpenUP Governed Lifecycle",
-      "version": "0.1.0",
-      "role": "governance",
-      "description": "The full OpenUP governance stack: extension, preset, and four phase workflows whose gates halt a run on a failing verdict.",
-      "author": "Aniket Gore",
-      "license": "MIT",
-      "tags": ["governance", "openup", "lifecycle", "traceability", "quality-gates"]
-    }
-  }
-}
+```bash
+git add catalog/ && git commit -m "Publish the SpecUP $VERSION catalog"
+git push origin main
 ```
 
 ---
 
-## 5. Publish and verify from a clean project
+## 5. Verify from a clean project
 
-Push the catalog files, then verify as a **user would**, in a throwaway project — not in this
-repo, where local paths would mask a broken catalog.
+Verify as a **user would**, in a throwaway project — not in this repo, where local paths would
+mask a broken catalog.
+
+**The four `catalog add` commands do not take the same flags.** This is the second thing that
+costs an afternoon, because three of the four reject `--policy` outright and the fourth
+requires it to install:
+
+| Primitive | Required | To make it installable | Priority flag |
+|---|---|---|---|
+| extension | `--name` | `--install-allowed` | `--priority` |
+| preset | `--name` | `--install-allowed` | `--priority` |
+| workflow | — (`--name` optional) | nothing — it installs by default | none |
+| bundle | — | `--policy install-allowed` (the default) | `--priority` |
+
+Omitting `--install-allowed` on the first two is the quiet failure: the catalog registers,
+`search` finds the component, and `add` refuses with *"is from a discovery-only catalog"*.
 
 ```bash
 mkdir /tmp/specup-verify && cd /tmp/specup-verify
 specify init --here --integration claude
 
-BASE=https://raw.githubusercontent.com/<owner>/specup/main/catalog
-specify extension catalog add $BASE/extensions.json --policy install-allowed --priority 0
-specify preset    catalog add $BASE/presets.json    --policy install-allowed --priority 0
-specify workflow  catalog add $BASE/workflows.json  --policy install-allowed --priority 0
+BASE=https://raw.githubusercontent.com/anvigo12/specup/main/catalog
+specify extension catalog add $BASE/extensions.json --name specup --install-allowed --priority 0
+specify preset    catalog add $BASE/presets.json    --name specup --install-allowed --priority 0
+specify workflow  catalog add $BASE/workflows.json  --name specup
 specify bundle    catalog add $BASE/bundles.json    --policy install-allowed --priority 0
 
 specify bundle install specup
 python3 -m pip install -r .specify/extensions/openup/requirements.txt
+```
+
+### If an install fails right after you pushed a catalog fix
+
+Clear the caches before believing the error. Each primitive caches its catalog JSON for about
+an hour, and a stale cache is indistinguishable from a broken catalog:
+
+```bash
+rm -rf .specify/extensions/.cache .specify/presets/.cache .specify/workflows/.cache
 ```
 
 Then confirm all four layers actually landed:
@@ -254,17 +266,26 @@ resolving. A correct catalog install reports six.
 
 ---
 
-## 6. Retire the development installer
+## 6. Demote the development installer
 
-Once step 5 passes from a clean project:
+Once step 5 passes from a clean project, the catalog is the install route and the docs must
+say so:
 
-1. Delete `bundles/specup/install.py` and its two tests in `tests/test_bundle.py`
-   (`test_installer_reads_the_manifest_rather_than_restating_it`,
-   `test_installer_documents_the_zero_component_record`).
-2. Replace the install sections in `README.md` and `bundles/specup/README.md` with the
-   `catalog add` + `bundle install specup` sequence.
-3. Drop the "specify bundle install cannot install this bundle" bullet from the README's
-   Limitations — it stops being true the moment the catalog is live.
+1. Lead with `catalog add` + `bundle install specup` in `README.md` and
+   `bundles/specup/README.md`.
+2. Drop the "specify bundle install cannot install this bundle" bullet from the README's
+   Limitations. It stops being true the moment the catalog is live, and leaving it there
+   tells users the supported route does not work.
+
+**Keep `bundles/specup/install.py`.** An earlier draft of this runbook said to delete it, and
+that is wrong for two reasons. It is the only way to install an unreleased working tree, which
+is what anyone developing SpecUP needs and what `task install PROJECT=…` calls. And it is the
+only offline route — the catalog path needs network access to `raw.githubusercontent.com` and
+`github.com`, which some environments do not have.
+
+Its docstring does need rewriting: it currently argues that catalog installation is impossible,
+which the catalog itself disproves. The honest version is "this installs from a working tree;
+`specify bundle install specup` installs a release".
 
 ---
 
@@ -292,8 +313,15 @@ A bad release is recoverable because nothing is mutated in place:
 | Asset is fine, digest is wrong | Fix the `sha256` in the catalog and commit. Never re-upload the asset. |
 | Version should never have shipped | `gh release delete v<x>` **and** revert the catalog entry. A catalog pointing at a deleted asset fails downloads with no useful message. |
 
-Users can force a refresh past the cache with `specify extension update` or by clearing
-`.specify/extensions/.cache/`.
+Users can force a refresh past the cache with `specify extension update` or by clearing the
+per-primitive cache directories:
+
+```bash
+rm -rf .specify/extensions/.cache .specify/presets/.cache .specify/workflows/.cache
+```
+
+The TTL is about an hour. Until it expires, a fixed catalog and a broken one behave
+identically, so clear the cache before diagnosing anything — including during step 5.
 
 ---
 

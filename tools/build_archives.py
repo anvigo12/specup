@@ -15,6 +15,13 @@ a tampered artifact.
 
 The component list is read from bundles/specup/bundle.yml rather than restated, so
 a component added to the bundle cannot be forgotten here.
+
+The bundle artifact itself is digested too, and is NOT built here. `specify bundle
+build` produces it, because the catalog resolves a bundle entry by downloading that
+exact archive and reading the manifest inside it. Hashing it here rather than in the
+bundler keeps one file — SHA256SUMS — as the single list every catalog `sha256`
+field is copied from, which is the property that makes `tools/build_catalog.py`
+possible at all.
 """
 
 from __future__ import annotations
@@ -93,7 +100,8 @@ def main() -> int:
     out_dir = (REPO_ROOT / args.out).resolve() if not os.path.isabs(args.out) else pathlib.Path(args.out)
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    provides = (yaml.safe_load(MANIFEST.read_text()) or {}).get("provides", {})
+    manifest = yaml.safe_load(MANIFEST.read_text()) or {}
+    provides = manifest.get("provides", {})
     sums: list[str] = []
     failures: list[str] = []
 
@@ -109,6 +117,28 @@ def main() -> int:
             sums.append(f"{digest}  {target.name}")
             print(f"  {target.name:<38} {count:>3} files  {digest[:16]}…")
 
+    # The bundle artifact. Built by `specify bundle build`, not here, but digested here
+    # because a catalog bundle entry needs `download_url` + `sha256` exactly like a
+    # component entry does -- and a missing digest there is the failure that looks like a
+    # broken catalog: `specify bundle install specup` reports "has no download_url; cannot
+    # resolve its manifest" and names nothing about why.
+    bundle = manifest.get("bundle") or {}
+    bundle_id, bundle_version = bundle.get("id"), bundle.get("version")
+    bundle_archive = out_dir / f"{bundle_id}-{bundle_version}.zip"
+    if bundle_archive.is_file():
+        digest = hashlib.sha256(bundle_archive.read_bytes()).hexdigest()
+        with zipfile.ZipFile(bundle_archive) as archive:
+            count = len(archive.namelist())
+        sums.append(f"{digest}  {bundle_archive.name}")
+        print(f"  {bundle_archive.name:<38} {count:>3} files  {digest[:16]}…  (bundle)")
+    else:
+        failures.append(
+            f"bundle artifact {bundle_archive.name} is missing from {out_dir}. Build it "
+            f"first:\n    specify bundle build --path bundles/specup --output {args.out}\n"
+            f"  Without it the catalog's bundles.json carries no sha256, and "
+            f"`specify bundle install {bundle_id}` fails on a manifest it cannot resolve."
+        )
+
     if failures:
         for failure in failures:
             print(f"error: {failure}", file=sys.stderr)
@@ -118,7 +148,7 @@ def main() -> int:
     sums_path.write_text("\n".join(sums) + "\n")
     print(f"\n{len(sums)} archive(s) -> {out_dir}")
     print(f"digests          -> {sums_path}")
-    print("\nThese digests go into the catalog `sha256` fields. See")
+    print("\nGenerate the catalog from these digests with `task release:catalog`. See")
     print("docs/runbooks/publishing-to-spec-kit.md.")
     return 0
 

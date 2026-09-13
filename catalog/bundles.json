@@ -1,0 +1,37 @@
+{
+  "schema_version": "1.0",
+  "catalog_url": "https://raw.githubusercontent.com/anvigo12/specup/main/catalog/bundles.json",
+  "bundles": {
+    "specup": {
+      "id": "specup",
+      "name": "SpecUP — OpenUP Governed Lifecycle",
+      "version": "0.1.0",
+      "role": "governance",
+      "description": "Installs the full OpenUP governance stack: the openup extension (validators, schemas, commands), the openup-governance preset, and the four phase workflows whose gates halt a run on a failing verdict.",
+      "author": "Aniket Gore",
+      "license": "MIT",
+      "download_url": "https://github.com/anvigo12/specup/releases/download/v0.1.0/specup-0.1.0.zip",
+      "sha256": "09b757fe2565255b7a460af6adc0be237307d4312403e9ee963e640e84f67532",
+      "requires": {
+        "speckit_version": ">=1.0.0,<2.0.0"
+      },
+      "provides": {
+        "extensions": 1,
+        "presets": 1,
+        "steps": 0,
+        "workflows": 4
+      },
+      "verified": false,
+      "repository": "https://github.com/anvigo12/specup",
+      "tags": [
+        "governance",
+        "openup",
+        "lifecycle",
+        "traceability",
+        "risk-management",
+        "wbs",
+        "quality-gates"
+      ]
+    }
+  }
+}

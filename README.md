@@ -272,6 +272,30 @@ all: people follow the document while the machine applies the code. `approval-ma
 `change-control.md` are the exceptions — who may approve what is a decision about your
 organisation, so those are authored from templates and never generated.
 
+### Three standards ship as binding rules
+
+`init_openup.py` seeds three more governance documents, and these are neither generated nor
+organisational. They come from published specifications, and they bind the agent through the
+root `AGENTS.md` and Principle VIII of the constitution addendum:
+
+| Document | Binds | Standard |
+|---|---|---|
+| `.specify/governance/language-rules.md` | every governed document | ASD-STE100 Simplified Technical English |
+| `.specify/governance/coding-rules.md` | every change to code | Railway Oriented Programming, RFC 9457 problem details |
+| `.specify/governance/security-practices.md` | design, code, and the security gate evidence | the rules the security review applies |
+
+The first two close a gap the structural checks cannot reach. A requirement written in a
+40-word sentence with two readings still registers, still traces, and still passes every
+check, while the implementation, the test and the gate each answer a different question. A
+failure thrown as an exception carries no type and no id, so it cannot be bound to an
+acceptance criterion or counted as evidence. Both are the same defect — meaning left in
+someone's head — and neither is visible to a validator.
+
+**None of the three is machine-checked.** They are enforced at review, each says so in its own
+closing section, and an agent's claim to have followed them is `asserted`. Adding a checker
+would be a real feature; pretending one exists would be the exact defect these documents are
+about.
+
 §65 says *"Do not manually maintain traceability documents."* Asking an agent to transcribe
 YAML into Markdown is still manual maintenance, with an extra failure mode: it is
 non-deterministic, every regeneration is a fresh diff, and nothing stops it from quietly
@@ -365,15 +389,18 @@ an unwrapped command, and `specify preset remove` left nothing behind.
 ```
 specup.md                          the original design document (unchanged)
 extensions/openup/
-  extension.yml                    manifest: 9 commands, 7 templates, 8 scripts
+  extension.yml                    manifest: 9 commands, 15 templates, 15 scripts
   schemas/                         ID-GRAMMAR.md + 4 JSON Schemas
-  scripts/python/                  the validators (~2,500 lines)
-  templates/                       starter WBS, risk, traceability, vision, index
+  scripts/python/                  the validators (~3,900 lines)
+  templates/                       starter WBS, risk, traceability, vision, index,
+                                   the three binding standards, 6 capability contracts
   openup-config.yml                thresholds, perimeter, gate definitions
 presets/openup-governance/         4 append addenda + 2 wrap overlays
 workflows/openup-{phase}/          the four phase workflows
 bundles/specup/                    bundle.yml + the local installer
-tests/                             148 tests + fixtures
+catalog/                           the four published catalog documents (generated)
+tools/                             archive + catalog generators
+tests/                             248 tests + fixtures
 ```
 
 ---
@@ -478,6 +505,13 @@ evidence fails two.
   human can. The only real anchor is `approval.commit` pointing at a signed commit, verified
   against git, which is not implemented. Read `approved` as "someone took accountability under
   this name", never as "a human checked this".
+- **The three binding standards are unenforced by design, for now.** `language-rules.md`,
+  `coding-rules.md` and `security-practices.md` are prompt-level rules: the root `AGENTS.md`
+  and Principle VIII of the constitution bind an agent to them, and a human reviewer is the
+  only thing that checks. Parts of all three are mechanically decidable — sentence length, the
+  non-approved word table, `application/problem+json` on every failure response, the RFC 9457
+  member set — and a validator over that subset is the obvious next increment. It is not
+  written, so do not read a passing gate as evidence of conformance to any of them.
 - **No CI enforcement yet.** The validators are CI-ready by construction — JSON out, exit
   codes — but no pipeline is authored (§62–63).
 - **`python3` in shell steps.** Windows hosts normally have `python`; adjust the `run:` lines

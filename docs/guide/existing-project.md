@@ -69,6 +69,29 @@ a `.specify/`.
 git add -A && git commit -m "Add SpecUP governance scaffolding (no behaviour change)"
 ```
 
+### The three standards arrive now, and apply forward only
+
+That commit brings in `.specify/governance/language-rules.md`, `coding-rules.md` and
+`security-practices.md`. They bind the agent through the root `AGENTS.md` and Principle VIII
+of the constitution, so from here an agent writing a new requirement or a new failure path is
+held to them.
+
+**They are not a backlog.** Nothing in an existing codebase becomes non-conformant by
+installing SpecUP, and rewriting existing prose into Simplified Technical English or
+converting a working exception-based codebase to `Result` types is not adoption work — it is
+a rewrite wearing adoption's clothes, and it is how a governance rollout gets cancelled.
+
+Apply them to what you touch:
+
+- a requirement you write today follows `language-rules.md`;
+- a new endpoint declares RFC 9457 failure responses;
+- a module you are already rewriting moves to the failure track.
+
+If the gap between the standard and the codebase is large enough to matter, that is a risk —
+register it with an owner, and let the mitigation be scheduled work rather than a standing
+sense of guilt. Amending a standard to match what you actually do is also legitimate, and is a
+change-control decision rather than an edit.
+
 Nothing is enforced yet. Do not run a workflow.
 
 ---

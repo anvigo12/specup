@@ -188,7 +188,7 @@ state.
 ```
 .specify/
 ├── lifecycle/        vision.md, stakeholders.md, index.md
-├── governance/       approvals and sign-off records
+├── governance/       approvals, sign-off records, and the three binding standards
 ├── architecture/     ADRs and the architecture baseline
 ├── wbs/wbs.yaml                        the work breakdown structure
 ├── risks/risk-register.yaml            the risk register

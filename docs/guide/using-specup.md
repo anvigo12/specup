@@ -168,13 +168,14 @@ Exit `1` is the correct result on a fresh project — an empty plan is not a val
 python3 .specify/extensions/openup/scripts/python/init_openup.py --program "My Product"
 ```
 
-This creates seven directories and seeds eleven authored files plus six capability contracts
+This creates seven directories and seeds fourteen authored files plus six capability contracts
 and an `index.md` per governed directory:
 
 ```
 .specify/
 ├── lifecycle/        vision.md, stakeholders.md, index.md
-├── governance/       change-control.md, approval-matrix.md, index.md
+├── governance/       change-control.md, approval-matrix.md, index.md,
+│                     language-rules.md, coding-rules.md, security-practices.md
 ├── architecture/     index.md
 ├── wbs/              wbs.yaml, index.md
 ├── risks/            risk-register.yaml, index.md
@@ -208,6 +209,44 @@ the machine applies the code. Generating them makes disagreement impossible.
 `approval-matrix.md` and `change-control.md` are the deliberate exceptions. Who may approve
 what is a decision about your organisation, and no validator can recompute it — so those are
 authored from templates and never generated.
+
+### The three binding standards
+
+`init_openup.py` also seeds three standards, and they are a different kind of document again.
+They are not generated, because no code decides them; and they are not organisational
+choices, because they come from published specifications.
+
+| Document | Binds | Standard |
+|---|---|---|
+| `.specify/governance/language-rules.md` | every governed document | ASD-STE100 Simplified Technical English |
+| `.specify/governance/coding-rules.md` | every change to code | Railway Oriented Programming, RFC 9457 problem details |
+| `.specify/governance/security-practices.md` | design, code, and the security gate evidence | the rules the security review applies |
+
+They are binding in the same sense as *"Resolve, or stop — never infer"*: the root
+`AGENTS.md` names all three, and the constitution addendum carries them as Principle VIII, so
+an agent reading its operating contract is told to obey them. **No validator checks any of
+them.** Conformance is established at review, and an agent's report that it followed them is
+`asserted` — the same label, carrying the same weight, as any other unverified claim.
+
+Two of the three are worth reading before you write anything:
+
+- `language-rules.md` exists because a requirement two people read differently still
+  registers, still traces, and still passes every structural check, while the implementation,
+  the test and the gate each answer a different question. Nothing downstream can detect that.
+- `coding-rules.md` exists because an exception carrying a string has no type, no id, and no
+  link to the requirement that anticipated it — so a failure mode raised that way cannot be
+  covered by an acceptance criterion or counted as evidence at a gate. Give the failure an
+  RFC 9457 `type` URI and it becomes an artifact the graph can see.
+
+`security-practices.md` earns its place differently. Two gate conditions —
+`security_review_complete` and `security_validation_passed` — read a JSON record and check
+that it says `passed`. Neither knows what was reviewed, and the required shape of those two
+records was documented nowhere else. That file is the standard the reviewer applies and the
+schema the records must match.
+
+A project may amend any of the three. It is a governance decision under
+`change-control.md`, not an edit — which is the point of seeding them into the repository
+rather than reading them out of the installed extension.
 
 ### Commit before writing anything into it
 
@@ -1658,6 +1697,13 @@ thing it was built to prevent.
   evidence.
 - **An approval binds content, not a human.** See [§5](#5-provenance-the-part-that-makes-the-rest-mean-anything).
   The only real anchor is a signed commit, and verifying one is not implemented.
+- **The three binding standards are checked by people, not by code.** `language-rules.md`,
+  `coding-rules.md` and `security-practices.md` bind an agent through the root `AGENTS.md` and
+  Principle VIII of the constitution, and no validator reads a sentence or a source file.
+  Useful parts of all three are mechanically decidable — sentence length, the non-approved
+  word table, `application/problem+json` on every failure response, the RFC 9457 member set —
+  and a checker over that subset is the obvious next increment. Until it exists, a green audit
+  says nothing about conformance to any of them.
 - **No CI enforcement.** The validators are CI-ready by construction — JSON out, exit codes —
   but no pipeline is authored.
 - **No commit-trailer validation and no pre-commit hook.** Nothing forces a change through

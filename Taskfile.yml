@@ -93,7 +93,11 @@ tasks:
 
   release:archives:
     desc: Build reproducible component archives and their SHA-256 digests
-    deps: [bundle:validate]
+    # bundle:build, not just bundle:validate. build_archives.py digests the bundle
+    # artifact as well as the six components, because bundles.json needs a sha256
+    # exactly as the component catalogs do -- and it refuses to write a partial
+    # SHA256SUMS rather than let build_catalog.py emit an entry with no digest.
+    deps: [bundle:build]
     cmds:
       - mkdir -p {{.DIST}}
       - python3 tools/build_archives.py --out {{.DIST}}
@@ -105,6 +109,20 @@ tasks:
     generates:
       - '{{.DIST}}/SHA256SUMS'
 
+  release:catalog:
+    desc: Generate catalog/*.json from the manifests and the built digests
+    deps: [release:archives]
+    cmds:
+      - python3 tools/build_catalog.py --dist {{.DIST}} --out catalog
+    sources:
+      - '{{.DIST}}/SHA256SUMS'
+      - bundles/specup/bundle.yml
+      - extensions/openup/extension.yml
+      - presets/openup-governance/preset.yml
+      - workflows/*/workflow.yml
+    generates:
+      - catalog/*.json
+
   release:check:
     desc: Everything that must be green before tagging a release
     cmds:
@@ -112,6 +130,7 @@ tasks:
       - task: bundle:validate
       - task: bundle:build
       - task: release:archives
+      - task: release:catalog
       - echo ""
       - echo "Release candidate is green. Next -> docs/runbooks/publishing-to-spec-kit.md"
 

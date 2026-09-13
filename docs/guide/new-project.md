@@ -66,7 +66,8 @@ Creates:
 ```
 .specify/
 ├── lifecycle/      vision.md, stakeholders.md, index.md
-├── governance/     approval records
+├── governance/     approval records, language-rules.md, coding-rules.md,
+│                   security-practices.md
 ├── architecture/   ADRs and the baseline
 ├── wbs/wbs.yaml
 ├── risks/risk-register.yaml

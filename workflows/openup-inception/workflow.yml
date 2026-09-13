@@ -4,12 +4,16 @@ workflow:
   id: "openup-inception"
   name: "OpenUP Inception"
   version: "0.1.0"
-  author: "SpecUP"
+  author: "Aniket Gore"
+  license: "MIT"
+  repository: "https://github.com/anvigo12/specup"
   description: "Establish intent, ownership, scope and initial risk, then hold the Lifecycle Objectives milestone against evidence."
 
 requires:
-  # 0.8.5 is the first release that resolves integration "auto" engine-side.
-  speckit_version: ">=0.8.5"
+  # 1.0.6 is the only Spec Kit this workflow has been run against. 0.8.5 was the first
+  # release that resolves integration "auto" engine-side, but nothing here was ever
+  # exercised on it, so the floor states what was tested rather than what might work.
+  speckit_version: ">=1.0.0,<2.0.0"
 
 # SECURITY: no `{{ inputs.* }}` value appears inside any `run:` field in this file.
 # Shell steps interpolate expressions as raw text with no quoting or escaping, so a value

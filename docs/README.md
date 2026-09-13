@@ -7,6 +7,7 @@
 | ↳ [New project](guide/new-project.md) | Greenfield adoption, governed from the first commit |
 | ↳ [Existing project](guide/existing-project.md) | Brownfield adoption, where intent has to be recovered |
 | **[Runbook: publishing](runbooks/publishing-to-spec-kit.md)** | Cutting a release and getting `specify bundle install specup` to work |
+| ↳ [Release notes 0.1.0](runbooks/release-notes-0.1.0.md) | What ships, what is enforced, what is not |
 | **[Dev: Taskfile](dev/taskfile.md)** | The task runner, and the boundary it must not cross |
 
 Component-level docs live next to the components:

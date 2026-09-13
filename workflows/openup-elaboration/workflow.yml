@@ -4,11 +4,14 @@ workflow:
   id: "openup-elaboration"
   name: "OpenUP Elaboration"
   version: "0.1.0"
-  author: "SpecUP"
+  author: "Aniket Gore"
+  license: "MIT"
+  repository: "https://github.com/anvigo12/specup"
   description: "Establish an executable architecture and retire the highest-exposure risks, then hold the Lifecycle Architecture milestone against evidence."
 
 requires:
-  speckit_version: ">=0.8.5"
+  # See the note in openup-inception/workflow.yml.
+  speckit_version: ">=1.0.0,<2.0.0"
 
 # SECURITY: no `{{ inputs.* }}` value appears inside any `run:` field. See the note in
 # openup-inception/workflow.yml.

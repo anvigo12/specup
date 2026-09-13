@@ -4,11 +4,14 @@ workflow:
   id: "openup-construction"
   name: "OpenUP Construction Iteration"
   version: "0.1.0"
-  author: "SpecUP"
+  author: "Aniket Gore"
+  license: "MIT"
+  repository: "https://github.com/anvigo12/specup"
   description: "Run one Construction iteration: select ready work risk-first, implement it task by task, verify, re-trace, then hold the iteration gate."
 
 requires:
-  speckit_version: ">=0.8.5"
+  # See the note in openup-inception/workflow.yml.
+  speckit_version: ">=1.0.0,<2.0.0"
 
 # SECURITY: no `{{ inputs.* }}` value appears inside any `run:` field. See the note in
 # openup-inception/workflow.yml.

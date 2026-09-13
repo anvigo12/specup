@@ -4,11 +4,14 @@ workflow:
   id: "openup-transition"
   name: "OpenUP Transition"
   version: "0.1.0"
-  author: "SpecUP"
+  author: "Aniket Gore"
+  license: "MIT"
+  repository: "https://github.com/anvigo12/specup"
   description: "Validate deployment, operations, security and acceptance, then hold the Product Release milestone against evidence."
 
 requires:
-  speckit_version: ">=0.8.5"
+  # See the note in openup-inception/workflow.yml.
+  speckit_version: ">=1.0.0,<2.0.0"
 
 # SECURITY: no `{{ inputs.* }}` value appears inside any `run:` field. See the note in
 # openup-inception/workflow.yml.
