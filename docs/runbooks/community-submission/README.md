@@ -48,6 +48,25 @@ Titles:
 A version bump or a repair is an update and needs the same flow — there is no lighter path for
 changing an entry that already exists.
 
+## What was filed
+
+All three were filed against `github/spec-kit` on 2026-09-13, from the 0.1.0 release:
+
+| Issue | Submission | Body |
+|---|---|---|
+| [#4566](https://github.com/github/spec-kit/issues/4566) | `[Bundle]` specup | [`bundle-specup.md`](bundle-specup.md) |
+| [#4567](https://github.com/github/spec-kit/issues/4567) | `[Extension]` openup | [`extension-openup.md`](extension-openup.md) |
+| [#4568](https://github.com/github/spec-kit/issues/4568) | `[Preset]` openup-governance | [`preset-openup-governance.md`](preset-openup-governance.md) |
+
+Each posted body round-trips byte-identical to the file here, apart from one trailing newline
+GitHub appends — 22, 23 and 18 `###` headings respectively, every required box `[x]`, none left
+unticked.
+
+All three are open and **unlabelled**, which is the correct state. The validation workflow does
+not start until a maintainer applies the label during triage, and the catalog pull request is
+opened by that workflow rather than by us. There is nothing to do in the meantime except answer
+questions on the issues.
+
 ## What a listing does and does not buy
 
 Discovery only. The community catalogs are `install_allowed: false`, so a user who finds

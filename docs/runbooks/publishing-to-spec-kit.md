@@ -380,6 +380,11 @@ is exactly the pull request the policy above rejects.
 filled from the release, and records which claims were verified by running them. The figures are
 version-stamped; re-derive them at each update instead of resubmitting the previous release's.
 
+Each file *is* the issue body, in the shape GitHub renders an issue form into — `### <field
+label>` then the value, and literal `- [x]` boxes. The automation parses it that way, so a
+free-form body will not validate. File with `gh issue create --body-file`, and read the filed
+0.1.0 issues off that README's *What was filed* table.
+
 ### Pin `download_url` to a tag, never to `latest`
 
 CONTRIBUTING requires `…/releases/download/<tag>/…`. `catalog/*.json` is already generated that
