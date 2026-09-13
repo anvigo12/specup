@@ -7,7 +7,9 @@ validator that always returns PASS would satisfy it.
 
 from __future__ import annotations
 
+import pytest
 from conftest import assert_fails, failing
+from openup_model import GraphError
 
 
 # --------------------------------------------------------------------------
@@ -23,6 +25,102 @@ def test_good_fixture_passes_all_validators(project):
 
 def test_good_fixture_passes_the_architecture_gate(project):
     assert project.gate("GATE-LIFECYCLE_ARCHITECTURE").status == "PASS"
+
+
+# --------------------------------------------------------------------------
+# Store integrity — an id names exactly one thing (ID-GRAMMAR.md s1)
+# --------------------------------------------------------------------------
+#
+# These raise GraphError (exit 2) rather than failing a check, because a store declaring one
+# id twice does not describe a graph that breaks a rule — it describes no graph at all. The
+# loader has to discard one of the two to build anything, so every check downstream would be
+# computing over an arbitrary choice, and reporting THAT as a governance verdict would
+# misrepresent what was actually read.
+
+
+def test_duplicate_wbs_node_id_is_refused(project):
+    def add_a_second_copy(document):
+        original = next(n for n in document["nodes"] if n["id"] == "WBS-1.2.3.4.1.1.3")
+        document["nodes"].append({**original, "name": "A different task reusing the id"})
+
+    project.wbs(add_a_second_copy)
+    with pytest.raises(GraphError, match="duplicate WBS node WBS-1.2.3.4.1.1.3"):
+        project.run("validate_wbs")
+
+
+def test_duplicate_risk_id_is_refused(project):
+    def add_a_second_copy(document):
+        original = next(r for r in document["risks"] if r["id"] == "RISK-0007")
+        document["risks"].append({**original, "title": "A different risk reusing the id"})
+
+    project.risks(add_a_second_copy)
+    with pytest.raises(GraphError, match="duplicate risk RISK-0007"):
+        project.run("validate_risk")
+
+
+def test_duplicate_artifact_id_is_refused(project):
+    """The case that used to pass in silence.
+
+    Before this check the second entry simply replaced the first, so a graph could report
+    100% coverage while the requirement everything pointed at had been quietly swapped for a
+    DRAFT one with a different owner. Nothing in fourteen traceability checks noticed.
+    """
+    project.artifacts(lambda d: d["artifacts"].append({
+        "id": "REQ-AUTH-0014", "type": "requirement",
+        "title": "A different requirement that reused the id",
+        "status": "DRAFT", "owner": "someone-else"}))
+    with pytest.raises(GraphError, match="duplicate artifact REQ-AUTH-0014"):
+        project.run("validate_trace")
+
+
+def test_duplicate_artifact_id_across_feature_stores_names_both_files(project):
+    """Artifacts are the only store spanning several files, so the error must name both.
+
+    Two features independently reaching for the same number is the realistic collision, and
+    an error naming only the file it was caught in leaves the reader hunting for the other.
+    """
+    project.config(lambda c: c["artifacts"].update(
+        stores=[".specify/traceability/requirements.yaml", "specs/*/artifacts.yaml"]))
+    (project.root / "specs/001-auth/artifacts.yaml").write_text(
+        'schema_version: "1.0"\n'
+        "artifacts:\n"
+        "  - id: REQ-AUTH-0014\n"
+        "    type: requirement\n"
+        '    title: "A second feature reached for the same number"\n'
+        "    status: DRAFT\n"
+        "    owner: billing-team\n"
+    )
+    with pytest.raises(GraphError) as caught:
+        project.run("validate_trace")
+    assert "specs/001-auth/artifacts.yaml" in str(caught.value)
+    assert ".specify/traceability/requirements.yaml" in str(caught.value)
+
+
+def test_an_artifact_with_no_id_is_refused(project):
+    """Consistency with the WBS and risk stores, which always refused this.
+
+    A typo'd `id:` key used to drop the artifact out of the graph without a word — the same
+    silent data loss as a duplicate, wearing a different hat.
+    """
+    project.artifacts(lambda d: d["artifacts"].append({
+        "di": "REQ-AUTH-0099", "type": "requirement", "title": "Typo in the id key",
+        "status": "DRAFT", "owner": "someone"}))
+    with pytest.raises(GraphError, match=r"artifact with no id \('Typo in the id key'\)"):
+        project.run("validate_trace")
+
+
+def test_a_duplicate_id_is_exit_2_not_exit_1(project):
+    """A workflow branches on the difference.
+
+    Exit 2 takes the setup-fault path, exit 1 the governance path. Telling someone their
+    architecture milestone failed when the truth is a copy-pasted id would send them to fix
+    the wrong thing.
+    """
+    project.artifacts(lambda d: d["artifacts"].append({
+        "id": "REQ-AUTH-0014", "type": "requirement", "title": "Reused id",
+        "status": "DRAFT", "owner": "someone-else"}))
+    assert project.script_rc("validate_trace.py", "--json") == 2
+    assert project.script_rc("audit.py", "--json") == 2
 
 
 # --------------------------------------------------------------------------

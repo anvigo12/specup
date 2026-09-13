@@ -409,40 +409,73 @@ class Graph:
         except ValueError:
             return str(path)
 
+    def _register(self, store: dict[str, dict], declared_in: dict[str, str],
+                  identifier: str | None, item: dict, kind: str, rel: str) -> None:
+        """Add one item to a store, refusing a missing or duplicated id.
+
+        Both refusals are GraphError — exit 2, "cannot evaluate" — rather than a FAIL check,
+        and deliberately so. A store declaring `REQ-AUTH-0014` twice does not describe a graph
+        that violates a policy; it describes no graph at all, because every downstream check
+        would be computing over whichever of the two happened to load last. Reporting that as
+        a governance failure would claim the graph was read and found wanting, when the truth
+        is that the loader silently discarded half of what was written.
+
+        An id is a name, and two things cannot share one. This is the single place that holds
+        for all three stores: the WBS enforced it from the start while artifacts and risks
+        overwrote in silence, which meant the most-edited store in the system was the one
+        where a collision cost you a requirement and said nothing.
+        """
+        if not identifier:
+            # Name the entry by whatever it does carry. The commonest cause is a typo'd `id:`
+            # key, and "one of your 200 artifacts has no id" is not a finding anyone can act on.
+            hint = item.get("title") or item.get("name")
+            raise GraphError(f"{rel}: {kind} with no id" + (f" ({hint!r})" if hint else ""))
+        if identifier in store:
+            first = declared_in[identifier]
+            where = f"already declared in {first}" if first != rel else "declared twice here"
+            raise GraphError(
+                f"{rel}: duplicate {kind} {identifier} — {where}. An id names exactly one "
+                f"artifact for its whole life; supersede it, never reuse it."
+            )
+        declared_in[identifier] = rel
+        store[identifier] = item
+
     def _load_wbs(self) -> None:
         path = self.root / self.config["wbs"].get("store", ".specify/wbs/wbs.yaml")
         if not path.is_file():
             return
         self.wbs_doc = _load_yaml(path)
-        self.loaded_files.append(self._rel(path))
+        rel = self._rel(path)
+        self.loaded_files.append(rel)
+        declared_in: dict[str, str] = {}
         for node in self.wbs_doc.get("nodes", []) or []:
-            node_id = node.get("id")
-            if not node_id:
-                raise GraphError(f"{self._rel(path)}: a WBS node has no id")
-            if node_id in self.wbs:
-                raise GraphError(f"{self._rel(path)}: duplicate WBS node {node_id}")
-            self.wbs[node_id] = node
+            self._register(self.wbs, declared_in, node.get("id"), node, "WBS node", rel)
 
     def _load_risks(self) -> None:
         path = self.root / self.config["risk"].get("store", ".specify/risks/risk-register.yaml")
         if not path.is_file():
             return
-        self.loaded_files.append(self._rel(path))
+        rel = self._rel(path)
+        self.loaded_files.append(rel)
+        declared_in: dict[str, str] = {}
         for risk in _load_yaml(path).get("risks", []) or []:
-            risk_id = risk.get("id")
-            if not risk_id:
-                raise GraphError(f"{self._rel(path)}: a risk has no id")
-            self.risks[risk_id] = risk
+            self._register(self.risks, declared_in, risk.get("id"), risk, "risk", rel)
 
     def _load_artifacts(self) -> None:
+        # Artifacts are the only store that spans several files — specs/*/artifacts.yaml all
+        # merge into the same graph — so this map lives outside the loop. Two features
+        # independently reaching for REQ-AUTH-0001 is the natural collision here, not an
+        # exotic one, and an error naming only the second file leaves the reader hunting for
+        # the first.
+        declared_in: dict[str, str] = {}
         for path in expand_paths(self.root, self.config["artifacts"]["stores"]):
-            self.loaded_files.append(self._rel(path))
+            rel = self._rel(path)
+            self.loaded_files.append(rel)
             doc = _load_yaml(path)
             for artifact in doc.get("artifacts", []) or []:
-                artifact_id = artifact.get("id")
-                if artifact_id:
-                    artifact.setdefault("source", self._rel(path))
-                    self.artifacts[artifact_id] = artifact
+                artifact.setdefault("source", rel)
+                self._register(self.artifacts, declared_in, artifact.get("id"), artifact,
+                               "artifact", rel)
 
     def _load_edges(self) -> None:
         seen: dict[tuple[str, str, str], Edge] = {}

@@ -132,6 +132,15 @@ class Project:
             capture_output=True, text=True,
         )
 
+    def script_rc(self, name: str, *argv: str) -> int:
+        """Run a validator as a real process and return its exit code.
+
+        In-process `run()` surfaces a GraphError as an exception; only the process boundary
+        shows whether that becomes exit 2 rather than exit 1, which is the contract a
+        workflow's setup-fault branch actually reads.
+        """
+        return self._script(name, *argv).returncode
+
     def render_views(self) -> None:
         result = self._script("render_views.py", "--write")
         assert result.returncode == 0, f"render_views.py --write failed: {result.stderr}"

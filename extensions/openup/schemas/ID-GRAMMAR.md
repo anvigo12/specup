@@ -15,6 +15,13 @@ Markdown views in §47 depend on.
 Every governed artifact has exactly one ID. IDs are **stable for the life of the artifact** — they are
 the edges of the knowledge graph (§48), so renaming one breaks traceability. Supersede, never rename.
 
+**Uniqueness is enforced at load time, not merely asserted here.** All three stores refuse a repeated
+id with a `GraphError` — exit 2, "cannot evaluate", rather than a failing check. A store declaring one
+id twice does not describe a graph that violates a rule; it describes no graph at all, since the loader
+must discard one of the two to build anything and every check downstream would then run over an
+arbitrary choice. Nothing allocates IDs: they are authored, and the `<DOMAIN>` tag is what lets teams
+and per-feature `specs/*/artifacts.yaml` registries allocate ordinals independently without colliding.
+
 ### 1.1 Common tokens
 
 | Token | Pattern | Notes |
