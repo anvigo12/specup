@@ -16,6 +16,7 @@ Before changing anything:
    `.specify/extensions/openup/openup-config.yml` → `lifecycle`.
 5. Determine the applicable WBS node, its requirements, its risks, and its acceptance criteria.
 6. Read the applicable `skills/<activity>/SKILL.md`.
+7. Read the standards that bind the work you are about to do — see below.
 
 Step 3 is the whole point of the hierarchy: navigate
 `directory → AGENTS.md → index.md → the one artifact you need`, rather than loading the
@@ -38,6 +39,21 @@ The single rule this whole model rests on. When a reference does not resolve, st
 Do not invent the requirement, the criterion, or the risk that would have made the task
 coherent. An invented governing artifact is worse than a missing one: it looks like governance
 and checks nothing.
+
+## The binding standards
+
+Three documents under `.specify/governance/` are part of this contract, not advice. Read the
+one that applies before you produce the artifact it governs.
+
+| Document | Binds | Standard |
+|---|---|---|
+| `language-rules.md` | every governed document you write | ASD-STE100 Simplified Technical English |
+| `coding-rules.md` | every change to code | Railway Oriented Programming, RFC 9457 |
+| `security-practices.md` | design, code, and the security gate evidence | the rules the security review applies |
+
+None of the three is machine-checked. That does not make them optional — it makes the human
+reviewer the enforcement, and it means your report that you followed them is `asserted`, in
+exactly the sense the provenance vocabulary uses the word. Do not claim otherwise.
 
 ## Prohibited
 

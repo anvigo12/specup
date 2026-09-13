@@ -7,14 +7,17 @@ extension:
   description: "Adds the OpenUP lifecycle to Spec Kit: phases, iterations, a seven-level WBS, an executable risk register, bi-directional traceability, and machine-checkable milestone gates."
   category: "process"
   effect: "read-write"
-  author: "SpecUP"
-  repository: "https://github.com/specup/spec-kit-extension-openup"
+  author: "Aniket Gore"
+  repository: "https://github.com/anvigo12/specup"
   license: "MIT"
 
 requires:
-  # 0.9.0 is the first release whose bundle manifest can compose this extension with
-  # the openup-governance preset and the phase workflows as one unit.
-  speckit_version: ">=0.9.0"
+  # 1.0.6 is the only Spec Kit this has ever been run against, and the floor states what
+  # was exercised rather than what might work. An earlier floor (0.9.0 was the first
+  # release whose bundle manifest could compose this extension with the preset and the
+  # phase workflows) would be an untested claim, which is the exact defect the gates in
+  # this extension exist to reject. Widen it after testing the wider range, not before.
+  speckit_version: ">=1.0.0,<2.0.0"
   tools:
     - name: python
       version: ">=3.10"
@@ -102,6 +105,22 @@ provides:
     - name: openup-change-control
       file: templates/change-control-template.md
       description: "How a change to a baselined artifact is assessed, approved and absorbed"
+
+    # The three binding standards. They are prompt-level rules, enforced at review rather than
+    # by a validator, and each says so in its own closing section. They ship here so that
+    # every project installing this extension gets the same standard, instead of each one
+    # re-deciding what "good" means the first time an agent writes a requirement.
+    - name: openup-language-rules
+      file: templates/language-rules-template.md
+      description: "ASD-STE100 Simplified Technical English for every governed document"
+
+    - name: openup-coding-rules
+      file: templates/coding-rules-template.md
+      description: "Railway Oriented Programming, and RFC 9457 problem details at the boundary"
+
+    - name: openup-security-practices
+      file: templates/security-practices-template.md
+      description: "The standard the two security gate conditions are reviewed against"
 
     - name: openup-agents-root
       file: templates/agents-root-template.md

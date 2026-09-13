@@ -23,6 +23,7 @@ One sentence on what this scope covers.
 | Traceability | `.specify/traceability/traceability.yaml` | `traceability.md`, `coverage.md` |
 | Evidence | `.specify/evidence/` | — |
 | Governance | `openup-config.yml`, the validators | `definition-of-ready.md`, `definition-of-done.md`, `quality-gates.md` |
+| Standards | `.specify/governance/language-rules.md`, `coding-rules.md`, `security-practices.md` | — |
 
 Never edit a generated view. Regenerate them all:
 

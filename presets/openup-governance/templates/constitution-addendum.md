@@ -65,6 +65,29 @@ levels are seven levels of scope resolution, not seven levels of narrative. Do n
 decomposition to reach a level; do not hand-maintain a document that can be generated. If
 governance is making the work slower without making it safer, say so.
 
+### VIII. The language is governed, in prose and in code
+
+Meaning is not left to the reader. Three standards bind every artifact this repository
+produces, and they are published as documents under `.specify/governance/`:
+
+| Document | Binds | Standard |
+|---|---|---|
+| `language-rules.md` | every governed document | ASD-STE100 Simplified Technical English |
+| `coding-rules.md` | every change to code | Railway Oriented Programming, RFC 9457 problem details |
+| `security-practices.md` | design, code, and the security gate evidence | the rules the security review applies |
+
+The reason is the same one behind every other principle here. A requirement written in a
+40-word sentence with two readings still traces, still resolves, and still passes every
+structural check, while the implementation, the test and the gate each answer a different
+question — and no validator can see it. A failure thrown as an exception carries no type, no
+id, and no link to the requirement that anticipated it, so it cannot be covered by an
+acceptance criterion or counted as evidence. Both are the same defect: meaning that exists
+only in someone's head.
+
+These three are enforced at review rather than by a validator, and each says so plainly in its
+own closing section. An agent's report that it followed them is `asserted` — the same label,
+carrying the same weight, as any other unverified claim.
+
 ## Human Approval Boundaries
 
 The following may not be decided by an agent:

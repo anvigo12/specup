@@ -145,6 +145,81 @@ def test_every_script_on_disk_is_declared(manifest):
     )
 
 
+def test_every_top_level_template_on_disk_is_declared(manifest):
+    """The mirror of the script check. A template file nothing declares does not install,
+    so it is a document that exists in this repository and nowhere a user can reach.
+
+    Scoped to the top level: `templates/skills/*/SKILL.md` are copied by init_openup.py as a
+    directory, not declared one by one.
+    """
+    declared = {pathlib.Path(t["file"]).name for t in manifest["provides"].get("templates", [])}
+    on_disk = {p.name for p in (EXTENSION_DIR / "templates").glob("*.*") if p.is_file()}
+    assert on_disk == declared, (
+        f"templates/ and the manifest disagree: "
+        f"only on disk {sorted(on_disk - declared)}, only declared {sorted(declared - on_disk)}"
+    )
+
+
+# The three binding standards, and where each one lands in a project. Named here rather than
+# read out of init_openup.py, because the point of the test is to disagree with that file if
+# somebody drops an entry.
+STANDARDS = {
+    "language-rules-template.md": ".specify/governance/language-rules.md",
+    "coding-rules-template.md": ".specify/governance/coding-rules.md",
+    "security-practices-template.md": ".specify/governance/security-practices.md",
+}
+
+
+def test_the_binding_standards_are_seeded_into_the_project():
+    """A standard that ships in the extension but is never seeded is unreachable.
+
+    An agent is told to read `.specify/governance/coding-rules.md`. If init does not put it
+    there, the instruction resolves to nothing — which is the one failure mode this whole
+    model calls worse than having no rule at all.
+    """
+    import init_openup
+
+    for template, destination in STANDARDS.items():
+        assert init_openup.SEEDS.get(template) == destination, (
+            f"{template} must seed to {destination}; init_openup.SEEDS says "
+            f"{init_openup.SEEDS.get(template)!r}"
+        )
+        assert (EXTENSION_DIR / "templates" / template).is_file(), f"missing {template}"
+
+
+def test_the_binding_standards_are_actually_binding():
+    """Each standard is named by the contract that binds it, in the agent's own reading path.
+
+    A rule document nothing points at is decoration. The agent operating contract and the
+    constitution are the two places an agent is required to read, so a standard absent from
+    both is one no agent will ever open.
+    """
+    contract = (EXTENSION_DIR / "templates" / "agents-root-template.md").read_text()
+    constitution = (
+        REPO_ROOT / "presets" / "openup-governance" / "templates" / "constitution-addendum.md"
+    ).read_text()
+
+    for destination in STANDARDS.values():
+        name = pathlib.Path(destination).name
+        assert name in contract, f"agents-root-template.md never mentions {name}"
+        assert name in constitution, f"the constitution addendum never mentions {name}"
+
+
+def test_the_security_standard_documents_the_records_the_gate_reads():
+    """`security_review_complete` and `security_validation_passed` parse two JSON files and
+    check named fields. Those shapes were documented nowhere until this standard existed, so
+    a project could write a plausible record that fails the gate for reasons nobody can see.
+    """
+    text = (EXTENSION_DIR / "templates" / "security-practices-template.md").read_text()
+    for fragment in (
+        ".specify/evidence/security-review.json",
+        ".specify/evidence/security-validation.json",
+        "critical_findings",
+        '"status": "passed"',
+    ):
+        assert fragment in text, f"security-practices-template.md never states {fragment!r}"
+
+
 def test_commands_reference_scripts_at_their_installed_path(manifest):
     """Extension commands get no {SCRIPT} substitution, so the path written in the command
     must be the path the script actually installs to — and the same one a workflow shell

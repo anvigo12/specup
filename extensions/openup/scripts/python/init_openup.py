@@ -44,6 +44,13 @@ SEEDS = {
     "stakeholders-template.md": ".specify/lifecycle/stakeholders.md",
     "change-control-template.md": ".specify/governance/change-control.md",
     "approval-matrix-template.md": ".specify/governance/approval-matrix.md",
+    # The three standards the agent operating contract binds it to. Seeded rather than read
+    # out of the extension directory on purpose: a project may amend a rule, and a rule it
+    # cannot amend is one it will work around instead. The amendment is then a visible diff
+    # under change control, which is the outcome worth having.
+    "language-rules-template.md": ".specify/governance/language-rules.md",
+    "coding-rules-template.md": ".specify/governance/coding-rules.md",
+    "security-practices-template.md": ".specify/governance/security-practices.md",
     # s7: the operating contract. The nearest one wins, so a scoped file narrows the root.
     "agents-root-template.md": "AGENTS.md",
     "agents-specify-template.md": ".specify/AGENTS.md",

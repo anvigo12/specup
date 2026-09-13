@@ -59,6 +59,25 @@ the missing edges are the finding — report them rather than proceeding on a gr
 see its own consequences. Changing a baselined artifact is a change-control event; follow
 `.specify/governance/change-control.md`.
 
+### The standards that bind this change
+
+Read these before you write code. They are part of the operating contract, not advice:
+
+- **`.specify/governance/coding-rules.md`** — a function that can fail returns a `Result`, and
+  the failure travels as a value. Do not throw for an expected failure. A genuine
+  programmer-error abort is declared in place with `openup: escape — <reason>`. At an HTTP
+  boundary the failure becomes an RFC 9457 problem document carrying a stable `type` URI,
+  `title` and `status`.
+- **`.specify/governance/security-practices.md`** — deny by default, authorize against the
+  resource rather than trusting an id from the request, parse untrusted input into typed
+  values at the boundary, bound every size, and keep secrets, tokens and stack traces out of
+  logs and problem documents.
+- **`.specify/governance/language-rules.md`** — for every comment, commit message, evidence
+  record and report you write.
+
+If the task introduces a failure mode, it needs a problem `type` URI, an acceptance criterion,
+and a scenario. Code alone leaves a path no check in this repository can see.
+
 {CORE_TEMPLATE}
 
 ## OpenUP Post-Execution: Produce Evidence, Then Update the Graph

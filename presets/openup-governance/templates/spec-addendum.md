@@ -17,6 +17,26 @@ prose here are invisible to the validators and will surface as gaps at the next 
 A requirement that refines no business objective is either unnecessary or evidence of an
 undocumented objective. Say which; do not quietly leave it unlinked.
 
+## How Requirements Are Written
+
+Every requirement and criterion in this specification follows
+`.specify/governance/language-rules.md` — ASD-STE100 Simplified Technical English. The rules
+that bite hardest here:
+
+- One requirement per statement, and it must be testable. If you cannot name the observation
+  that would falsify it, it is not a requirement.
+- At most 25 words in a sentence. A requirement that will not fit is usually two requirements.
+- "Must" is an obligation and "can" is a possibility. Never write "should" in a requirement —
+  a reviewer cannot tell whether it binds.
+- Never write "and/or"; name which one, or name both. Never write "etc."; the items it hides
+  are the ones the implementer needed.
+- One word for one meaning, every time. A synonym introduced for variety reads as a new
+  concept.
+
+This is not a style preference. A requirement two people read differently still registers,
+still traces and still passes every structural check, while the implementation, the test and
+the gate each answer a different question.
+
 ## Acceptance Criteria
 
 Each requirement needs at least one acceptance criterion, registered as
@@ -36,6 +56,12 @@ If this feature exposes or consumes an API, register the contract as
 `CONTRACT-<DOMAIN>-nnnn` with the path to its OpenAPI or AsyncAPI file. Behavior and contract
 are separate questions: Gherkin asks whether the system does what the business expects, the
 contract asks whether the implementation conforms to the agreed interaction.
+
+**Specify the failure modes, not only the success path.** Per
+`.specify/governance/coding-rules.md`, every failure a client can observe has a stable RFC
+9457 `type` URI, and that URI is the name the requirement, the acceptance criterion, the
+scenario and the contract all use for it. A failure mode with no criterion is an untested
+path; a failure mode with no type URI cannot be referred to at all.
 
 ## What This Specification Must Not Do
 

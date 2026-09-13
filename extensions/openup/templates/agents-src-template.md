@@ -3,6 +3,22 @@
 > Scoped rules for implementation code (specup.md s7). The repository-root `AGENTS.md` applies
 > as well; this adds what is specific to changing code under governance.
 
+## The standards that bind code
+
+Read these before you write anything here. They are part of this contract:
+
+- **`.specify/governance/coding-rules.md`** — Railway Oriented Programming. A function that
+  can fail returns a `Result`; a failure is a value on the failure track, never an exception.
+  At an HTTP boundary that failure becomes an RFC 9457 problem document with a stable `type`
+  URI. An exception thrown for anything but a programmer error is a defect at review, and a
+  legitimate one is declared in place with `openup: escape — <reason>`.
+- **`.specify/governance/security-practices.md`** — deny by default, authorize at the
+  resource, parse untrusted input into typed values at the boundary, bound every size, and
+  keep secrets out of logs and out of problem documents.
+
+A new failure mode is not only code. It needs a problem `type`, an acceptance criterion, and a
+scenario — otherwise it is an untested path that no check in this repository can see.
+
 ## Before changing a file
 
 Every file inside the traceability perimeter must be reachable from a requirement

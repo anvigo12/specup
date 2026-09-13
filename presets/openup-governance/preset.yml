@@ -5,12 +5,13 @@ preset:
   name: "OpenUP Governance"
   version: "0.1.0"
   description: "Composes OpenUP lifecycle governance into Spec Kit's own constitution, spec, plan and tasks templates, and wraps /tasks and /implement with the governed execution contract."
-  author: "SpecUP"
-  repository: "https://github.com/specup/spec-kit-preset-openup-governance"
+  author: "Aniket Gore"
+  repository: "https://github.com/anvigo12/specup"
   license: "MIT"
 
 requires:
-  speckit_version: ">=0.9.0"
+  # Matches the extension and the bundle: 1.0.6 is the only version exercised.
+  speckit_version: ">=1.0.0,<2.0.0"
 
 # This preset changes Spec Kit's OWN artifacts. It deliberately ships no WBS, risk or
 # traceability templates: those belong to the openup extension, and duplicating them here

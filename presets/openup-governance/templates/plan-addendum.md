@@ -53,6 +53,30 @@ machine can answer.
 A contract change without a corresponding requirement change is a silent interface break.
 State which requirement drove it.
 
+Every operation declares its failure responses, and each one is
+`application/problem+json` carrying `type`, `title` and `status`, per
+`.specify/governance/coding-rules.md`. An operation with only a 2xx response has not been
+specified — it has been sketched. A `type` URI is part of the published interface, so changing
+one is a breaking API change and needs the approval named in `approval-matrix.md`.
+
+## Security
+
+Plan against `.specify/governance/security-practices.md` rather than reviewing for security at
+the end. Two gate conditions depend on it: `security_review_complete` closes this phase's
+milestone, and `security_validation_passed` closes the release.
+
+For this plan, state:
+
+- which boundaries authenticate, and where authorization is checked against the resource
+- what untrusted input is parsed into typed domain values, and where
+- which limits are bounded — body size, page size, upload size, request rate
+- what personal data is collected, and how long it is kept
+- which third-party dependency touches authentication, cryptography, serialization or process
+  execution, and therefore needs its own ADR
+
+Every security finding is registered as a risk, with mitigation bound to WBS nodes. Accepting
+one is a human decision, never an agent's.
+
 ## Decomposition
 
 This plan is decomposed by `/speckit.openup.wbs` into L4–L7 nodes. Every L7 task carries an
