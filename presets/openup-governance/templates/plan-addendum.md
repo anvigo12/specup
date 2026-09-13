@@ -59,6 +59,22 @@ Every operation declares its failure responses, and each one is
 specified — it has been sketched. A `type` URI is part of the published interface, so changing
 one is a breaking API change and needs the approval named in `approval-matrix.md`.
 
+## Data and consistency
+
+Part 3 of `.specify/governance/coding-rules.md` applies to any plan that crosses a service
+boundary. Decide these at plan time, because none of them can be retrofitted cheaply:
+
+- which service owns each dataset, and which copies are read models derived from it
+- how each read model is kept up to date, and what staleness a consumer must tolerate
+- for each requirement, whether it needs immediate or eventual consistency — and where the
+  answer is eventual, the staleness bound the acceptance criterion will observe
+- which operations form a saga, what compensates each step, and whether the saga is
+  choreographed or orchestrated (an ADR either way)
+- what happens to a message that cannot be processed
+
+A saga step whose compensation is not planned is unfinished work. Decompose the compensation
+as its own WBS node under the same requirement, not as a task somebody adds later.
+
 ## Security
 
 Plan against `.specify/governance/security-practices.md` rather than reviewing for security at

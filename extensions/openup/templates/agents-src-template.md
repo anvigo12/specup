@@ -16,6 +16,10 @@ Read these before you write anything here. They are part of this contract:
   resource, parse untrusted input into typed values at the boundary, bound every size, and
   keep secrets out of logs and out of problem documents.
 
+Across a service boundary the same file's Part 3 applies: one service owns a dataset, a copy
+is a read model updated by event, there is no distributed transaction, and every saga step is
+written together with what compensates it.
+
 A new failure mode is not only code. It needs a problem `type`, an acceptance criterion, and a
 scenario — otherwise it is an untested path that no check in this repository can see.
 

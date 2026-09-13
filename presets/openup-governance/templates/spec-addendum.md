@@ -63,6 +63,12 @@ contract asks whether the implementation conforms to the agreed interaction.
 scenario and the contract all use for it. A failure mode with no criterion is an untested
 path; a failure mode with no type URI cannot be referred to at all.
 
+**State the consistency a requirement needs.** Where the data a user reads is owned by another
+service, say whether the requirement needs immediate or eventual consistency. Where it is
+eventual, name the staleness the user must tolerate, and write an acceptance criterion that
+observes it. "The balance is up to date" and "the balance is at most 30 seconds old" are
+different requirements, and only the second can be verified.
+
 ## What This Specification Must Not Do
 
 - Do not invent requirements to fill a template section. An empty section that says "none

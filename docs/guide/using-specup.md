@@ -219,7 +219,7 @@ choices, because they come from published specifications.
 | Document | Binds | Standard |
 |---|---|---|
 | `.specify/governance/language-rules.md` | every governed document | ASD-STE100 Simplified Technical English |
-| `.specify/governance/coding-rules.md` | every change to code | Railway Oriented Programming, RFC 9457 problem details |
+| `.specify/governance/coding-rules.md` | every change to code | Railway Oriented Programming, RFC 9457 problem details, cloud-native data patterns |
 | `.specify/governance/security-practices.md` | design, code, and the security gate evidence | the rules the security review applies |
 
 They are binding in the same sense as *"Resolve, or stop — never infer"*: the root

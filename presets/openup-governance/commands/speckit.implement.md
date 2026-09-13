@@ -67,7 +67,9 @@ Read these before you write code. They are part of the operating contract, not a
   the failure travels as a value. Do not throw for an expected failure. A genuine
   programmer-error abort is declared in place with `openup: escape — <reason>`. At an HTTP
   boundary the failure becomes an RFC 9457 problem document carrying a stable `type` URI,
-  `title` and `status`.
+  `title` and `status`. Across a service boundary, one service owns each dataset, a local copy
+  is a read model updated by event, and every saga step ships with the transaction that
+  compensates it.
 - **`.specify/governance/security-practices.md`** — deny by default, authorize against the
   resource rather than trusting an id from the request, parse untrusted input into typed
   values at the boundary, bound every size, and keep secrets, tokens and stack traces out of

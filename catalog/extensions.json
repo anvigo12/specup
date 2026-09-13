@@ -12,7 +12,7 @@
       "repository": "https://github.com/anvigo12/specup",
       "category": "process",
       "download_url": "https://github.com/anvigo12/specup/releases/download/v0.1.0/openup-0.1.0.zip",
-      "sha256": "80c27b99d255b90d08ab774e26e8fa0f76398bb350899002a1af7c94637e532b",
+      "sha256": "012e11f5949060d57bef2c5ea15772e4649fc92d723e171a85e6230fb87cb46f",
       "requires": {
         "speckit_version": ">=1.0.0,<2.0.0"
       },

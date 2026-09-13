@@ -65,7 +65,7 @@ derived at load time rather than stored.
 | Document | Binds | Standard |
 |---|---|---|
 | `.specify/governance/language-rules.md` | every governed document | ASD-STE100 Simplified Technical English |
-| `.specify/governance/coding-rules.md` | every change to code | Railway Oriented Programming, RFC 9457 problem details |
+| `.specify/governance/coding-rules.md` | every change to code | Railway Oriented Programming, RFC 9457 problem details, cloud-native data patterns |
 | `.specify/governance/security-practices.md` | design, code, and the security gate evidence | the rules the security review applies |
 
 These close a gap the structural checks cannot reach. A requirement written in a 40-word

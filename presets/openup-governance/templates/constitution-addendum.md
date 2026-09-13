@@ -73,7 +73,7 @@ produces, and they are published as documents under `.specify/governance/`:
 | Document | Binds | Standard |
 |---|---|---|
 | `language-rules.md` | every governed document | ASD-STE100 Simplified Technical English |
-| `coding-rules.md` | every change to code | Railway Oriented Programming, RFC 9457 problem details |
+| `coding-rules.md` | every change to code | Railway Oriented Programming, RFC 9457 problem details, cloud-native data patterns |
 | `security-practices.md` | design, code, and the security gate evidence | the rules the security review applies |
 
 The reason is the same one behind every other principle here. A requirement written in a

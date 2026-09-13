@@ -48,7 +48,7 @@ one that applies before you produce the artifact it governs.
 | Document | Binds | Standard |
 |---|---|---|
 | `language-rules.md` | every governed document you write | ASD-STE100 Simplified Technical English |
-| `coding-rules.md` | every change to code | Railway Oriented Programming, RFC 9457 |
+| `coding-rules.md` | every change to code | Railway Oriented Programming, RFC 9457, cloud-native data patterns |
 | `security-practices.md` | design, code, and the security gate evidence | the rules the security review applies |
 
 None of the three is machine-checked. That does not make them optional — it makes the human
