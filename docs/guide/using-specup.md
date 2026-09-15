@@ -265,24 +265,38 @@ src/AGENTS.md                     narrowed to implementation code
 skills/{wbs,risk,requirements,traceability,gherkin,architecture}/SKILL.md
 ```
 
-**`init_openup.py` never overwrites an existing file.** Re-running it is safe, and is the
+**`init_openup.py` never overwrites an authored file.** Re-running it is safe, and is the
 supported way to restore a store someone deleted. Authored content survives; that is the
 converse of "generated does not mean approved".
 
-### Then generate what is generated
+### What that one command also generates
 
-```bash
-python3 .specify/extensions/openup/scripts/python/render_views.py --write
-```
+Three governance documents are **not seeded from templates**: `definition-of-ready.md`,
+`definition-of-done.md` and `quality-gates.md`. They are generated from the code that
+enforces them — `select_work.py`, `validate_done.py`, and `openup-config.yml` +
+`evaluate_gate.py` respectively — and `init_openup.py` runs that generation for you.
 
-Three governance documents are **deliberately not seeded** by `init_openup.py`:
-`definition-of-ready.md`, `definition-of-done.md` and `quality-gates.md`. They are generated
-from the code that enforces them — `select_work.py`, `validate_done.py`, and
-`openup-config.yml` + `evaluate_gate.py` respectively.
+The reason they are generated is the sharpest one in the whole system: **a governance
+document that disagrees with the check is worse than no document at all**, because people
+follow the document while the machine applies the code. Generating them makes disagreement
+impossible.
 
-The reason is the sharpest one in the whole system: **a governance document that disagrees
-with the check is worse than no document at all**, because people follow the document while
-the machine applies the code. Generating them makes disagreement impossible.
+That reason is about what *produces* them, not about when, which is why this is one command
+rather than two. Generated documents are owned by the code, so unlike the authored files
+above they *are* rewritten on a re-run — a stale one is a defect, and `VIEW-001` fails on it.
+
+Two flags matter here:
+
+| Flag | Effect |
+|---|---|
+| `--no-render` | Scaffold only. Rendering needs `jsonschema` and `referencing`; the scaffold needs neither, so this still works on a machine that has only PyYAML. |
+| `--json` | Emits the validator verdict shape, with `INIT-003` carrying the render result. |
+
+If rendering cannot run, `init_openup.py` **exits `2` and says so** rather than exiting `0`
+with three documents quietly missing. The scaffold is still written, so the fix is to install
+the dependencies and re-run. Exit `2` is the same could-not-evaluate code every validator
+uses, so a workflow halts on its setup-fault branch instead of proceeding over a tree that
+looks finished.
 
 `approval-matrix.md` and `change-control.md` are the deliberate exceptions. Who may approve
 what is a decision about your organisation, and no validator can recompute it — so those are

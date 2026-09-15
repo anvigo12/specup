@@ -55,7 +55,7 @@ task venv --force
 | Task | What it runs |
 |---|---|
 | `task bundle:validate` | `specify bundle validate --path bundles/specup --offline` |
-| `task bundle:build` | `specify bundle build` → `dist/specup-0.1.0.zip` |
+| `task bundle:build` | `specify bundle build` → `dist/specup-0.1.1.zip` |
 
 `bundle:validate` uses Spec Kit's own validator rather than ours, so it catches manifest rules
 we have not transcribed into `tests/test_bundle.py`. Offline, the reference checks downgrade

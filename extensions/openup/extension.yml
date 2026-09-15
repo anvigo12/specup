@@ -3,7 +3,7 @@ schema_version: "1.0"
 extension:
   id: openup
   name: "OpenUP Governed Lifecycle"
-  version: "0.1.0"
+  version: "0.1.1"
   description: "Adds the OpenUP lifecycle to Spec Kit: phases, iterations, a seven-level WBS, an executable risk register, bi-directional traceability, and machine-checkable milestone gates."
   category: "process"
   effect: "read-write"

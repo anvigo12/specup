@@ -44,7 +44,6 @@ Then scaffold:
 
 ```bash
 python3 .specify/extensions/openup/scripts/python/init_openup.py --program "Your Program"
-python3 .specify/extensions/openup/scripts/python/render_views.py --write
 python3 .specify/extensions/openup/scripts/python/audit.py
 ```
 

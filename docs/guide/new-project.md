@@ -90,7 +90,13 @@ Creates:
 └── evidence/
 ```
 
-It never overwrites an existing file, so it is safe to re-run.
+It never overwrites an authored file, so it is safe to re-run.
+
+The same command also generates `definition-of-ready.md`, `definition-of-done.md` and
+`quality-gates.md` from the code that enforces them, so the documents and the checks cannot
+disagree. Those three *are* rewritten on a re-run — they are owned by the code, not by you.
+Pass `--no-render` to scaffold without them; it exits `2` rather than `0` if the generation
+step cannot run.
 
 Commit this before writing anything into it. The first diff of a governance file should be
 legible as a decision, not lost inside the scaffold.

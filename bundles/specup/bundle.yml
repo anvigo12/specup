@@ -3,7 +3,7 @@ schema_version: "1.0"
 bundle:
   id: specup
   name: "SpecUP — OpenUP Governed Lifecycle"
-  version: "0.1.0"
+  version: "0.1.1"
   role: "governance"
   description: "Installs the full OpenUP governance stack: the openup extension (validators, schemas, commands), the openup-governance preset, and the four phase workflows whose gates halt a run on a failing verdict."
   author: "Aniket Gore"
@@ -40,11 +40,11 @@ provides:
   # the preset is instructions pointing at files that are not there.
   extensions:
     - id: openup
-      version: "0.1.0"
+      version: "0.1.1"
 
   presets:
     - id: openup-governance
-      version: "0.1.0"
+      version: "0.1.1"
       # Lower priority wins in the 4-layer resolution stack. 10 is Spec Kit's
       # own DEFAULT_PRIORITY, which keeps a project's explicit overrides in
       # `.specify/templates/overrides/` ahead of this preset — governance should

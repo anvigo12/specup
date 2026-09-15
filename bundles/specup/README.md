@@ -5,8 +5,8 @@ Installs the whole OpenUP governance stack as one unit: the `openup` extension, 
 
 | Component | Version | Kind | Why it is here |
 |---|---|---|---|
-| `openup` | 0.1.0 | extension | The validators, JSON Schemas, config and `/speckit.openup.*` commands |
-| `openup-governance` | 0.1.0 | preset | Composes governance into Spec Kit's own constitution, spec, plan, tasks, `/tasks` and `/implement` |
+| `openup` | 0.1.1 | extension | The validators, JSON Schemas, config and `/speckit.openup.*` commands |
+| `openup-governance` | 0.1.1 | preset | Composes governance into Spec Kit's own constitution, spec, plan, tasks, `/tasks` and `/implement` |
 | `openup-inception` | 0.1.0 | workflow | Lifecycle Objectives gate |
 | `openup-elaboration` | 0.1.0 | workflow | Lifecycle Architecture gate |
 | `openup-construction` | 0.1.0 | workflow | Initial Operational Capability gate, with a risk-first fan-out over ready work |
@@ -34,18 +34,27 @@ extensions → presets → steps → workflows, which is the order needed here.
 
 ## Install a release
 
-The supported route. Register SpecUP's catalog once, then install by id:
+The supported route. Register SpecUP's catalogs once per machine, then install by id in any
+project:
 
 ```bash
-BASE=https://raw.githubusercontent.com/anvigo12/specup/main/catalog
-specify extension catalog add $BASE/extensions.json --name specup --install-allowed --priority 0
-specify preset    catalog add $BASE/presets.json    --name specup --install-allowed --priority 0
-specify workflow  catalog add $BASE/workflows.json  --name specup
-specify bundle    catalog add $BASE/bundles.json    --policy install-allowed --priority 0
+mkdir -p ~/.specify
+BASE=https://raw.githubusercontent.com/anvigo12/specup/main/catalog/user
+for f in extension preset workflow bundle; do
+  curl -sSL -o ~/.specify/$f-catalogs.yml $BASE/$f-catalogs.yml
+done
+```
 
+```bash
 specify bundle install specup
 python3 -m pip install -r .specify/extensions/openup/requirements.txt
 ```
+
+`specify <primitive> catalog add` is the other route and is per project, not per machine — it
+writes into `<project>/.specify/`, and for extensions, presets and workflows that file
+*replaces* Spec Kit's built-in catalogs rather than merging with them.
+[`catalog/user/README.md`](../../catalog/user/README.md) covers both and what the difference
+costs.
 
 Spec Kit's `default` catalog holds only components vendored into the Spec Kit wheel, so
 every third-party project publishes its own catalog. Registering it is the supported

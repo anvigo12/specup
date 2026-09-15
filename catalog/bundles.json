@@ -5,13 +5,13 @@
     "specup": {
       "id": "specup",
       "name": "SpecUP — OpenUP Governed Lifecycle",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "role": "governance",
       "description": "Installs the full OpenUP governance stack: the openup extension (validators, schemas, commands), the openup-governance preset, and the four phase workflows whose gates halt a run on a failing verdict.",
       "author": "Aniket Gore",
       "license": "MIT",
-      "download_url": "https://github.com/anvigo12/specup/releases/download/v0.1.0/specup-0.1.0.zip",
-      "sha256": "8906da8726042852cfec5fc8fb7bdb4056379d0057b40f927c3d1e4a14c26f16",
+      "download_url": "https://github.com/anvigo12/specup/releases/download/v0.1.1/specup-0.1.1.zip",
+      "sha256": "d8141a18454ab1d216efd7b1c97714dd6774dbba72760a66eec2276e44463965",
       "requires": {
         "speckit_version": ">=1.0.0,<2.0.0"
       },

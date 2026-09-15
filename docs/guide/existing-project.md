@@ -70,8 +70,9 @@ python3 .specify/extensions/openup/scripts/python/init_openup.py --program "Exis
 `specify init --here` on a populated repo is additive — it creates `.specify/` and agent
 command files. Commit before and after so the diff is reviewable.
 
-`init_openup.py` never overwrites an existing file, so it is safe on a repo that already has
-a `.specify/`.
+`init_openup.py` never overwrites an authored file, so it is safe on a repo that already has
+a `.specify/`. It also generates the three documents that are derived from the checks
+themselves — those are owned by the code and are rewritten each run.
 
 ```bash
 git add -A && git commit -m "Add SpecUP governance scaffolding (no behaviour change)"

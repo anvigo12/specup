@@ -27,13 +27,14 @@ preset is only half of it — see [It expects the openup extension](#it-expects-
 specify bundle install specup
 ```
 
-That needs SpecUP's catalogs registered first; [`bundles/specup/README.md`](../../bundles/specup/README.md)
-has the four one-time `catalog add` commands.
+That needs SpecUP's catalogs registered first — four files copied into `~/.specify/`, once per
+machine. [`catalog/user/README.md`](../../catalog/user/README.md) has them, and explains why
+`specify preset catalog add` is not the same thing.
 
 To install only this preset, from the release or from this working tree:
 
 ```bash
-specify preset add --from https://github.com/anvigo12/specup/releases/download/v0.1.0/openup-governance-0.1.0.zip
+specify preset add --from https://github.com/anvigo12/specup/releases/download/v0.1.1/openup-governance-0.1.1.zip
 specify preset add --dev ./presets/openup-governance
 ```
 

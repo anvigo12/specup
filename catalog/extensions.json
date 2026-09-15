@@ -4,15 +4,15 @@
   "extensions": {
     "openup": {
       "id": "openup",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "name": "OpenUP Governed Lifecycle",
       "description": "Adds the OpenUP lifecycle to Spec Kit: phases, iterations, a seven-level WBS, an executable risk register, bi-directional traceability, and machine-checkable milestone gates.",
       "author": "Aniket Gore",
       "license": "MIT",
       "repository": "https://github.com/anvigo12/specup",
       "category": "process",
-      "download_url": "https://github.com/anvigo12/specup/releases/download/v0.1.0/openup-0.1.0.zip",
-      "sha256": "012e11f5949060d57bef2c5ea15772e4649fc92d723e171a85e6230fb87cb46f",
+      "download_url": "https://github.com/anvigo12/specup/releases/download/v0.1.1/openup-0.1.1.zip",
+      "sha256": "9ff55a72a6f3ec82726d7488ad5033c277a4a2907db43420eaff73fcbc307ac2",
       "requires": {
         "speckit_version": ">=1.0.0,<2.0.0"
       },

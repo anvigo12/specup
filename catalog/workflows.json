@@ -10,7 +10,7 @@
       "author": "Aniket Gore",
       "license": "MIT",
       "repository": "https://github.com/anvigo12/specup",
-      "url": "https://github.com/anvigo12/specup/releases/download/v0.1.0/openup-inception-0.1.0.zip",
+      "url": "https://github.com/anvigo12/specup/releases/download/v0.1.1/openup-inception-0.1.0.zip",
       "sha256": "7f85d863af4a1c8882044e5942bb4541177fbbadfd2a1a4d800e378a0a0be873",
       "requires": {
         "speckit_version": ">=1.0.0,<2.0.0"
@@ -25,7 +25,7 @@
       "author": "Aniket Gore",
       "license": "MIT",
       "repository": "https://github.com/anvigo12/specup",
-      "url": "https://github.com/anvigo12/specup/releases/download/v0.1.0/openup-elaboration-0.1.0.zip",
+      "url": "https://github.com/anvigo12/specup/releases/download/v0.1.1/openup-elaboration-0.1.0.zip",
       "sha256": "ec3964f772b7c1c16fe65715e539a3e3d574ed828e4b899a84639a1ab66dfe5b",
       "requires": {
         "speckit_version": ">=1.0.0,<2.0.0"
@@ -40,7 +40,7 @@
       "author": "Aniket Gore",
       "license": "MIT",
       "repository": "https://github.com/anvigo12/specup",
-      "url": "https://github.com/anvigo12/specup/releases/download/v0.1.0/openup-construction-0.1.0.zip",
+      "url": "https://github.com/anvigo12/specup/releases/download/v0.1.1/openup-construction-0.1.0.zip",
       "sha256": "d9e35f3a449cabe705d76205d82d96c0f17a675f418c5229faa86dcf149043d1",
       "requires": {
         "speckit_version": ">=1.0.0,<2.0.0"
@@ -55,7 +55,7 @@
       "author": "Aniket Gore",
       "license": "MIT",
       "repository": "https://github.com/anvigo12/specup",
-      "url": "https://github.com/anvigo12/specup/releases/download/v0.1.0/openup-transition-0.1.0.zip",
+      "url": "https://github.com/anvigo12/specup/releases/download/v0.1.1/openup-transition-0.1.0.zip",
       "sha256": "4b084f707f5bf3039ce803974d87e1fec106467ddaab950dd84095fe75c87469",
       "requires": {
         "speckit_version": ">=1.0.0,<2.0.0"

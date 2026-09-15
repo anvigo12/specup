@@ -11,6 +11,7 @@ Emits the same JSON verdict shape as the validators, so it composes into a workf
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import pathlib
 import shutil
@@ -68,11 +69,55 @@ GENERATED_NEXT = (
 )
 
 
+def _render(root: pathlib.Path, json_mode: bool) -> tuple[str, str]:
+    """Generate the documents this script deliberately does not seed.
+
+    definition-of-ready.md, definition-of-done.md and quality-gates.md are produced from the
+    code that enforces them, because a governance document disagreeing with its check is worse
+    than no document — people follow the document while the machine applies the code. That
+    reason is about what *produces* them, not about when, so running it here changes nothing
+    about the guarantee and removes a step a reader had to be told to take.
+
+    Imported lazily and on purpose. render_views needs jsonschema and referencing; the scaffold
+    itself needs neither, so `--no-render` still works on a machine that has only PyYAML.
+    """
+    # SystemExit is caught deliberately, and is not defensive padding: openup_model reports a
+    # missing PyYAML by printing to stderr and raising SystemExit(2) at import time. Letting
+    # that through would kill this process before the verdict is written, so `--json` would
+    # exit 2 with empty stdout — a workflow step consuming the verdict would see malformed
+    # output rather than a check it can read. Converting it to an INIT-003 ERROR keeps the
+    # exit code and gives the caller something to parse.
+    try:
+        import render_views
+        from openup_model import GraphError
+    except ImportError as exc:  # pragma: no cover - requires a broken install to reach
+        return "ERROR", f"render_views could not be imported: {exc}"
+    except SystemExit as exc:
+        return "ERROR", f"a dependency render_views needs is missing (exit {exc.code})"
+
+    # write_views narrates to stdout. Under --json that would land ahead of the verdict and
+    # leave the caller parsing "  wrote  ..." as JSON, so the narration goes to stderr instead
+    # of being thrown away — the operator still sees which documents were written.
+    sink = contextlib.redirect_stdout(sys.stderr) if json_mode else contextlib.nullcontext()
+    try:
+        with sink:
+            render_views.write_views(argparse.Namespace(root=str(root)))
+    except GraphError as exc:
+        return "ERROR", str(exc)
+    except SystemExit as exc:
+        return "ERROR", f"rendering stopped with exit {exc.code}"
+    return "PASS", "generated governance and view documents written"
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Scaffold the OpenUP governance tree")
     parser.add_argument("--root", default=".", help="project root (default: cwd)")
     parser.add_argument("--json", action="store_true", help="emit a JSON verdict on stdout")
     parser.add_argument("--program", default=None, help="program name to seed into the WBS root")
+    parser.add_argument(
+        "--no-render", action="store_true",
+        help="scaffold only; do not generate the documents render_views.py produces",
+    )
     args = parser.parse_args()
 
     root = pathlib.Path(args.root).resolve()
@@ -145,29 +190,50 @@ def main() -> int:
     else:
         skipped.append(".specify/extensions/openup/openup-config.yml (exists)")
 
-    verdict = {
-        "validator": "openup-init",
-        "status": "PASS",
-        "checks": [
-            {"id": "INIT-001", "status": "PASS",
-             "message": f"{len(created)} path(s) created", "evidence": created},
-            {"id": "INIT-002", "status": "PASS",
-             "message": f"{len(skipped)} path(s) left untouched", "evidence": skipped},
-        ],
-        "metrics": {"created": len(created), "skipped": len(skipped)},
-    }
-
-    if args.json:
-        print(json.dumps(verdict, indent=2))
-    else:
+    # The scaffold is written either way. Reporting happens after rendering so that a render
+    # failure can carry the whole verdict to ERROR rather than being appended to a PASS.
+    if not args.json:
         print("OpenUP governance tree")
         print("=" * 22)
         for item in created:
             print(f"  created  {item}")
         for item in skipped:
             print(f"  kept     {item}")
-        print(f"\n  {len(created)} created, {len(skipped)} preserved")
-        print(f"\n{GENERATED_NEXT}")
+        print(f"\n  {len(created)} created, {len(skipped)} preserved\n")
+
+    if args.no_render:
+        render_status, render_message = "SKIP", "rendering skipped (--no-render)"
+    else:
+        render_status, render_message = _render(root, args.json)
+
+    verdict = {
+        "validator": "openup-init",
+        "status": "ERROR" if render_status == "ERROR" else "PASS",
+        "checks": [
+            {"id": "INIT-001", "status": "PASS",
+             "message": f"{len(created)} path(s) created", "evidence": created},
+            {"id": "INIT-002", "status": "PASS",
+             "message": f"{len(skipped)} path(s) left untouched", "evidence": skipped},
+            {"id": "INIT-003", "status": render_status, "message": render_message},
+        ],
+        "metrics": {"created": len(created), "skipped": len(skipped)},
+    }
+
+    if args.json:
+        print(json.dumps(verdict, indent=2))
+    elif args.no_render:
+        print(GENERATED_NEXT)
+
+    if render_status == "ERROR":
+        # The scaffold stands and re-running is safe, so the only thing missing is the three
+        # generated documents. That is a setup fault, not a governance failure: exit 2, the
+        # same code every validator uses for "could not evaluate", so a workflow halts on its
+        # setup-fault branch instead of proceeding with a tree that is quietly incomplete.
+        if not args.json:
+            print(f"\nERROR: {render_message}", file=sys.stderr)
+            print("The scaffold is written. Re-run this command once the dependencies are "
+                  "installed, or pass --no-render to skip generation.", file=sys.stderr)
+        return 2
     return 0
 
 

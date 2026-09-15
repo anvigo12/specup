@@ -25,7 +25,11 @@ Treat the input as the **program name** for the WBS root if it looks like one. O
 python .specify/extensions/openup/scripts/python/init_openup.py --program "<program name>" --json
 ```
 
-The script never overwrites an existing file. Re-running it is safe and is the supported way to restore a deleted store.
+The script never overwrites an **authored** file. Re-running it is safe and is the supported way to restore a deleted store.
+
+It then generates `definition-of-ready.md`, `definition-of-done.md` and `quality-gates.md` from the code that enforces them, so the document and the check cannot disagree. Those three are owned by the code and *are* rewritten on a re-run.
+
+Exit codes follow the usual contract: `0` scaffolded and generated, `2` the scaffold was written but generation could not run — report that to the user as a missing dependency (`pip install -r .specify/extensions/openup/requirements.txt`) and do not treat it as success. Pass `--no-render` only if the user explicitly wants the scaffold without the generated documents.
 
 ## What it creates
 
