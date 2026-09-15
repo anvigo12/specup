@@ -67,6 +67,19 @@ not start until a maintainer applies the label during triage, and the catalog pu
 opened by that workflow rather than by us. There is nothing to do in the meantime except answer
 questions on the issues.
 
+### They describe 0.1.0, and SpecUP is now at 0.1.1
+
+Deliberately, not by neglect. The bodies here are the record of what was filed, so they keep
+the figures they were filed with, and every one of those figures still holds: the `v0.1.0`
+release is still published and its assets still resolve at the digests the issues cite.
+
+What is stale is only the version a reader of those issues sees. Refiling to say `0.1.1` costs
+three more issues through the same flow, for two install-ergonomics changes that alter nothing
+a catalog entry records beyond the version, URL and digest. The sensible moment to update is
+when a maintainer picks these up, or at the next release with real content in it — whichever
+comes first. Update the bodies then, from a fresh run of step 5, rather than editing the
+version string on top of the previous release's numbers.
+
 ## What a listing does and does not buy
 
 Discovery only. The community catalogs are `install_allowed: false`, so a user who finds

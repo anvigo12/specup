@@ -1,0 +1,66 @@
+{
+  "schema_version": "1.0",
+  "catalog_url": "https://raw.githubusercontent.com/anvigo12/specup/main/catalog/workflows.json",
+  "workflows": {
+    "openup-inception": {
+      "id": "openup-inception",
+      "version": "0.1.0",
+      "name": "OpenUP Inception",
+      "description": "Establish intent, ownership, scope and initial risk, then hold the Lifecycle Objectives milestone against evidence.",
+      "author": "Aniket Gore",
+      "license": "MIT",
+      "repository": "https://github.com/anvigo12/specup",
+      "url": "https://github.com/anvigo12/specup/releases/download/v0.1.1/openup-inception-0.1.0.zip",
+      "sha256": "7f85d863af4a1c8882044e5942bb4541177fbbadfd2a1a4d800e378a0a0be873",
+      "requires": {
+        "speckit_version": ">=1.0.0,<2.0.0"
+      },
+      "verified": false
+    },
+    "openup-elaboration": {
+      "id": "openup-elaboration",
+      "version": "0.1.0",
+      "name": "OpenUP Elaboration",
+      "description": "Establish an executable architecture and retire the highest-exposure risks, then hold the Lifecycle Architecture milestone against evidence.",
+      "author": "Aniket Gore",
+      "license": "MIT",
+      "repository": "https://github.com/anvigo12/specup",
+      "url": "https://github.com/anvigo12/specup/releases/download/v0.1.1/openup-elaboration-0.1.0.zip",
+      "sha256": "ec3964f772b7c1c16fe65715e539a3e3d574ed828e4b899a84639a1ab66dfe5b",
+      "requires": {
+        "speckit_version": ">=1.0.0,<2.0.0"
+      },
+      "verified": false
+    },
+    "openup-construction": {
+      "id": "openup-construction",
+      "version": "0.1.0",
+      "name": "OpenUP Construction Iteration",
+      "description": "Run one Construction iteration: select ready work risk-first, implement it task by task, verify, re-trace, then hold the iteration gate.",
+      "author": "Aniket Gore",
+      "license": "MIT",
+      "repository": "https://github.com/anvigo12/specup",
+      "url": "https://github.com/anvigo12/specup/releases/download/v0.1.1/openup-construction-0.1.0.zip",
+      "sha256": "d9e35f3a449cabe705d76205d82d96c0f17a675f418c5229faa86dcf149043d1",
+      "requires": {
+        "speckit_version": ">=1.0.0,<2.0.0"
+      },
+      "verified": false
+    },
+    "openup-transition": {
+      "id": "openup-transition",
+      "version": "0.1.0",
+      "name": "OpenUP Transition",
+      "description": "Validate deployment, operations, security and acceptance, then hold the Product Release milestone against evidence.",
+      "author": "Aniket Gore",
+      "license": "MIT",
+      "repository": "https://github.com/anvigo12/specup",
+      "url": "https://github.com/anvigo12/specup/releases/download/v0.1.1/openup-transition-0.1.0.zip",
+      "sha256": "4b084f707f5bf3039ce803974d87e1fec106467ddaab950dd84095fe75c87469",
+      "requires": {
+        "speckit_version": ">=1.0.0,<2.0.0"
+      },
+      "verified": false
+    }
+  }
+}

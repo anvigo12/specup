@@ -8,7 +8,7 @@ phase workflows that enforce an [Eclipse OpenUP](https://www.eclipse.org/epf/)-s
 lifecycle with a seven-level WBS, an executable risk register, and bi-directional
 traceability.
 
-> **Status:** [0.1.0 released](https://github.com/anvigo12/specup/releases/tag/v0.1.0),
+> **Status:** [0.1.1 released](https://github.com/anvigo12/specup/releases/tag/v0.1.1),
 > verified against spec-kit **1.0.6**, and installed end to end from the published catalog
 > into a clean project — see [Quick start](#quick-start). Spec Kit's `default` catalog carries
 > only components vendored into its wheel, so a self-hosted catalog is the supported route for
@@ -114,7 +114,7 @@ done
 specify bundle install specup
 python3 -m pip install -r .specify/extensions/openup/requirements.txt
 
-# 4. Scaffold the governance tree
+# 4. Scaffold the governance tree, and generate the documents derived from the checks
 python3 .specify/extensions/openup/scripts/python/init_openup.py --program "My Product"
 
 # 5. See where you stand (it will FAIL — an empty plan is not a valid plan)
@@ -392,25 +392,28 @@ And the bundle, into a clean `specify init` project — both routes:
 
 | Step | Result |
 |---|---|
-| 4 × `catalog add` against the published catalog | all four registered; workflows resolve through `url`, the rest through `download_url` |
+| `catalog/user/*.yml` copied to `~/.specify/`, **no `catalog add` at all** | all four resolve from user scope; `default` and `community` survive — `specify extension search` still finds 173 |
 | `specify bundle install specup` | `✓ Installed 'specup' (6 added, 0 already present)` |
-| `specify bundle list` after that | `specup v0.1.0 (6 components)` — a non-zero count is the proof the install was real |
-| Published archive digests | `openup`, `openup-governance` and `specup` each hash identically as downloaded, as built locally, and as pinned in `catalog/` |
+| `specify bundle list` after that | `specup v0.1.1 (6 components)` — a non-zero count is the proof the install was real |
+| Published archive digests | all **7** assets fetched from the release: HTTP 200, digest equal to `catalog/`, tag matching the version |
 | `install.py --project <clean project>` | 6 components installed in manifest order, pins checked |
-| `specify preset resolve spec-template` | `[append] openup-governance v0.1.0` composed onto core |
+| `specify preset resolve spec-template` | `[append] openup-governance v0.1.1` composed onto core |
 | 9 `speckit.openup.*` skills | registered under `.claude/skills/` |
+| `init_openup.py` once | scaffold **and** the three generated governance documents; re-run reports `0 created, 35 preserved` |
 | `audit.py` on the fresh scaffold | exit **1** — `initial_risks_registered`, `wbs_levels_1_to_3_valid` and `requirements_have_owners` all FAIL, correctly |
-| `specify bundle build` | `specup-0.1.0.zip`, 3 files, fixed timestamps |
+| `specify bundle build` | `specup-0.1.1.zip`, 3 files, fixed timestamps |
 | A pin bumped to `0.2.0` in `bundle.yml` | install refuses before touching the project |
 
-The three single-component routes, which the community-catalog submissions attest to, were
-exercised separately against the published release:
+The three single-component routes were exercised separately against the published 0.1.1
+release. The community-catalog submissions on `github/spec-kit` attest to the same routes at
+**0.1.0**, the version they were filed for; that release is still published and its assets
+still resolve at the digests those issues cite:
 
 | Step | Result |
 |---|---|
 | `specify extension add openup --from <release url>` | exit 0, 9 commands registered |
-| `specify preset add --from <release url>` | exit 0, `spec-template` resolves to `[append] openup-governance v0.1.0` |
-| `specify bundle install ./specup-0.1.0.zip` (downloaded artifact) | `6 added, 0 already present` |
+| `specify preset add --from <release url>` | exit 0, `spec-template` resolves to `[append] openup-governance v0.1.1` |
+| `specify bundle install ./specup-0.1.1.zip` (downloaded artifact) | `6 added, 0 already present` |
 | `specify bundle validate --path bundles/specup` | `✓ specup is well-formed and valid` |
 | `preset add` into a project with no `openup` extension | warns `openup is not installed`, names `specify extension add openup`, installs anyway |
 
