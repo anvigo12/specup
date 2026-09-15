@@ -13,6 +13,8 @@
 
 Component-level docs live next to the components:
 
+- [`catalog/user/README.md`](../catalog/user/README.md) — the four files that register
+  SpecUP's catalogs once per machine, and why the CLI cannot write them
 - [`bundles/specup/README.md`](../bundles/specup/README.md) — why the bundle exists, and the
   two install routes: a release from the catalog, or this working tree
 - [`workflows/README.md`](../workflows/README.md) — the enforcement pattern

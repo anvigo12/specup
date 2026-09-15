@@ -16,19 +16,24 @@ its evidence fails rather than skipping.
 ```bash
 specify init --here --integration claude    # if Spec Kit is not already set up
 
-BASE=https://raw.githubusercontent.com/anvigo12/specup/main/catalog
-specify extension catalog add $BASE/extensions.json --name specup --install-allowed --priority 0
-specify preset    catalog add $BASE/presets.json    --name specup --install-allowed --priority 0
-specify workflow  catalog add $BASE/workflows.json  --name specup
-specify bundle    catalog add $BASE/bundles.json    --policy install-allowed --priority 0
+mkdir -p ~/.specify
+BASE=https://raw.githubusercontent.com/anvigo12/specup/main/catalog/user
+for f in extension preset workflow bundle; do
+  curl -sSL -o ~/.specify/$f-catalogs.yml $BASE/$f-catalogs.yml
+done
 
 specify bundle install specup
 python3 -m pip install -r .specify/extensions/openup/requirements.txt
 ```
 
-The four `catalog add` commands are one-time. Spec Kit's `default` catalog holds only
+Registering the catalogs is one time per machine. Spec Kit's `default` catalog holds only
 components vendored into the Spec Kit wheel, so every third-party project publishes its own
 catalog; registering it is the supported route, not a workaround.
+
+`specify <primitive> catalog add` does the same job per project rather than per machine, and
+for three of the four primitives its config *replaces* Spec Kit's built-in catalogs instead
+of merging with them. [`catalog/user/README.md`](../../catalog/user/README.md) covers the
+difference.
 
 **Do not skip the `pip install`.** Without those packages every validator exits 2, and a
 workflow then halts on its setup-fault branch rather than passing a gate it could not

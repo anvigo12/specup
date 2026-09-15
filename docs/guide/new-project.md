@@ -34,22 +34,32 @@ mkdir my-product && cd my-product && git init
 specify init --here --integration claude      # or your agent of choice
 ```
 
-Then register SpecUP's catalog — one time, per machine — and install the stack:
+Then register SpecUP's catalogs. This part is genuinely one time per machine — copy four
+files into `~/.specify/`, where Spec Kit reads them for every project:
 
 ```bash
-BASE=https://raw.githubusercontent.com/anvigo12/specup/main/catalog
-specify extension catalog add $BASE/extensions.json --name specup --install-allowed --priority 0
-specify preset    catalog add $BASE/presets.json    --name specup --install-allowed --priority 0
-specify workflow  catalog add $BASE/workflows.json  --name specup
-specify bundle    catalog add $BASE/bundles.json    --policy install-allowed --priority 0
+mkdir -p ~/.specify
+BASE=https://raw.githubusercontent.com/anvigo12/specup/main/catalog/user
+for f in extension preset workflow bundle; do
+  curl -sSL -o ~/.specify/$f-catalogs.yml $BASE/$f-catalogs.yml
+done
+```
 
+`specify <primitive> catalog add` cannot write there — it writes into the project, so it is
+four commands in every project — and for three of the four primitives a project config
+*replaces* Spec Kit's built-in catalogs instead of merging with them. The files above keep
+them. [`catalog/user/README.md`](../../catalog/user/README.md) has the detail.
+
+Then install the stack:
+
+```bash
 specify bundle install specup
 python3 -m pip install -r .specify/extensions/openup/requirements.txt
 ```
 
-The second line is not optional. Without those packages every validator exits `2`, and your
-workflows will halt on the setup-fault branch rather than passing gates they could not
-evaluate. Confirm:
+The second line is not optional. Without `PyYAML` every validator exits `2`; without the two
+schema libraries, five of the nine do. Your workflows then halt on the setup-fault branch
+rather than passing gates they could not evaluate. Confirm:
 
 ```bash
 python3 .specify/extensions/openup/scripts/python/audit.py; echo "exit=$?"

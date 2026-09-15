@@ -39,8 +39,10 @@ at its own GitHub release and works exactly this way.
 
 Two consequences to accept up front:
 
-- Users run four one-time `catalog add` commands before their first install. There is no way
-  around this short of Spec Kit vendoring SpecUP.
+- Users register four catalogs before their first install. There is no way around this short
+  of Spec Kit vendoring SpecUP. It is one time *per machine* only if they copy
+  [`catalog/user/*.yml`](../../catalog/user/) into `~/.specify/`; the `catalog add` commands
+  write into the project and so repeat forever.
 - Submitting to the **community** catalog is still worth doing, but understand what it buys:
   search visibility. The install still comes from our catalog.
 
@@ -238,6 +240,10 @@ git push origin main
 
 Verify as a **user would**, in a throwaway project — not in this repo, where local paths would
 mask a broken catalog.
+
+Use the project-scoped `catalog add` route here, deliberately: it keeps the throwaway project
+isolated from whatever `~/.specify/` holds on your machine, which is the point of testing in
+one.
 
 **The four `catalog add` commands do not take the same flags.** This is the second thing that
 costs an afternoon, because three of the four reject `--policy` outright and the fourth

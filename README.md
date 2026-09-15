@@ -101,12 +101,14 @@ workflow `shell` steps invoke. There is no second thing to keep in sync.
 # 1. A Spec Kit project
 specify init --here --integration claude
 
-# 2. Register SpecUP's catalog — one time, per machine
-BASE=https://raw.githubusercontent.com/anvigo12/specup/main/catalog
-specify extension catalog add $BASE/extensions.json --name specup --install-allowed --priority 0
-specify preset    catalog add $BASE/presets.json    --name specup --install-allowed --priority 0
-specify workflow  catalog add $BASE/workflows.json  --name specup
-specify bundle    catalog add $BASE/bundles.json    --policy install-allowed --priority 0
+# 2. Register SpecUP's catalogs — genuinely one time, per machine.
+#    `specify catalog add` cannot write here; it writes per project. These files
+#    also keep Spec Kit's own catalogs, which the per-project route silently drops.
+mkdir -p ~/.specify
+BASE=https://raw.githubusercontent.com/anvigo12/specup/main/catalog/user
+for f in extension preset workflow bundle; do
+  curl -sSL -o ~/.specify/$f-catalogs.yml $BASE/$f-catalogs.yml
+done
 
 # 3. All three layers, in dependency order, each archive verified against its digest
 specify bundle install specup
@@ -122,10 +124,10 @@ python3 .specify/extensions/openup/scripts/python/audit.py
 Step 3 installs the extension, then the preset, then the four workflows. The order is not
 cosmetic: the preset's guidance calls validators the extension installs.
 
-**Do not skip the `pip install`.** Without those packages every validator exits 2, and a
-workflow then halts on its setup-fault branch rather than passing a gate it could not
-evaluate. That is the designed behaviour, and a confusing way to discover a missing
-dependency.
+**Do not skip the `pip install`.** Without `PyYAML` every validator exits 2; without the two
+schema libraries, five of the nine do — `audit.py` among them. A workflow then halts on its
+setup-fault branch rather than passing a gate it could not evaluate. That is the designed
+behaviour, and a confusing way to discover a missing dependency.
 
 Then drive a phase:
 

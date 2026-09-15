@@ -135,25 +135,38 @@ reachable and legible — not to *be* the checks.
 | `specify` CLI ≥ 1.0.6 | Spec Kit itself |
 | A git repository | Every governed artifact is a version-controlled file |
 
-### Install
+### Once per machine
+
+Spec Kit resolves components through catalogs, and its `default` catalog holds only what is
+vendored into the Spec Kit wheel. Every third-party project publishes its own catalog, so
+registering SpecUP's is the supported route rather than a workaround. Each archive is pinned
+by SHA-256 and the install aborts if the bytes do not match.
+
+Register all four at user scope, once:
+
+```bash
+mkdir -p ~/.specify
+BASE=https://raw.githubusercontent.com/anvigo12/specup/main/catalog/user
+for f in extension preset workflow bundle; do
+  curl -sSL -o ~/.specify/$f-catalogs.yml $BASE/$f-catalogs.yml
+done
+```
+
+Read them before you run that — four short files deciding where your machine downloads code
+from. [`catalog/user/README.md`](../../catalog/user/README.md) explains each one.
+
+**There is no CLI equivalent.** `specify <primitive> catalog add` calls
+`_require_specify_project()` and writes `<project>/.specify/<primitive>-catalogs.yml`; no
+subcommand has a `--user` flag. Spec Kit *reads* `~/.specify/<primitive>-catalogs.yml` for all
+four primitives, so the file route does once what the command route does per project.
+
+### Once per project
 
 ```bash
 specify init --here --integration claude          # if not already a Spec Kit project
-
-BASE=https://raw.githubusercontent.com/anvigo12/specup/main/catalog
-specify extension catalog add $BASE/extensions.json --name specup --install-allowed --priority 0
-specify preset    catalog add $BASE/presets.json    --name specup --install-allowed --priority 0
-specify workflow  catalog add $BASE/workflows.json  --name specup
-specify bundle    catalog add $BASE/bundles.json    --policy install-allowed --priority 0
-
 specify bundle install specup
 python3 -m pip install -r .specify/extensions/openup/requirements.txt
 ```
-
-The four `catalog add` commands are one-time, per machine. Spec Kit's `default` catalog
-holds only components vendored into the Spec Kit wheel, so every third-party project
-publishes its own catalog; registering it is the supported route, not a workaround. Each
-archive is pinned by SHA-256 and the install aborts if the bytes do not match.
 
 The bundle installs the extension, then the preset, then the four workflows. **The order is
 load-bearing.** The preset's guidance instructs agents to run validators the *extension*
@@ -174,9 +187,10 @@ touching anything; `--skip-record` omits the final provenance-recording call. Af
 route `specify bundle list` shows 0 components, which is correct and explained in
 [`bundles/specup/README.md`](../../bundles/specup/README.md#why-the-two-cannot-be-collapsed).
 
-**The `pip install` line is not optional.** Without `PyYAML`, `jsonschema` and `referencing`
-every validator exits `2`, and your workflows halt on the setup-fault branch instead of
-passing gates they could not evaluate. Confirm it took:
+**The `pip install` line is not optional.** `bundle install` says so itself — it prints
+`! Requires external tools: python3 >=3.10, pip: PyYAML>=6.0, jsonschema>=4.18,
+referencing>=0.30` from the bundle manifest — but a warning you scrolled past and an exit
+code you can see are different things, so check:
 
 ```bash
 python3 .specify/extensions/openup/scripts/python/audit.py; echo "exit=$?"
@@ -184,6 +198,47 @@ python3 .specify/extensions/openup/scripts/python/audit.py; echo "exit=$?"
 
 Exit `1` is the correct result on a fresh project — an empty plan is not a valid plan. Exit
 `2` means the dependencies are missing.
+
+`audit.py` is the right probe because it is one of the validators that needs all three.
+Missing `PyYAML` takes every validator to `2`; missing only the schema libraries is narrower,
+and the split is worth knowing when you are diagnosing a partial install:
+
+| Needs `jsonschema` + `referencing` | Runs on `PyYAML` alone |
+|---|---|
+| `validate_wbs`, `validate_risk`, `validate_trace`, `render_views`, `audit` | `validate_done`, `validate_context`, `select_work`, `derive_edges` |
+
+Either way the failure is an honest `2` rather than a gate that passes without evaluating,
+which is the property that matters.
+
+### If you would rather scope the catalogs to one project
+
+Run the four `catalog add` commands instead of copying the files, and know what they cost:
+
+```bash
+BASE=https://raw.githubusercontent.com/anvigo12/specup/main/catalog
+specify extension catalog add $BASE/extensions.json --name specup --install-allowed --priority 0
+specify preset    catalog add $BASE/presets.json    --name specup --install-allowed --priority 0
+specify workflow  catalog add $BASE/workflows.json  --name specup --priority 0
+specify bundle    catalog add $BASE/bundles.json    --id specup --policy install-allowed --priority 0
+```
+
+`--id specup` is not optional in spirit. Without it Spec Kit derives the source id from the
+URL and you get `raw-githubusercontent-com-bundles` in your config.
+
+**This removes Spec Kit's own catalogs from that project.** For extensions, presets and
+workflows a config file *replaces* the stack below it rather than merging —
+`get_active_catalogs` returns the first scope that loads and never consults the next. So a
+project config naming only `specup` is the entire stack for that primitive. On a fresh
+project `specify extension search` drops from **173 extensions to 1**.
+
+The four core extensions still install, because they are vendored in the wheel rather than
+fetched, and that is precisely what makes the loss hard to notice: nothing you try fails,
+things simply stop being findable. If you take this route, restate `default` and `community`
+in each file — [`catalog/user/*.yml`](../../catalog/user/) shows the shape, and those files
+work unchanged at project scope.
+
+Bundles are the exception both ways: their sources merge by id across built-in → user →
+project, so `bundle-catalogs.yml` never needs the built-ins restated.
 
 ### Scaffold
 
