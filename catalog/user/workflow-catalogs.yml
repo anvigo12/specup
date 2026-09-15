@@ -1,0 +1,28 @@
+# Spec Kit workflow catalog sources, user scope.
+#
+# Copy to ~/.specify/workflow-catalogs.yml. See README.md beside this file.
+#
+# `default` and `community` are Spec Kit's own built-in stack, restated because a
+# file at this path replaces that stack rather than merging with it.
+#
+# The four openup-* workflows are the only layer with real enforcement: a phase
+# workflow's shell step exits non-zero on a failing gate and halts the run. Losing
+# this catalog costs more than discovery.
+catalogs:
+  - name: specup
+    url: https://raw.githubusercontent.com/anvigo12/specup/main/catalog/workflows.json
+    priority: 0
+    install_allowed: true
+    description: SpecUP — OpenUP governed lifecycle
+
+  - name: default
+    url: https://raw.githubusercontent.com/github/spec-kit/main/workflows/catalog.json
+    priority: 1
+    install_allowed: true
+    description: Official workflows
+
+  - name: community
+    url: https://raw.githubusercontent.com/github/spec-kit/main/workflows/catalog.community.json
+    priority: 2
+    install_allowed: false
+    description: Community-contributed workflows (discovery only)

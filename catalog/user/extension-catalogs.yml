@@ -1,0 +1,27 @@
+# Spec Kit extension catalog sources, user scope.
+#
+# Copy to ~/.specify/extension-catalogs.yml. See README.md beside this file.
+#
+# The `default` and `community` entries below are Spec Kit's own built-in stack,
+# restated verbatim. They are NOT redundant. A config file at this path REPLACES
+# the built-in stack rather than merging with it, so a file listing only specup
+# would hide every extension Spec Kit ships with — 173 discoverable extensions
+# drop to 1. Keep them.
+catalogs:
+  - name: specup
+    url: https://raw.githubusercontent.com/anvigo12/specup/main/catalog/extensions.json
+    priority: 0
+    install_allowed: true
+    description: SpecUP — OpenUP governed lifecycle
+
+  - name: default
+    url: https://raw.githubusercontent.com/github/spec-kit/main/extensions/catalog.json
+    priority: 1
+    install_allowed: true
+    description: Built-in catalog of installable extensions
+
+  - name: community
+    url: https://raw.githubusercontent.com/github/spec-kit/main/extensions/catalog.community.json
+    priority: 2
+    install_allowed: false
+    description: Community-contributed extensions (discovery only)

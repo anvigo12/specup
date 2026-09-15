@@ -1,0 +1,24 @@
+# Spec Kit preset catalog sources, user scope.
+#
+# Copy to ~/.specify/preset-catalogs.yml. See README.md beside this file.
+#
+# `default` and `community` are Spec Kit's own built-in stack, restated because a
+# file at this path replaces that stack rather than merging with it.
+catalogs:
+  - name: specup
+    url: https://raw.githubusercontent.com/anvigo12/specup/main/catalog/presets.json
+    priority: 0
+    install_allowed: true
+    description: SpecUP — OpenUP governed lifecycle
+
+  - name: default
+    url: https://raw.githubusercontent.com/github/spec-kit/main/presets/catalog.json
+    priority: 1
+    install_allowed: true
+    description: Built-in catalog of installable presets
+
+  - name: community
+    url: https://raw.githubusercontent.com/github/spec-kit/main/presets/catalog.community.json
+    priority: 2
+    install_allowed: false
+    description: Community-contributed presets (discovery only)

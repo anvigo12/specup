@@ -1,0 +1,20 @@
+# Spec Kit bundle catalog sources, user scope.
+#
+# Copy to ~/.specify/bundle-catalogs.yml. See README.md beside this file.
+#
+# Two things differ from the other three files, both deliberate:
+#
+#   * The schema is different. Bundles use `schema_version` plus `id` and
+#     `install_policy`; the other three use `name` and `install_allowed`. Copying
+#     the shape from one of the others produces a file Spec Kit rejects.
+#   * There are no `default` or `community` entries, and that is not an omission.
+#     The bundle stack MERGES by id across built-in -> user -> project, so the
+#     built-ins survive on their own. The other three replace, which is why they
+#     restate theirs.
+schema_version: '1.0'
+
+catalogs:
+  - id: specup
+    url: https://raw.githubusercontent.com/anvigo12/specup/main/catalog/bundles.json
+    priority: 0
+    install_policy: install-allowed
