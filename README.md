@@ -450,7 +450,7 @@ workflows/openup-{phase}/          the four phase workflows
 bundles/specup/                    bundle.yml + the working-tree installer
 catalog/                           the four published catalog documents (generated)
 tools/                             archive + catalog generators
-tests/                             332 tests + fixtures
+tests/                             381 tests + fixtures
 ```
 
 ---
@@ -485,7 +485,7 @@ every audit.
 
 ```bash
 python3 -m pip install pyyaml jsonschema referencing pytest
-python3 -m pytest tests/ -q          # 324 passed, 8 skipped
+python3 -m pytest tests/ -q          # 373 passed, 8 skipped
 ```
 
 The 8 skips are the engine-validation tests. To run them, install spec-kit:
@@ -493,7 +493,7 @@ The 8 skips are the engine-validation tests. To run them, install spec-kit:
 ```bash
 uv venv .venv && uv pip install --python .venv/bin/python specify-cli==1.0.6 pytest
 uv pip install --python .venv/bin/python -r extensions/openup/requirements.txt
-.venv/bin/python -m pytest tests/ -q  # 332 passed
+.venv/bin/python -m pytest tests/ -q  # 381 passed
 ```
 
 Or with [Taskfile](docs/dev/taskfile.md), which wraps both suites and the release pipeline:

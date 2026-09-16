@@ -3,6 +3,15 @@
 > Capability contract (specup.md s8). `AGENTS.md` says **what rules must I obey**; this file
 > says **how do I perform this activity**. Keep the two separate — merging them produces a
 > document that is followed for neither purpose.
+>
+> **Done badly when** — edges are added to raise a coverage number rather than because the
+> relation holds. No check in this repository can detect it: an invented edge between two real
+> ids resolves, type-checks, and counts. Coverage computed over unverified claims is a number
+> about a graph, not about a system.
+>
+> **Checked by** — `TRC-001` through `TRC-013`, and `TRC-010` is the one that earns its place:
+> it re-runs the rule a `derived` edge names and fails any edge that rule does not reproduce.
+> **Nothing can tell a true asserted edge from a plausible invented one.**
 
 ## Purpose
 

@@ -1,12 +1,51 @@
 # Risk register — canonical machine-readable form.
 #
-# specup.md s19: this is not passive documentation. A risk at or above the configured
-# high_exposure_threshold MUST point at real WBS work and MUST declare how it will be
-# verified, or the Elaboration gate fails.
+# ANSWERS
+#   what could go wrong, how bad it would be, what work reduces it, and how the
+#   reduction will be proved. specup.md s19: this is not passive documentation. A risk
+#   at or above high_exposure_threshold MUST point at real WBS work and MUST declare how
+#   it will be verified, or the Elaboration gate fails.
 #
-#   exposure = probability x impact   (computed; a stored value that disagrees is an error)
+# DOES NOT ANSWER
+#   what to do about a risk right now. That is a WBS node with kind: risk-mitigation,
+#   and this file points at it rather than describing it.
+#
+# FILLED IN BADLY WHEN
+#   the numbers are chosen to land under the threshold. The arithmetic is checked and
+#   the inputs are not, so `probability: 0.3` on something nobody measured passes every
+#   check in this repository. The other symptom is a register that only ever shrinks:
+#   risks are closed on the strength of a decision having been taken, rather than on
+#   evidence that exposure fell.
+#
+# CHECKED BY
+#   RISK-001 recomputes exposure and rejects a stored value that disagrees. RISK-003
+#   rejects a residual exposure that is not strictly lower than the current one.
+#   RISK-004 fails a high risk with no mitigation, RISK-005 one with no verification,
+#   RISK-006 checks a mitigation link from both ends, and RISK-007 fails a `mitigated`
+#   risk with no evidence behind it. RISK-000 is the schema, and it is what fails an
+#   `accepted` risk carrying no approval. NOTHING checks whether a probability is true.
+#
+# AUTHORITY
+#   the risk owner maintains an entry; accepting a live risk is reserved for a named
+#   human (s59) and RISK-000 enforces that an approval is recorded.
+#
+# exposure = probability x impact   (computed; a stored value that disagrees is an error)
 #
 # risk-register.md is a GENERATED view of this file.
+#
+# ---------------------------------------------------------------------------
+# `mitigating` is a real state, not a waiting room.
+#
+# The case it exists for: you have done the work and you have the evidence, but the governed
+# link the schema wants — a WBS node of kind risk-mitigation — does not exist yet. The honest
+# record is `status: mitigating` with the evidence attached, and the register says plainly
+# that the reduction is real and the graph does not show it yet.
+#
+# Two wrong answers are available and both are worse. Marking it `mitigated` claims a
+# reduction the graph cannot corroborate. Inventing the WBS node to satisfy the schema puts a
+# fiction in the plan. A gate that blocks a premature closure is working, and the intermediate
+# state is how you record the truth while it does.
+# ---------------------------------------------------------------------------
 
 schema_version: "1.0"
 
@@ -24,6 +63,9 @@ risks: []
 #   phase_identified: ELABORATION
 #   iteration_identified: ITER-E-01
 #   status: open               # open | mitigating | mitigated | accepted | closed | materialized
+#                              # mitigating: the work is done and the evidence exists, but the
+#                              # governed link does not. Read the note at the top of this file
+#                              # before reaching for 'mitigated' instead.
 #   owner: "team-accountable-for-this-risk"
 #
 #   # The WBS nodes that reduce this risk. Each must have kind 'risk-mitigation' and must

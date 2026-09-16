@@ -1,8 +1,24 @@
 # Change Control
 
-> Authored, not generated (specup.md s5, s52). This describes how a change to a governed
-> artifact is proposed, assessed and absorbed. The impact *set* is computed; the decision about
-> it is yours.
+> **Answers** — how a change to a `BASELINED` artifact is proposed, assessed and absorbed.
+> Authored, not generated (specup.md s5, s52).
+>
+> **Does not answer** — what the change reaches. That is computed: `impact.py` traverses the
+> graph in both directions. The impact *set* is a fact; the decision about it is yours.
+>
+> **Filled in badly when** — the impact set is assessed from memory or by reading around the
+> code. Two failure modes follow, and the second is the dangerous one: a fan-out that looks
+> too small is usually right about the graph and wrong about the system, which means the
+> missing edges are the finding, not a reason to skip the step.
+>
+> **Checked by** — **nothing forces a change through this document.** There is no commit-trailer
+> validation and no pre-commit hook (s43, s44). What does happen automatically is `TRC-013`:
+> editing an artifact recomputes `approved_endpoints_hash`, and every edge approved for the
+> old content stops counting as evidence until someone approves it again. So the graph
+> notices afterwards even when nobody followed the process.
+>
+> **Authority** — per `.specify/governance/approval-matrix.md`, by the class of artifact being
+> changed. Re-baselining is a human act.
 
 ## When this applies
 

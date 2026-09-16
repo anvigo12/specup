@@ -1,8 +1,26 @@
 # Approval Matrix
 
-> Authored, not generated (specup.md s5, s59, s60). Fill in the **Who** column with real
-> names or standing groups before the first gate. An empty cell is an unowned decision, which
-> in practice means whoever is nearest at the time.
+> **Answers** — which decisions require a named human, and who that human is. Authored, not
+> generated (specup.md s5, s59, s60).
+>
+> **Does not answer** — whether an approval actually happened. That is recorded on the
+> artifact or the edge, and `validate_approvals.py` is what reads it back.
+>
+> **Filled in badly when** — the **Who** column is empty. That is the whole failure mode, and
+> it is silent: every gate still runs, every check still passes, and nobody notices that no
+> decision has an owner until one is disputed. If nobody is named here, anyone can override
+> anything and the gate is decorative.
+>
+> **Checked by** — `APV-000` **fails** when this file names no approver at all, and `APV-003`
+> **fails** an approval whose `by` is not a name in this table. `APV-002` goes further and
+> verifies the signature on a declared commit against `.specify/governance/allowed-signers`.
+> What nothing checks is whether the right person is in the cell.
+>
+> **Authority** — the product owner, or whoever owns the organisation's delegation. Changing
+> this table is a governance change, not an edit; it belongs in a diff someone reviewed.
+>
+> Fill in the **Who** column with real names or standing groups before the first gate. An
+> empty cell is an unowned decision, which in practice means whoever is nearest at the time.
 >
 > The sibling documents in this directory — `definition-of-ready.md`, `definition-of-done.md`
 > and `quality-gates.md` — are **generated** from the code that enforces them. This one is

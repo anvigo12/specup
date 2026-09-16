@@ -1,5 +1,33 @@
 # Work Breakdown Structure — canonical machine-readable form.
 #
+# ANSWERS
+#   what work exists, who owns it, where it sits in the lifecycle, and what governs it.
+#   WBS L7 IS the executable task (s15) — there is no separate task id anywhere in this
+#   system.
+#
+# DOES NOT ANSWER
+#   what order the work happens in, or when. `dependencies` records what must precede
+#   what; nothing here is a schedule, and a plan that reads like one is being maintained
+#   twice.
+#
+# FILLED IN BADLY WHEN
+#   the tree is deep and the leaves are narrative. Seven levels of heading with nothing
+#   executable at the bottom is a document, not a plan. The opposite failure is a leaf
+#   at L3 — levels 1 to 3 are pure structure, and a leaf there means the plan is empty
+#   rather than concise.
+#
+# CHECKED BY
+#   WBS-001 (declared level equals the id's segment count), WBS-002 (parentage is the id
+#   minus its last segment), WBS-003 (exactly one root), WBS-004 (leaf depth and
+#   terminal_reason), WBS-005/006/007 (every requirement, risk and acceptance id
+#   resolves), WBS-009 (no dependency cycles), WBS-010 (iteration letter matches phase).
+#   WBS-011 WARNS on a parent with too many children. NOTHING checks whether the work is
+#   the right work.
+#
+# AUTHORITY
+#   the node owner. The plan is not an approval artifact — what needs a named human is
+#   the requirement baseline the work serves, not the work breakdown.
+#
 # wbs.md is a GENERATED view of this file (specup.md s47). Edit this file; never edit both.
 #
 # Levels are semantic, and the id encodes the level — the number of dotted segments IS the

@@ -3,6 +3,14 @@
 > Capability contract (specup.md s8). `AGENTS.md` says **what rules must I obey**; this file
 > says **how do I perform this activity**. Keep the two separate — merging them produces a
 > document that is followed for neither purpose.
+>
+> **Done badly when** — the tree is deep and the leaves are narrative. Seven levels of heading
+> with nothing executable at the bottom is a document, not a plan (s65). The opposite failure
+> is a leaf at L1-L3, which means the plan is empty rather than concise.
+>
+> **Checked by** — `WBS-001` through `WBS-011`. What none of them check is whether this is the
+> right work: every id can resolve, every level can agree, and the plan can still be for a
+> system nobody asked for.
 
 ## Purpose
 

@@ -4,6 +4,22 @@
 > writing any governed document in this repository obeys these rules, the same way it obeys
 > "Resolve, or stop — never infer". A human reviewer enforces them; no validator does. Seeded
 > from the `openup` extension — amending it is a governance decision, not an edit.
+>
+> **Answers** — how a governed sentence is written, so that two readers get one meaning.
+>
+> **Does not answer** — what to write. A requirement can obey every rule here and still be the
+> wrong requirement; controlled language removes ambiguity, not error.
+>
+> **Filled in badly when** — a project amends it to permit the phrasing it already uses. The
+> amendment is legitimate and the reason for it usually is not, which is why it goes through
+> change control and shows up as a diff somebody reviewed.
+>
+> **Checked by** — **nothing.** No validator reads a requirement's prose. This is the largest
+> unchecked surface in the whole model, and the reason the reviewer is named as the
+> enforcement rather than left implied.
+>
+> **Authority** — whoever owns the repository's standards, under `change-control.md`. An
+> agent may propose an amendment; it may not make one.
 
 The controlled language is **ASD-STE100, Simplified Technical English**. It exists because technical English has too many ways to say one thing, and a reader must follow its meaning clearly and consistently.
 Refer: https://github.com/AminBlg/SimpleEnglish

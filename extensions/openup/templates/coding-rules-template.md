@@ -4,6 +4,21 @@
 > writing or changing code in this repository obeys these rules. A human reviewer enforces
 > them; no validator does. Seeded from the `openup` extension — amending it is a governance
 > decision, not an edit.
+>
+> **Answers** — how a failure is represented, inside a function, at an interface, and between
+> services, so that a failure mode can be traced, covered and evidenced like anything else.
+>
+> **Does not answer** — how to structure a system. That is the architecture document and the
+> ADRs. These rules apply the same whatever shape the system has.
+>
+> **Filled in badly when** — a project keeps the rules and adds an escape for each place it
+> was already throwing. One declared `openup: escape — <reason>` is a decision; twenty are the
+> old style wearing a comment.
+>
+> **Checked by** — **nothing here is machine-checked.** `DOC-004` asks a docstring to state a
+> boundary, which is adjacent but not the same thing. A `Result` type, a problem `type` URI and
+> a compensating saga step are all review findings, and the numbering exists so a review can
+> cite one rule rather than gesture at the file.
 
 Failure is a first-class value here, not an interruption. Three standards say how:
 

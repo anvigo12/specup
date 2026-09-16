@@ -36,6 +36,14 @@ A quality gate is machine-checkable, evidence-producing, and repeatable. "Archit
 good" is not a gate result. Absence of evidence is not evidence: a missing test report or
 review record fails its condition rather than being skipped.
 
+**There is a third verdict, and it is never rounded.** A check that could not run has not
+passed and has not failed. Every validator here reports it separately — exit `0` pass, exit
+`1` a governance failure, exit `2` could not evaluate — and a workflow branches on the
+difference, because a malformed YAML file and a failed milestone need different people. Carry
+the same discipline into anything you report: "not evaluated" is a legitimate answer and
+collapsing it into either neighbour is the failure. Rounded up it is a pass nobody earned;
+rounded down it sends someone to fix data that was never wrong.
+
 The following are prohibited, and each defeats a gate rather than passing it:
 
 - editing thresholds or removing a condition from `openup-config.yml` to clear a failure
@@ -87,6 +95,25 @@ only in someone's head.
 These three are enforced at review rather than by a validator, and each says so plainly in its
 own closing section. An agent's report that it followed them is `asserted` — the same label,
 carrying the same weight, as any other unverified claim.
+
+### IX. Re-read before asserting
+
+Any value stated as fact — a threshold, a clause, an id, a number from a document — is
+re-opened and read before it is stated. Not the summary of it formed earlier in the session.
+The source.
+
+A value reconstructed from memory arrives with exactly the same confidence as one just read,
+and nothing downstream can tell the two apart: the requirement, the test and the gate inherit
+the error together. It costs one file read to avoid.
+
+Two corollaries, because the failure has a characteristic shape:
+
+- **Agreement between two things you wrote is not corroboration.** A transcribed value checked
+  against a predicate derived from the same reading agrees because the two share an origin,
+  and they are wrong together. Corroboration needs a source you did not produce.
+- **Report which reading you did.** "Confirmed against §4.2" and "from a single reading,
+  unconfirmed" are both useful. Only the first is a claim, and a claim must be true. `DOC-005`
+  fails a docstring that claims a cross-check while naming fewer than two sources.
 
 ## Human Approval Boundaries
 

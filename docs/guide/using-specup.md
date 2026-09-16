@@ -248,15 +248,15 @@ project, so `bundle-catalogs.yml` never needs the built-ins restated.
 python3 .specify/extensions/openup/scripts/python/init_openup.py --program "My Product"
 ```
 
-This creates seven directories and seeds fourteen authored files plus six capability contracts
-and an `index.md` per governed directory:
+This creates seven directories and seeds seventeen authored files plus six capability
+contracts and an `index.md` per governed directory:
 
 ```
 .specify/
 ├── lifecycle/        vision.md, stakeholders.md, index.md
-├── governance/       change-control.md, approval-matrix.md, index.md,
+├── governance/       change-control.md, approval-matrix.md, allowed-signers, index.md,
 │                     language-rules.md, coding-rules.md, security-practices.md
-├── architecture/     index.md
+├── architecture/     architecture-template.md, adr-template.md, index.md
 ├── wbs/              wbs.yaml, index.md
 ├── risks/            risk-register.yaml, index.md
 ├── traceability/     requirements.yaml, traceability.yaml, index.md
@@ -270,6 +270,14 @@ skills/{wbs,risk,requirements,traceability,gherkin,architecture}/SKILL.md
 **`init_openup.py` never overwrites an authored file.** Re-running it is safe, and is the
 supported way to restore a store someone deleted. Authored content survives; that is the
 converse of "generated does not mean approved".
+
+**The two files under `architecture/` keep their `-template` names on purpose.** Copy
+`architecture-template.md` to `architecture.md` when you write one, and `adr-template.md` to
+`adr-0001-<slug>.md` per decision. `architecture_baselined` checks only that
+`architecture.md` **exists**, so seeding a blank one would retire the gate's first condition
+on day one while the document still said nothing. Left as templates, the gate keeps reporting
+"no architecture document found" — which is the truth — and an author still has somewhere to
+start.
 
 ### What that one command also generates
 

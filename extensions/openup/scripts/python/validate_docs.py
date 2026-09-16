@@ -204,10 +204,10 @@ def named_sources(doc: str) -> set[str]:
     citing one requirement would satisfy a check that asks for two sources.
 
     This counts **names**, and cannot judge independence. Two ids in one docstring may still
-    be two readings of one page, which is how the `cits-crypto` truth table went wrong. What
-    the check buys is that a claim of corroboration has to say what corroborated what; whether
-    those two things are genuinely independent is a human judgement, and an ADR is where it
-    gets recorded.
+    be two readings of one page, which is the failure this whole check descends from. What it
+    buys is that a claim of corroboration has to say what corroborated what; whether those two
+    things are genuinely independent is a human judgement, and an ADR is where it gets
+    recorded.
     """
     found = {_normalise(token) for token in ANCHOR_ID.findall(doc)}
     remainder = ANCHOR_ID.sub(" ", doc)
@@ -357,9 +357,9 @@ def validate(args: Any) -> Verdict:
 
     # DOC-005 — a claim of corroboration names two things. Always a failure.
     #
-    # The `cits-crypto` lesson, generalised. A truth table was transcribed from a reading of a
-    # rule rather than from the page, and the predicate written to cross-check it came from the
-    # same misreading. They agreed, and both were wrong. A docstring that says "cross-checked"
+    # The failure this comes from: a truth table transcribed from a reading of a rule rather
+    # than from the page, and a predicate written to cross-check it derived from the same
+    # misreading. They agreed, and both were wrong. A docstring that says "cross-checked"
     # while naming one source is making a claim of independence it cannot support, and the
     # reader's whole reason to trust the value is that claim.
     unsupported = []

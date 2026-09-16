@@ -45,6 +45,14 @@ SEEDS = {
     "stakeholders-template.md": ".specify/lifecycle/stakeholders.md",
     "change-control-template.md": ".specify/governance/change-control.md",
     "approval-matrix-template.md": ".specify/governance/approval-matrix.md",
+    # Seeded with their template names intact, which is the point. `architecture_baselined`
+    # checks only that `.specify/architecture/architecture.md` EXISTS, so seeding a blank one
+    # would retire the gate's first condition on day one while the document still said nothing.
+    # Left as templates, the gate keeps reporting "no architecture document found" until
+    # somebody writes one, and the author has somewhere to start. The ADR template is copied
+    # per decision, so it stays a template permanently.
+    "architecture-template.md": ".specify/architecture/architecture-template.md",
+    "adr-template.md": ".specify/architecture/adr-template.md",
     # The trust root APV-002 verifies a signed approval commit against. Seeded empty of keys
     # and full of reasoning: a project that never adds a signer gets warned by APV-004 rather
     # than silently trusting nobody, and the file explains why it is version-controlled.

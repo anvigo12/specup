@@ -1,9 +1,23 @@
 # Agent Operating Contract
 
-> specup.md s7. This file answers one question: **how is an agent allowed to operate in this
-> repository?** It is rules, not instructions for a task — that is what `skills/*/SKILL.md` is
-> for (s8). Keep the separation: `AGENTS.md` = what rules must I obey, `SKILL.md` = how do I
-> perform this activity.
+> **Answers** — how an agent is allowed to operate in this repository (specup.md s7).
+>
+> **Does not answer** — how to perform any particular activity. That is `skills/*/SKILL.md`
+> (s8). Keep the separation: `AGENTS.md` = what rules must I obey, `SKILL.md` = how do I
+> perform this activity. A contract that starts explaining procedure becomes long enough that
+> nobody reads the rules.
+>
+> **Filled in badly when** — it reads as encouragement. "Be careful", "use good judgement" and
+> "follow best practices" are unfalsifiable: no agent can tell whether it complied, and no
+> reviewer can tell either. Every rule below is written so that breaking it is visible.
+>
+> **Checked by** — `CTX-003` warns when no `AGENTS.md` is reachable above a governed directory.
+> **Nothing checks that any rule here was obeyed.** The rules are enforced by the validators
+> they point at, and by the reviewer, which is why each one names the check behind it or says
+> that there is none.
+>
+> **Authority** — whoever owns the repository. The nearest `AGENTS.md` wins, so a scoped file
+> narrows this one rather than replacing it.
 
 ## Mandatory startup
 
@@ -39,6 +53,26 @@ The single rule this whole model rests on. When a reference does not resolve, st
 Do not invent the requirement, the criterion, or the risk that would have made the task
 coherent. An invented governing artifact is worse than a missing one: it looks like governance
 and checks nothing.
+
+## Re-read before asserting
+
+Any value you are about to state as fact — a threshold, a clause, an id, a number from a
+document — you re-open and read before you state it. Not the summary of it you formed earlier
+in this session. The source.
+
+This is not diligence for its own sake. A value reconstructed from what you remember reading
+arrives with exactly the same confidence as one you just read, and nothing downstream can tell
+the two apart: the requirement, the test and the review all inherit the error together. It
+costs one file read to avoid, and it is the highest-yield habit in this document.
+
+Two corollaries:
+
+- **Agreement between two things you wrote is not corroboration.** If you check a transcribed
+  value against a predicate you derived from the same reading, they agree because they share
+  an origin, and they are wrong together. Corroboration needs a second source you did not
+  produce.
+- **Say which reading you did.** "Confirmed against §4.2" and "from a single reading,
+  unconfirmed" are both useful reports. Only the first one is a claim, and it must be true.
 
 ## The binding standards
 

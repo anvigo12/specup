@@ -3,6 +3,16 @@
 > Capability contract (specup.md s8). `AGENTS.md` says **what rules must I obey**; this file
 > says **how do I perform this activity**. Keep the two separate — merging them produces a
 > document that is followed for neither purpose.
+>
+> **Done badly when** — the record captures the outcome and not the forces. An ADR with one
+> considered option cannot tell a later reader whether the alternative was weighed and dropped
+> or never seen. The second failure is treating the decision as closing the risk that prompted
+> it: deciding how to mitigate is not mitigating.
+>
+> **Checked by** — `architecture_baselined` fails the Elaboration gate while any registered ADR
+> is below `APPROVED`, and `TRC-002`/`CTX-002`/`DOC-002` reject an `ADR-` id that does not
+> resolve. **Nothing reads an ADR.** Use `adr-template.md`, which carries the sections a
+> reviewer needs and the rule about confirming a transcribed value.
 
 ## Purpose
 

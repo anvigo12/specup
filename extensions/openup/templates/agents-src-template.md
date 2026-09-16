@@ -1,7 +1,23 @@
 # Agent Operating Contract — source
 
-> Scoped rules for implementation code (specup.md s7). The repository-root `AGENTS.md` applies
-> as well; this adds what is specific to changing code under governance.
+> **Answers** — what an agent must do before and after changing code under governance
+> (specup.md s7).
+>
+> **Does not answer** — how to write the code. That is `.specify/governance/coding-rules.md`
+> and `security-practices.md`, which bind the content; this binds the procedure around it.
+>
+> **Filled in badly when** — a rule here can be satisfied by editing a check instead of the
+> code. Every instruction below is written to close that route, because it is always the
+> cheapest one available and it always looks like progress.
+>
+> **Checked by** — `TRC-007` fails backward coverage when in-perimeter files do not reach a
+> requirement, `TRC-008` reports orphans, `DOC-002` fails a docstring naming an id that does
+> not resolve, and `validate_done.py` computes done rather than accepting the claim. What
+> nothing checks: whether a test was weakened to make a suite pass. A widened assertion and a
+> fixed defect look identical to every check in this repository.
+>
+> **Authority** — the code owner for the change; anything touching a `BASELINED` artifact goes
+> through `.specify/governance/change-control.md`.
 
 ## The standards that bind code
 

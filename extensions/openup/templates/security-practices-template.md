@@ -4,6 +4,23 @@
 > designing, writing or changing code in this repository obeys these rules. A human reviewer
 > enforces them; no validator does. Seeded from the `openup` extension — amending it is a
 > governance decision, not an edit.
+>
+> **Answers** — the standard the two security gate conditions are reviewed against.
+>
+> **Does not answer** — what this system's threats are. That is a threat model and a risk
+> register; these are the rules that hold whatever the threats turn out to be.
+>
+> **Filled in badly when** — the evidence record says `passed` and nobody can say which rules
+> were applied. A review that produced no findings and cites no rule numbers is indistinguishable
+> from a review that did not happen.
+>
+> **Checked by** — `security_review_complete` and `security_validation_passed` read an evidence
+> record and check that it says `passed`. **Neither knows what was reviewed.** That is the whole
+> reason this document exists; without it, those two gate conditions check only that somebody
+> wrote a file.
+>
+> **Authority** — the security owner named in `.specify/governance/approval-matrix.md`. A
+> security exception is one of the decisions specup.md s59 reserves for a named human.
 
 Two lifecycle gates depend on this file. `security_review_complete` closes the Lifecycle
 Architecture milestone and `security_validation_passed` closes the Product Release milestone.

@@ -3,6 +3,15 @@
 > Capability contract (specup.md s8). `AGENTS.md` says **what rules must I obey**; this file
 > says **how do I perform this activity**. Keep the two separate — merging them produces a
 > document that is followed for neither purpose.
+>
+> **Done badly when** — a requirement cannot be verified, which makes it a wish, or it gets
+> renamed rather than superseded. A rename is the expensive one: ids are graph edges, so
+> renaming silently detaches every edge that pointed at the old id.
+>
+> **Checked by** — `TRC-002` rejects an edge into an unregistered id, `TRC-005`/`TRC-006` fail
+> a requirement nothing implements or verifies, and `requirements_have_owners` fails the
+> Inception gate over a missing owner. **Nothing reads the sentence**, which is why
+> `language-rules.md` binds it and a human enforces that.
 
 ## Purpose
 

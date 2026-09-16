@@ -3,6 +3,16 @@
 > Capability contract (specup.md s8). `AGENTS.md` says **what rules must I obey**; this file
 > says **how do I perform this activity**. Keep the two separate — merging them produces a
 > document that is followed for neither purpose.
+>
+> **Done badly when** — the scenario is written from the implementation instead of from the
+> acceptance criterion. It passes immediately, it will never fail, and it inverts the
+> relationship the whole model rests on: the criterion is the specification, and the scenario
+> is evidence about the system rather than a restatement of the code.
+>
+> **Checked by** — `TRC-012` fails an acceptance criterion no scenario executes, and `TRC-011`
+> reports a rule-derivable tag edge that no store declares. **Nothing here runs a scenario** —
+> `acceptance_scenarios_passing` reads `.specify/evidence/acceptance-results.json` and trusts
+> the record, so a green gate is only as honest as whatever produced that file.
 
 ## Purpose
 

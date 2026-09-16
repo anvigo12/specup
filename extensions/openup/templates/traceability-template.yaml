@@ -1,5 +1,35 @@
 # Traceability graph — the relation store.
 #
+# ANSWERS
+#   how governed artifacts relate, and on what evidence. The `provenance` field is the
+#   honest part: coverage computed over unverified claims is a number about a graph, not
+#   about a system.
+#
+# DOES NOT ANSWER
+#   what any artifact IS. That is requirements.yaml. An edge here names two ids and
+#   asserts nothing about either.
+#
+# FILLED IN BADLY WHEN
+#   edges are added to raise a coverage number rather than because the relation holds.
+#   It is undetectable by any check in this repository — an invented edge between two
+#   real ids resolves, type-checks, and counts. The other symptom is everything labelled
+#   `asserted` forever: correct, but it means no rule was ever written and no human ever
+#   signed anything.
+#
+# CHECKED BY
+#   TRC-001 rejects a duplicate (from, relation, to) triple, TRC-002 fails an endpoint
+#   that does not resolve, TRC-003 rejects a relation outside the closed vocabulary or
+#   between illegal types, TRC-004 rejects cycles, TRC-005 and TRC-007 fail forward and
+#   backward coverage below threshold, TRC-008 reports orphans, TRC-009 fails an
+#   under-provenanced edge on a BASELINED artifact, TRC-010 RE-RUNS the rule behind a
+#   `derived` edge and fails any it does not reproduce, and TRC-013 warns when an
+#   `approved` edge no longer matches what was approved, which stops it counting as
+#   evidence. NOTHING can tell a true asserted edge from a plausible invented one.
+#
+# AUTHORITY
+#   anyone may assert an edge; only a named human can approve one, and approve_edge.py
+#   is the only correct way to record that.
+#
 # Edges are stored ONCE, in active voice. The inverse direction is DERIVED at load time and
 # must never be written here: two hand-maintained directions are two things that can
 # disagree, and disagreement is exactly what traceability exists to prevent.

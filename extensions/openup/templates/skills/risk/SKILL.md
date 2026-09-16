@@ -3,6 +3,14 @@
 > Capability contract (specup.md s8). `AGENTS.md` says **what rules must I obey**; this file
 > says **how do I perform this activity**. Keep the two separate — merging them produces a
 > document that is followed for neither purpose.
+>
+> **Done badly when** — the numbers are chosen to land under the threshold. The arithmetic is
+> checked and the inputs are not, so `probability: 0.3` on something nobody measured passes
+> every check here. The other symptom is a register that only ever shrinks, because risks get
+> closed on the strength of a decision having been taken rather than on evidence exposure fell.
+>
+> **Checked by** — `RISK-000` through `RISK-007`. **Nothing checks whether a probability is
+> true.** Reassess from what the iteration actually taught, and expect some numbers to go up.
 
 ## Purpose
 

@@ -1,5 +1,33 @@
 # Governed artifacts other than WBS nodes and risks, which have their own stores.
 #
+# ANSWERS
+#   what exists, what it is called, who owns it, and how far through the governance
+#   states it has got. This is the registry every edge points into: an id that is not
+#   here resolves to nothing.
+#
+# DOES NOT ANSWER
+#   how any two artifacts relate. That is traceability.yaml, and the separation is
+#   deliberate — identity in one file, relationships in another, so a rename is one edit
+#   rather than a search.
+#
+# FILLED IN BADLY WHEN
+#   a title that restates the id ("REQ-AUTH-0014: authentication requirement") and an
+#   owner that is a team nobody is on. The state column is the other one: artifacts that
+#   sit at DRAFT forever are a register nobody is using, and artifacts that arrive at
+#   BASELINED in one commit are a register nobody reviewed.
+#
+# CHECKED BY
+#   TRC-002 fails an edge pointing at an id that is not registered, WBS-005/006/007
+#   fail a WBS node naming one, CTX-002 fails a context map naming one, and DOC-002
+#   fails a docstring naming one. requirements_have_owners fails the Inception gate over
+#   a requirement with no owner. This file is NOT schema-validated — no check reads its
+#   shape, so a misspelled key is silently ignored rather than rejected. Read the
+#   `cites:` note below in that light.
+#
+# AUTHORITY
+#   the owner named on each artifact drafts it; moving one to BASELINED or beyond is
+#   reserved for a named human (s59) and requires a recorded approval.
+#
 # Every artifact here obeys the ID grammar and the governance states in
 # .specify/extensions/openup/schemas/ID-GRAMMAR.md. Artifacts created by a command always
 # enter at DRAFT: generated does not mean approved (specup.md s31).
@@ -7,6 +35,35 @@
 #   DRAFT -> REVIEW -> APPROVED -> BASELINED -> IMPLEMENTED -> VERIFIED -> ACCEPTED
 #
 # BASELINED and beyond require a recorded approval with a named human.
+#
+# ---------------------------------------------------------------------------
+# `cites:` — a convention, not a field.
+#
+# When a requirement takes a value from an external source, cite it at the level a reviewer
+# can actually check: the document, its edition, and the clause. A citation to a document
+# alone is a citation to several hundred pages, and it will not be followed.
+#
+#   - id: NON-FR-CRYPTO-0003
+#     type: non-functional-requirement
+#     title: "Signature verification completes within the published budget"
+#     status: DRAFT
+#     owner: "architect"
+#     cites:
+#       - document: "<standard designation>"
+#         edition: "<year or revision>"
+#         clause: "<section number>"
+#         value: "<the number or rule taken from it>"
+#
+# Nothing reads this key. No validator globs it, no schema requires it, and adding it to
+# artifact.schema.json would change nothing either, because this registry is never validated
+# against a schema. It is here because value-level citation is what makes review possible at
+# all: without it, a reviewer checking one number has to guess which page it came from, and
+# will take the author's word instead.
+#
+# If a value was transcribed once, from one reading, say so. A value nobody confirmed is
+# workable. A value presented as confirmed when it was not is the kind of error that survives
+# review precisely because it looks finished.
+# ---------------------------------------------------------------------------
 
 schema_version: "1.0"
 

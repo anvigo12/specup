@@ -1,8 +1,26 @@
 # Governance Index
 
-> The context map for this directory (specup.md s9). An agent navigates
-> directory -> AGENTS.md -> index.md -> the one artifact it needs, instead of loading the
-> repository. This is what keeps per-task context bounded (s56, s57).
+> **Answers** — what is in this directory and which single artifact to open next. An agent
+> navigates directory -> AGENTS.md -> index.md -> the one artifact it needs, instead of
+> loading the repository (specup.md s9, s56, s57).
+>
+> **Does not answer** — what the rules are. That is the nearest `AGENTS.md`. A map that starts
+> giving instructions is a second operating contract, and the two will disagree.
+>
+> **Filled in badly when** — it lists every id in the project instead of the ones that matter
+> here, or it goes stale. A map is only worth reading if it is shorter than the thing it maps.
+> The failure that actually hurts: an id that used to resolve and no longer does. It does not
+> merely fail to help — it sends an agent looking for something that is not there, and an
+> agent willing to infer will fill the hole itself.
+>
+> **Checked by** — `CTX-001` warns when a governed directory has no `index.md`, and `CTX-002`
+> **fails** when an id-shaped token here does not resolve. That split is the project's rule in
+> miniature: a missing thing warns, a misleading thing fails. **Nothing checks what this map
+> leaves out.** `CTX-002` reads the ids that are here; an artifact the map never mentions is
+> invisible to it, so a map can be entirely correct and still send an agent nowhere useful.
+>
+> **Authority** — whoever owns the directory. No approval needed; this is navigation, not a
+> decision.
 
 ## Purpose
 

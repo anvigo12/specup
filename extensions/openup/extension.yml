@@ -95,6 +95,18 @@ provides:
       file: templates/index-template.md
       description: "Directory context map for progressive disclosure"
 
+    # Both seed as templates rather than as the documents themselves. `architecture_baselined`
+    # checks only that `architecture.md` exists, so seeding a blank one would retire the gate's
+    # first condition on day one while the document still said nothing. A template in place
+    # gives an author somewhere to start and leaves the gate telling the truth.
+    - name: openup-architecture
+      file: templates/architecture-template.md
+      description: "The architecture document the Elaboration gate looks for, and what it must name"
+
+    - name: openup-adr
+      file: templates/adr-template.md
+      description: "One architecture decision: forces, options rejected, costs, and when to revisit it"
+
     # The other three governance documents (definition-of-ready, definition-of-done,
     # quality-gates) have no template on purpose: render_views.py generates them from the
     # code that enforces them, so the document and the check cannot drift.
