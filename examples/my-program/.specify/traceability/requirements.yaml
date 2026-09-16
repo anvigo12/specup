@@ -1,0 +1,88 @@
+# My Program — the governed artifact registry.
+#
+# Everything an edge can point at that is not a WBS node, a risk, or a source path is
+# registered here. An id that is not in this file resolves to nothing, and TRC-002 fails any
+# edge that reaches for it.
+#
+# Every artifact below sits at DRAFT or REVIEW. That is the correct state for a program at
+# Inception, and it is not a formality: BASELINED and beyond require a recorded approval from
+# a named human, and nothing here has been approved yet. Generated does not mean approved.
+
+schema_version: "1.0"
+
+artifacts:
+  # -- the business case ----------------------------------------------------------------
+
+  - id: BUS-OBJ-0001
+    type: business-objective
+    title: "Cut the time a new customer waits for a first response from 4 hours to 5 minutes"
+    status: REVIEW
+    owner: "product-owner"
+    priority: high
+    # A business objective with no measure cannot be missed, and therefore cannot be met.
+    # This one names the number and the direction; whether 5 minutes is the right target is
+    # a judgement no validator can make.
+
+  # -- what the system must do ----------------------------------------------------------
+
+  - id: REQ-GREET-0001
+    type: requirement
+    title: "The service must return a greeting for a known customer within 200 ms"
+    status: DRAFT
+    owner: "product-owner"
+    priority: high
+    phase: INCEPTION
+    iteration: ITER-I-01
+    # Written to be falsifiable, per language-rules.md: one statement, "must" for an
+    # obligation, and a number an observation can contradict. "The service must be fast"
+    # would register, trace and pass every structural check while meaning nothing.
+
+  - id: NON-FR-GREET-0001
+    type: non-functional-requirement
+    title: "The service must sustain 500 requests per second at the 200 ms target"
+    status: DRAFT
+    owner: "architect"
+    priority: high
+    # The quality attribute behind RISK-0001. Registered as its own artifact rather than as
+    # a clause inside REQ-GREET-0001, because a risk, a spike and an ADR all need to point
+    # at it, and a clause inside another requirement has no id to point at.
+    #
+    # `cites:` is a convention rather than a field — nothing reads it, and this registry is
+    # never schema-validated. It is here because a reviewer checking where 500 came from
+    # should not have to ask.
+    cites:
+      - document: "My Program capacity study"
+        edition: "2026-Q1"
+        clause: "3.2"
+        value: "peak observed load, 420 rps, plus 20% headroom"
+
+  # -- how it will be verified ----------------------------------------------------------
+
+  - id: AC-GREET-0001-0001
+    type: acceptance-criterion
+    title: "A request for a registered customer returns 200 and a greeting inside 200 ms"
+    status: DRAFT
+    owner: "qa-lead"
+    # TRC-012 fails this criterion today: no Gherkin scenario executes it. That is correct
+    # and it is the state the plan says it is in — WBS-1.1.1.1.1.1.3 is the work that
+    # closes it, and it is still `planned`.
+
+  # -- the iterations -------------------------------------------------------------------
+  #
+  # Registered because `belongs-to` points at them. The `wbs-iteration-field` derivation rule
+  # reads every WBS node's `iteration:` field and produces one edge per node, so an iteration
+  # that is not a registered artifact makes every one of those edges fail TRC-002.
+
+  - id: ITER-I-01
+    type: iteration
+    title: "Inception iteration 1 — establish the case"
+    status: DRAFT
+    owner: "iteration-owner"
+    phase: INCEPTION
+
+  - id: ITER-E-01
+    type: iteration
+    title: "Elaboration iteration 1 — prove the architecture"
+    status: DRAFT
+    owner: "architect"
+    phase: ELABORATION

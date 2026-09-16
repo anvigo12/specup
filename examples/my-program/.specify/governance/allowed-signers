@@ -1,0 +1,12 @@
+# Allowed signers — the trust root for approvals in My Program.
+#
+# Empty of keys, and that is this program's honest state: nobody has set up signed approvals
+# yet. `approvals.require_witness_at_or_above` is null to match, so APV-005 does not fire and
+# APV-004 warns on every approval instead — the gap is visible from day one without breaking
+# a program that has not got there.
+#
+# Add a line per signer, then raise the floor. Adding a key is a governance change under
+# change-control.md, not an edit, which is the whole reason this file is in version control
+# rather than in somebody's global git config.
+#
+#   dana@example.org ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAA...

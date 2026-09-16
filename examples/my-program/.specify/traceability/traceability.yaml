@@ -1,0 +1,69 @@
+# My Program — the relation store.
+#
+# Every edge here is `asserted`, and that is the correct label rather than a shortfall. An
+# `asserted` edge is a claim by whoever wrote it. `derived` means a rule in derivers.py
+# recomputes the edge from the filesystem, and TRC-010 re-runs that rule and fails any edge
+# it does not reproduce — so labelling one of these `derived` to improve the provenance mix
+# would not raise the number, it would fail the graph. `approved` is recorded by
+# approve_edge.py, never by hand, because the hash it writes binds the signature to the
+# endpoints as they stand.
+#
+# The `derived` edges are in `derived.yaml`, which `derive_edges.py --write` owns and rewrites
+# in full. Ten of the fourteen edges in this graph are there, all from one rule:
+# `wbs-iteration-field` reads each WBS node's `iteration:` field and produces a `belongs-to`
+# edge. Derivation fires here even though this tree holds no code, because that rule reads the
+# WBS rather than the filesystem — the rules that do need code (a test file named after its
+# subject, a @SCEN- tag in a .feature file) produce nothing, which shows up as a zero beside
+# their name in the `by_rule` metric rather than as a failure.
+
+schema_version: "1.0"
+scope: ".specify"
+
+edges:
+  # -- the business case holds together -------------------------------------------------
+  # Both requirements refine the objective. Without these two edges each requirement is an
+  # orphan under TRC-008: work with no stated reason to exist.
+
+  - from: REQ-GREET-0001
+    relation: refines
+    to: BUS-OBJ-0001
+    provenance: asserted
+
+  - from: NON-FR-GREET-0001
+    relation: refines
+    to: BUS-OBJ-0001
+    provenance: asserted
+
+  # -- how the functional requirement will be verified -----------------------------------
+  # An acceptance criterion `verifies` a requirement. This is what moves REQ-GREET-0001 into
+  # the verified half of the coverage figure; NON-FR-GREET-0001 has nothing verifying it yet,
+  # which is why TRC-006 still fails and `requirements_traceable` with it.
+
+  - from: AC-GREET-0001-0001
+    relation: verifies
+    to: REQ-GREET-0001
+    provenance: asserted
+
+  # -- the mitigation reaches the risk ---------------------------------------------------
+  # The WBS node carries `risks: [RISK-0001]` and the risk carries `mitigation:
+  # [WBS-1.2.1.2]`; this edge is the same fact in the graph, which is what `impact.py`
+  # traverses. Without it the node is a leaf with no requirements and no out-edges, which
+  # TRC-008 reports as an orphan WBS node.
+
+  - from: WBS-1.2.1.2
+    relation: mitigates
+    to: RISK-0001
+    provenance: asserted
+
+# NOTHING IMPLEMENTS EITHER REQUIREMENT, AND NO EDGE HERE PRETENDS OTHERWISE.
+#
+# `implements` runs from work or a source file to a requirement. At Inception there is no
+# code and the Elaboration work is not decomposed, so there is nothing that could honestly
+# be at the near end of that edge. TRC-005 therefore reports 0% forward coverage and
+# `requirements_traceable` fails.
+#
+# The cheap repair would be an `implements` edge from WBS-1.1.1.1.1.1.1 — the task that
+# writes the vision — to REQ-GREET-0001. It would resolve, it would type-check, it would
+# raise forward coverage to 100%, and no check in this repository could detect that it is
+# false. That is the one failure mode the provenance model cannot close, and it is why the
+# audit prints the provenance mix next to every coverage figure.

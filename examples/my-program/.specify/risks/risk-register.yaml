@@ -1,0 +1,60 @@
+# My Program — the risk register.
+#
+# Two risks, deliberately on opposite sides of the high threshold (0.40), because the
+# threshold is what makes the register consequential rather than decorative:
+#
+#   RISK-0001  0.63  above  -> must point at real WBS work AND declare how the reduction
+#                             will be proved, or the Elaboration gate fails
+#   RISK-0002  0.18  below  -> may sit open with neither, and that is a legitimate choice
+#
+# RISK-0001 has its mitigation node and NOT its verification reference. That is the state
+# this program is actually in, and it is why `all_high_risks_have_mitigation` fails: RISK-004
+# passes, RISK-005 does not. Adding a verification reference now, to a test nobody has
+# designed, would make the gate green and the register false.
+
+schema_version: "1.0"
+
+risks:
+  - id: RISK-0001
+    title: "The 500 rps target may be unreachable on the chosen runtime"
+    description: >-
+      The capacity study measured 420 rps on the current stack, with no headroom left at the
+      200 ms target. If the runtime cannot be made to reach 500 rps, NON-FR-GREET-0001 is not
+      achievable and the architecture has to change, which at Elaboration is expensive and
+      at Construction is a re-write.
+    category: architectural
+    probability: 0.7
+    impact: 0.9
+    exposure: 0.63
+    phase_identified: INCEPTION
+    iteration_identified: ITER-I-01
+    status: open
+    owner: "architect"
+
+    # RISK-004 is satisfied: a high risk points at real work. The link is checked from both
+    # ends — WBS-1.2.1.2 must list RISK-0001 back, and RISK-006 fails if the two disagree.
+    mitigation:
+      - WBS-1.2.1.2
+
+    # No `verification:` key, and no residual estimate either. Both are honest omissions:
+    # nobody has designed the spike, so there is nothing to name, and a residual exposure
+    # guessed before the spike runs is a number that will be quoted later as if it were
+    # measured.
+
+  - id: RISK-0002
+    title: "The greeting copy may not survive legal review"
+    description: >-
+      The wording shown to a customer has not been through legal review. A rejection costs a
+      copy change and a re-run of the acceptance scenarios; it does not change the
+      architecture.
+    category: compliance
+    probability: 0.3
+    impact: 0.6
+    exposure: 0.18
+    phase_identified: INCEPTION
+    iteration_identified: ITER-I-01
+    status: open
+    owner: "product-owner"
+    # Below the high threshold, so it carries no mitigation node and TRC-008 does not report
+    # it as an orphan. Carrying a risk without acting on it is a decision the model allows;
+    # what it does not allow is carrying a HIGH one that way.

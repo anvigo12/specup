@@ -24,6 +24,7 @@ traceability.
 | [Using SpecUP](docs/guide/using-specup.md) | The operating manual — every command, every check id, every config key |
 | [New project](docs/guide/new-project.md) | Greenfield adoption |
 | [Existing project](docs/guide/existing-project.md) | Brownfield adoption, where intent has to be recovered |
+| [Worked example](examples/README.md) | A governed program that **passes Inception and fails Elaboration**, and why each failure is correct |
 | [Release notes 0.1.0](docs/runbooks/release-notes-0.1.0.md) | What ships, what is enforced, what is not |
 | [Publishing runbook](docs/runbooks/publishing-to-spec-kit.md) | Cutting a release and keeping the catalog honest |
 | [Taskfile](docs/dev/taskfile.md) | The task runner, and the boundary it must not cross |
@@ -135,6 +136,22 @@ Then drive a phase:
 specify workflow run ./workflows/openup-inception/workflow.yml \
   --input idea="..." --input program="My Product"
 ```
+
+### See it fail first
+
+There is a worked program in [`examples/`](examples/README.md). It passes the Inception gate
+and fails the Elaboration gate on five conditions, which is the state a real program is in on
+its first day:
+
+```bash
+python3 extensions/openup/scripts/python/evaluate_gate.py \
+    --gate GATE-LIFECYCLE_ARCHITECTURE --root examples/my-program   # exit 1, 5 of 7 failed
+```
+
+Every one of those five has a one-minute repair that turns the gate green and the record
+false, and `examples/README.md` names each one. That is not a gap in the tooling — it is the
+boundary of what a filesystem check can establish, and the reason the audit prints the
+provenance mix beside every coverage figure.
 
 To install this repository instead of a release — developing SpecUP, needing an unreleased
 change, or working offline — use
@@ -439,18 +456,20 @@ an unwrapped command, and `specify preset remove` left nothing behind.
 ```
 specup.md                          the original design document (unchanged)
 extensions/openup/
-  extension.yml                    manifest: 9 commands, 15 templates, 15 scripts
+  extension.yml                    manifest: 9 commands, 18 templates, 17 scripts
   schemas/                         ID-GRAMMAR.md + 4 JSON Schemas
-  scripts/python/                  the validators (~3,900 lines)
+  scripts/python/                  the validators (~4,800 lines)
   templates/                       starter WBS, risk, traceability, vision, index,
-                                   the three binding standards, 6 capability contracts
+                                   architecture + MADR ADR, the three binding standards,
+                                   6 capability contracts
   openup-config.yml                thresholds, perimeter, gate definitions
 presets/openup-governance/         4 append addenda + 2 wrap overlays
 workflows/openup-{phase}/          the four phase workflows
 bundles/specup/                    bundle.yml + the working-tree installer
 catalog/                           the four published catalog documents (generated)
 tools/                             archive + catalog generators
-tests/                             381 tests + fixtures
+examples/                          a worked program + the deliverable it governs
+tests/                             395 tests + fixtures
 ```
 
 ---
@@ -485,7 +504,7 @@ every audit.
 
 ```bash
 python3 -m pip install pyyaml jsonschema referencing pytest
-python3 -m pytest tests/ -q          # 373 passed, 8 skipped
+python3 -m pytest tests/ -q          # 387 passed, 8 skipped
 ```
 
 The 8 skips are the engine-validation tests. To run them, install spec-kit:
@@ -493,7 +512,7 @@ The 8 skips are the engine-validation tests. To run them, install spec-kit:
 ```bash
 uv venv .venv && uv pip install --python .venv/bin/python specify-cli==1.0.6 pytest
 uv pip install --python .venv/bin/python -r extensions/openup/requirements.txt
-.venv/bin/python -m pytest tests/ -q  # 381 passed
+.venv/bin/python -m pytest tests/ -q  # 395 passed
 ```
 
 Or with [Taskfile](docs/dev/taskfile.md), which wraps both suites and the release pipeline:

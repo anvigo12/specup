@@ -1,0 +1,169 @@
+# My Program — OpenUP configuration.
+#
+# ANSWERS
+#   every value specup.md leaves undefined for THIS program: where the stores live, what
+#   "high" exposure means, what the gates require, and what counts as in scope.
+#
+# DOES NOT ANSWER
+#   what the program is for. That is vision.md. Nothing in this file is a decision about
+#   the product.
+#
+# FILLED IN BADLY WHEN
+#   a threshold is moved to make a run go green. Every number here is referenced by a
+#   validator, so lowering one silently converts a failure into a pass and nothing records
+#   that it happened. Lower a threshold as a decision, never as a repair.
+#
+# CHECKED BY
+#   every validator reads this file, and evaluate_gate.py fails GATE-000 when a gate names
+#   a condition it cannot find. NOTHING checks that the values are the right values for
+#   this program — that is what makes changing one a governance act.
+#
+# AUTHORITY
+#   the program owner. A change here goes through change-control.md like any other
+#   baselined artifact.
+
+schema_version: "1.0"
+
+lifecycle:
+  # This example sits at INCEPTION on purpose, which is the state a real program is in on
+  # its first day. GATE-LIFECYCLE_OBJECTIVES passes here; GATE-LIFECYCLE_ARCHITECTURE fails
+  # on five conditions, and it is meant to. An example that shipped green would teach that
+  # the gates are decorative.
+  phase: INCEPTION
+  iteration: ITER-I-01
+
+wbs:
+  depth_policy: semantic
+  never_terminal_above: 3
+  max_children_warn: 25
+  store: .specify/wbs/wbs.yaml
+
+risk:
+  high_exposure_threshold: 0.40
+  critical_exposure_threshold: 0.65
+  require_mitigation_at_or_above: high
+  require_verification_at_or_above: high
+  require_residual_reduction: true
+  store: .specify/risks/risk-register.yaml
+
+artifacts:
+  stores:
+    - .specify/traceability/requirements.yaml
+
+approvals:
+  allowed_signers: .specify/governance/allowed-signers
+
+  # null, like a real first-day program. Nobody here has signed anything yet, so APV-004
+  # warns on every approval and the gap is visible. Raise this to BASELINED once the
+  # approvals in this program carry commits — and raise it as a decision.
+  require_witness_at_or_above: null
+
+docs:
+  # Empty, and it will stay empty while this program has no code of its own to check.
+  # See the perimeter note below: the deliverable lives in a different root.
+  enforce: []
+  max_docstring_lines: 40
+
+traceability:
+  stores:
+    - .specify/traceability/traceability.yaml
+    # Machine-owned. `derive_edges.py --write` regenerates it wholesale; never hand-edit it.
+    # Keeping derived edges in their own store is what lets one be *reproduced* rather than
+    # merely *labelled* — TRC-010 re-runs the rule and fails any edge it does not produce.
+    - .specify/traceability/derived.yaml
+
+  # THE PERIMETER IS EMPTY HERE, AND THAT IS THE POINT.
+  #
+  # A program is not a repository. This tree governs "My Program"; the code it will deliver
+  # lives in `my-project/`, which is a different root. `graph.perimeter_files()` walks the
+  # project root and nothing above it, so no file in a sibling directory can ever be in
+  # scope — backward coverage over this tree is a ratio with nothing in the denominator.
+  #
+  # Say that out loud rather than leaving it to be discovered. Two layouts are available and
+  # the choice is architectural:
+  #
+  #   one root   governance and code in the same repository. File-level traceability works:
+  #              `implements` edges point at real paths, TRC-007 measures something, and the
+  #              DOC-* checks have Python to read.
+  #   two roots  this layout. Traceability stops at the artifact level — requirement,
+  #              criterion, risk, WBS node — and no check can reach a source file.
+  #
+  # Neither is wrong. What is wrong is running the second and reporting the coverage figure
+  # as though it were the first.
+  perimeter:
+    include:
+      - "src/**"
+    exclude:
+      - "**/*.test.*"
+      - "**/*.spec.*"
+
+  coverage_thresholds:
+    forward: 1.00
+    backward: 0.95
+  baseline_min_provenance: approved
+
+gherkin:
+  features_glob: "specs/*/acceptance/**/*.feature"
+  require_ac_tag: true
+  require_requirement_tag: true
+  require_scenario_per_ac: true
+
+testing:
+  stem_suffixes: [".test", ".spec", "_test", "_spec", "-test", "Test"]
+  stem_prefixes: ["test_", "test-"]
+
+contracts:
+  openapi_glob: "specs/*/contracts/*.openapi.{yaml,yml,json}"
+  microcks:
+    enabled: false
+
+gates:
+  GATE-LIFECYCLE_OBJECTIVES:
+    phase: INCEPTION
+    conditions:
+      - vision_present
+      - stakeholders_identified
+      - initial_risks_registered
+      - wbs_levels_1_to_3_valid
+      - requirements_have_owners
+
+  GATE-LIFECYCLE_ARCHITECTURE:
+    phase: ELABORATION
+    conditions:
+      - architecture_baselined
+      - all_high_risks_have_mitigation
+      - requirements_traceable
+      - critical_contracts_defined
+      - security_review_complete
+      - wbs_valid
+      - human_approvals_witnessed
+
+  GATE-INITIAL_OPERATIONAL_CAPABILITY:
+    phase: CONSTRUCTION
+    conditions:
+      - wbs_valid
+      - forward_coverage_met
+      - backward_coverage_met
+      - acceptance_scenarios_passing
+      - definition_of_done_met
+      - no_open_critical_risks
+      - no_orphans
+
+  GATE-PRODUCT_RELEASE:
+    phase: TRANSITION
+    conditions:
+      - all_gates_passed
+      - release_evidence_complete
+      - no_open_high_risks
+      - traceability_final
+      - security_validation_passed
+      - human_approvals_witnessed
+
+audit:
+  fail_on:
+    - broken_references
+    - orphan_requirements
+    - orphan_wbs_nodes
+    - unmitigated_high_risk
+    - coverage_below_threshold
+    - dangling_docstring_anchor

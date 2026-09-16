@@ -1,0 +1,185 @@
+# My Program — Work Breakdown Structure.
+#
+# Filled in as a program on its first day: Inception decomposed to L7 because that work is
+# starting, Elaboration stopped at L4 with a terminal_reason because it is not. Decomposing
+# Elaboration now would produce seven levels of guess, which is the failure specup.md s65
+# names and WBS-011 cannot see.
+
+schema_version: "1.0"
+program: "My Program"
+depth_policy: semantic
+
+nodes:
+  - id: WBS-1
+    name: "My Program"
+    level: 1
+    status: in-progress
+    kind: structural
+    owner: "program-owner"
+
+  # ---- L2: the phases -----------------------------------------------------------------
+  # Both phases exist from the start. A phase node is structure, not work, so it carries no
+  # requirements and is never a leaf.
+
+  - id: WBS-1.1
+    name: "Inception"
+    level: 2
+    parent: WBS-1
+    phase: INCEPTION
+    status: in-progress
+    kind: structural
+    owner: "program-owner"
+
+  - id: WBS-1.2
+    name: "Elaboration"
+    level: 2
+    parent: WBS-1
+    phase: ELABORATION
+    status: planned
+    kind: structural
+    owner: "architect"
+
+  # ---- L3: the iterations -------------------------------------------------------------
+
+  - id: WBS-1.1.1
+    name: "ITER-I-01 — establish the case"
+    level: 3
+    parent: WBS-1.1
+    phase: INCEPTION
+    iteration: ITER-I-01
+    status: in-progress
+    kind: structural
+    owner: "iteration-owner"
+
+  - id: WBS-1.2.1
+    name: "ITER-E-01 — prove the architecture"
+    level: 3
+    parent: WBS-1.2
+    phase: ELABORATION
+    iteration: ITER-E-01
+    status: planned
+    kind: structural
+    owner: "architect"
+
+  # ---- L4-L7: the Inception work, decomposed because it is starting -------------------
+
+  - id: WBS-1.1.1.1
+    name: "Scope and feasibility"
+    level: 4
+    parent: WBS-1.1.1
+    phase: INCEPTION
+    iteration: ITER-I-01
+    status: in-progress
+    kind: structural
+    owner: "program-owner"
+
+  - id: WBS-1.1.1.1.1
+    name: "A greeting service the business can measure"
+    level: 5
+    parent: WBS-1.1.1.1
+    phase: INCEPTION
+    iteration: ITER-I-01
+    status: in-progress
+    kind: structural
+    owner: "product-owner"
+
+  - id: WBS-1.1.1.1.1.1
+    name: "Establish and record the case"
+    level: 6
+    parent: WBS-1.1.1.1.1
+    phase: INCEPTION
+    iteration: ITER-I-01
+    status: in-progress
+    kind: structural
+    owner: "product-owner"
+
+  # L7 is the executable task (s15). There is no separate TASK-nnnn anywhere in this model.
+  # The schema requires owner, iteration and at least one requirement at this level, and
+  # WBS-005 then checks that every requirement id resolves in the registry.
+  #
+  # NOTHING IN THIS PROGRAM IS `done`, AND THAT IS NOT AN OVERSIGHT.
+  #
+  # validate_done.py computes done from the graph rather than accepting the claim: DOD-002
+  # holds that a task is done only when every requirement it links is BOTH implemented and
+  # verified. At Inception nothing is implemented, so no L7 task here can honestly be `done`
+  # — including the one that writes the vision, whose own work really is finished.
+  #
+  # That tension is worth seeing rather than hiding. Every L7 node must name a requirement,
+  # and `done` is then judged on that requirement's delivery rather than on the task's. If
+  # your Inception tasks sit at `in_progress` for a phase, the model is working; setting them
+  # to `done` anyway is how a Definition of Done becomes a checkbox.
+  - id: WBS-1.1.1.1.1.1.1
+    name: "Write the vision and register the business objective"
+    level: 7
+    parent: WBS-1.1.1.1.1.1
+    phase: INCEPTION
+    iteration: ITER-I-01
+    status: in-progress
+    kind: implementation
+    owner: "product-owner"
+    requirements: [REQ-GREET-0001]
+    estimate: {unit: hours, value: 6}
+
+  - id: WBS-1.1.1.1.1.1.2
+    name: "Register the initial risks and size them"
+    level: 7
+    parent: WBS-1.1.1.1.1.1
+    phase: INCEPTION
+    iteration: ITER-I-01
+    status: in-progress
+    kind: implementation
+    owner: "program-owner"
+    requirements: [NON-FR-GREET-0001]
+    risks: [RISK-0001, RISK-0002]
+    estimate: {unit: hours, value: 3}
+
+  # A `test` node must name acceptance criteria — the schema requires it, and WBS-007 then
+  # checks each one resolves. This is the work that will make REQ-GREET-0001 verifiable.
+  - id: WBS-1.1.1.1.1.1.3
+    name: "Write the acceptance scenarios for the greeting"
+    level: 7
+    parent: WBS-1.1.1.1.1.1
+    phase: INCEPTION
+    iteration: ITER-I-01
+    status: planned
+    kind: test
+    owner: "qa-lead"
+    requirements: [REQ-GREET-0001]
+    acceptance: [AC-GREET-0001-0001]
+    dependencies: [WBS-1.1.1.1.1.1.1]
+    estimate: {unit: hours, value: 4}
+
+  # ---- L4: Elaboration, stopped early and saying why ----------------------------------
+  #
+  # A leaf above L7 is legal under `depth_policy: semantic` only when it declares a
+  # terminal_reason, and WBS-004 fails it otherwise. This is the honest state of work that
+  # has been identified and not yet planned.
+
+  - id: WBS-1.2.1.1
+    name: "Prove the architecture against the throughput target"
+    level: 4
+    parent: WBS-1.2.1
+    phase: ELABORATION
+    iteration: ITER-E-01
+    status: planned
+    kind: structural
+    owner: "architect"
+    terminal_reason: >-
+      Not decomposed. The architecture that would tell us what the work packages are has not
+      been written, and inventing six levels beneath this node would record guesses as a plan.
+      Decompose it when ADR-0001 exists.
+
+  - id: WBS-1.2.1.2
+    name: "Mitigate RISK-0001: the throughput target may be unreachable"
+    level: 4
+    parent: WBS-1.2.1
+    phase: ELABORATION
+    iteration: ITER-E-01
+    status: planned
+    kind: risk-mitigation
+    owner: "architect"
+    risks: [RISK-0001]
+    terminal_reason: >-
+      Not decomposed, for the same reason as its sibling. Registered now because the risk is
+      already above the high threshold and the register has to point at real work, not
+      because the spike has been planned.
