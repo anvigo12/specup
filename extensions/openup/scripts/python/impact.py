@@ -5,7 +5,7 @@ specup.md s52 asks for a computed impact set before a governed artifact is chang
 for the reverse query — "what requirements does this file affect?". The graph already answers
 both; nothing exposed it.
 
-    impact.py --of REQ-AUTH-0014                        what changing this requirement touches
+    impact.py --of REQ-<DOMAIN>-<NNNN>                  what changing this requirement touches
     impact.py --of src/auth/authentication_service.ts   what this file affects, upstream
 
 This is a REPORT, not a gate: it always exits 0 when the graph loads (2 if it does not). An

@@ -52,6 +52,30 @@ NOT_ARTIFACTS = re.compile(r"^(?:GATE-|TRACE-)")
 # itself. That is the s51 failure the whole model exists to prevent.
 
 
+def in_a_nested_project(graph, path) -> bool:
+    """True when this file belongs to a governed tree that is not the one being validated.
+
+    A directory holding its own `.specify/` is a project root, and its context maps describe
+    its graph rather than this one. Without this, a repository that ships an example project
+    or a test fixture reports every id in that project's maps as dangling — which is how
+    SpecUP found it, on itself: `examples/my-program/` and `tests/fixtures/good/` produced 28
+    violations between them, all of them resolving perfectly well in the graph they belong to.
+
+    Judged by the filesystem rather than by configuration, because a nested `.specify/` is
+    what makes a directory a root — `load_graph` would read it as one if pointed there.
+
+    This does NOT decide whether the nested tree is valid. Nothing here validates it; it is a
+    different graph and needs its own run, which is what `tests/test_examples.py` does for the
+    shipped example. Skipping is a statement about scope, not a clean bill of health.
+    """
+    for parent in path.parents:
+        if parent == graph.root:
+            return False
+        if (parent / ".specify").is_dir():
+            return True
+    return False
+
+
 def _feature_directories(graph) -> list[str]:
     return sorted(
         graph._rel(path) for path in (graph.root / "specs").glob("*")
@@ -77,7 +101,8 @@ def validate(args: Any) -> Verdict:
     # help; it sends the agent looking for something that is not there, and an agent that is
     # willing to infer will fill the gap itself.
     dangling: list[str] = []
-    indexes = sorted(graph.root.glob("**/index.md"))
+    indexes = [path for path in sorted(graph.root.glob("**/index.md"))
+               if not in_a_nested_project(graph, path)]
     for path in indexes:
         rel = graph._rel(path)
         if rel.startswith(".git/"):

@@ -1,0 +1,278 @@
+# SpecUP's own Work Breakdown Structure.
+#
+# ANSWERS
+#   what work is planned or in flight, which iteration it belongs to, what it is for, and
+#   which of it is genuinely finished.
+#
+# DOES NOT ANSWER
+#   what has already shipped, node by node. `docs/guide/existing-project.md` is explicit —
+#   "Do not reconstruct historical work as WBS nodes. The WBS describes work TO BE DONE"
+#   — so 0.1.0 is absent entirely and 0.1.1 is one node with the release notes attached.
+#   Archaeology produces a tree nobody uses.
+#
+# FILLED IN BADLY WHEN
+#   a node is marked `done` because the work feels finished. `done` is computed here:
+#   validate_done.py resolves the evidence, checks that every linked requirement is both
+#   implemented and verified in the graph, and fails the claim if either is missing. A node
+#   set to `done` to tidy a board fails DOD-001 within one run.
+#
+# CHECKED BY
+#   WBS-001 to WBS-011 for structure, DOD-001 to DOD-006 for every node claiming `done`,
+#   TRC-008 for leaves that reach nothing. NOTHING checks that the plan is the right plan,
+#   that an estimate is realistic, or that a node left at `planned` for a year should still
+#   be here.
+#
+# AUTHORITY
+#   the maintainer. Level 1 to 3 is a structure change and goes through change-control.md.
+#
+# ---------------------------------------------------------------------------
+# DEPTH: every leaf here stops at L4 with a `terminal_reason`.
+#
+# `wbs.depth_policy: semantic` allows that; `strict` would not, and specup.md §18 read
+# literally demands L7 everywhere while §65 says "do not create seven levels of narrative".
+# A workstream in a one-person project is a unit of work, not a programme — decomposing
+# "write validate_docs.py" into an L7 task tree would produce six levels of restatement and
+# nothing a reader could act on. That is a judgement, it is recorded on every leaf, and
+# WBS-004 is what makes it a declaration rather than an omission.
+
+schema_version: "1.0"
+program: "SpecUP"
+
+nodes:
+
+  # -- L1: the program ------------------------------------------------------------------
+
+  - id: WBS-1
+    name: "SpecUP"
+    level: 1
+    phase: CONSTRUCTION
+    status: in-progress
+    owner: "maintainer"
+    kind: structural
+
+  # -- L2: the phase --------------------------------------------------------------------
+  #
+  # One phase, and it is the one SpecUP is in. Inception and Elaboration are absent because
+  # they happened before this WBS existed and nothing would be gained by writing them down
+  # now; Transition is absent because no release date is committed. A phase node added to
+  # look complete is a node with no work under it, which WBS-004 would reject anyway.
+
+  - id: WBS-1.1
+    name: "Construction"
+    level: 2
+    parent: WBS-1
+    phase: CONSTRUCTION
+    status: in-progress
+    owner: "maintainer"
+    kind: structural
+
+  # -- L3: iterations -------------------------------------------------------------------
+  #
+  # `iteration:` is on every node from here down. That field is the only thing in this
+  # repository that any derivation rule can read: `wbs-iteration-field` turns each one into a
+  # `belongs-to` edge that TRC-010 re-derives on every run. It is also the whole of SpecUP's
+  # machine-checkable provenance, which is RISK-0003.
+
+  - id: WBS-1.1.1
+    name: "ITER-C-01 — SpecUP 0.1.1"
+    level: 3
+    parent: WBS-1.1
+    phase: CONSTRUCTION
+    iteration: ITER-C-01
+    status: done
+    owner: "maintainer"
+    kind: structural
+
+  - id: WBS-1.1.1.1
+    name: "SpecUP 0.1.1, released"
+    level: 4
+    parent: WBS-1.1.1
+    phase: CONSTRUCTION
+    iteration: ITER-C-01
+    status: done
+    owner: "maintainer"
+    kind: implementation
+    terminal_reason: >-
+      Shipped before this WBS existed. Decomposing a released iteration after the fact is
+      archaeology, and the release notes already record what it contained.
+    evidence:
+      - EVID-0001
+    # Every obligation the 0.1.1 engine already met. REQ-APV-0001 and REQ-DOC-0001 are
+    # deliberately absent: approval verification and the docstring contract are 0.1.2, and
+    # listing them here would make DOD-002 pass over work this node did not do.
+    requirements:
+      - REQ-WBS-0001
+      - REQ-RISK-0001
+      - REQ-TRACE-0001
+      - REQ-TRACE-0002
+      - REQ-TRACE-0003
+      - REQ-DONE-0001
+      - REQ-READY-0001
+      - REQ-GATE-0001
+      - REQ-AUDIT-0001
+      - REQ-VIEW-0001
+      - REQ-CTX-0001
+      - REQ-IMPACT-0001
+      - REQ-INIT-0001
+      - NON-FR-CORE-0001
+      - NON-FR-CORE-0002
+
+  - id: WBS-1.1.2
+    name: "ITER-C-02 — SpecUP 0.1.2"
+    level: 3
+    parent: WBS-1.1
+    phase: CONSTRUCTION
+    iteration: ITER-C-02
+    status: in-progress
+    owner: "maintainer"
+    kind: structural
+
+  - id: WBS-1.1.2.1
+    name: "Make human approval mechanical"
+    level: 4
+    parent: WBS-1.1.2
+    phase: CONSTRUCTION
+    iteration: ITER-C-02
+    status: done
+    owner: "maintainer"
+    kind: implementation
+    terminal_reason: >-
+      One validator and its tests. The work is a single deliverable with one acceptance
+      condition; an L7 breakdown would restate the check list already in the code.
+    evidence:
+      - EVID-0002
+    requirements:
+      - REQ-APV-0001
+    skills:
+      - traceability
+
+  - id: WBS-1.1.2.2
+    name: "Check the docstring as a working context"
+    level: 4
+    parent: WBS-1.1.2
+    phase: CONSTRUCTION
+    iteration: ITER-C-02
+    status: done
+    owner: "maintainer"
+    kind: implementation
+    terminal_reason: >-
+      One validator and its tests, as above. The seven check ids are the decomposition and
+      they live where they are enforced.
+    evidence:
+      - EVID-0003
+    requirements:
+      - REQ-DOC-0001
+
+  - id: WBS-1.1.2.3
+    name: "Make every template explain itself"
+    level: 4
+    parent: WBS-1.1.2
+    phase: CONSTRUCTION
+    iteration: ITER-C-02
+    status: done
+    owner: "maintainer"
+    kind: implementation
+    terminal_reason: >-
+      A sweep over sixteen templates and six skill contracts. Splitting it per file would
+      produce twenty-two nodes that are one editorial decision.
+    evidence:
+      - EVID-0004
+    # The templates ARE the context hierarchy §9 and §56-57 describe — an AGENTS.md, an
+    # index.md and a SKILL.md are what an agent navigates. Making each one state what it does
+    # not answer is work against REQ-CTX-0001, not merely documentation about it.
+    requirements:
+      - REQ-CTX-0001
+    skills:
+      - requirements
+
+  - id: WBS-1.1.2.4
+    name: "Ship a worked example that fails its next gate"
+    level: 4
+    parent: WBS-1.1.2
+    phase: CONSTRUCTION
+    iteration: ITER-C-02
+    status: done
+    owner: "maintainer"
+    kind: implementation
+    terminal_reason: >-
+      Two directories authored as one artifact. The example is only coherent as a whole, so
+      decomposing it would produce nodes that cannot be finished independently.
+    evidence:
+      - EVID-0005
+    # Linked to REQ-GATE-0001 rather than to the objective, and the link is arguable: the
+    # example does not implement gate evaluation, it demonstrates that the conditions are
+    # predicates by being pinned to the exact set it fails. `tests/test_examples.py` asserts
+    # that set, so the demonstration is itself checked. A reader who thinks this is a stretch
+    # is reading it correctly — it is the weakest `requirements:` link in this file.
+    requirements:
+      - REQ-GATE-0001
+
+  - id: WBS-1.1.2.5
+    name: "SpecUP governs itself"
+    level: 4
+    parent: WBS-1.1.2
+    phase: CONSTRUCTION
+    iteration: ITER-C-02
+    status: in-progress
+    owner: "maintainer"
+    kind: implementation
+    terminal_reason: >-
+      Following docs/guide/existing-project.md end to end on this repository. The guide is
+      the decomposition, and duplicating its phases here would create two plans.
+    requirements:
+      - REQ-AUDIT-0001
+    skills:
+      - traceability
+      - risk
+
+  - id: WBS-1.1.2.6
+    name: "Documentation sweep and the 0.1.2 release"
+    level: 4
+    parent: WBS-1.1.2
+    phase: CONSTRUCTION
+    iteration: ITER-C-02
+    status: planned
+    owner: "maintainer"
+    kind: release
+    terminal_reason: >-
+      The six steps are in docs/runbooks/publishing-to-spec-kit.md, which is executed rather
+      than planned. A node per step would be a copy that goes stale.
+    requirements:
+      - NON-FR-DOCS-0001
+
+  # -- L3: the next iteration -----------------------------------------------------------
+  #
+  # 0.1.3 carries the Open SWE runtime, and it is NOT decomposed here. Its intent is recorded
+  # in a plan and in no registered requirement, and a WBS node whose requirement does not
+  # exist yet puts the work in the plan ahead of the decision to do it — which is the order
+  # specup.md §39 exists to prevent. The one node below is here because it mitigates a risk
+  # that is live now, and a mitigation with no scheduled work is not a mitigation.
+
+  - id: WBS-1.1.3
+    name: "ITER-C-03 — SpecUP 0.1.3"
+    level: 3
+    parent: WBS-1.1
+    phase: CONSTRUCTION
+    iteration: ITER-C-03
+    status: planned
+    owner: "maintainer"
+    kind: structural
+
+  - id: WBS-1.1.3.1
+    name: "Make SpecUP's own test suite derivable"
+    level: 4
+    parent: WBS-1.1.3
+    phase: CONSTRUCTION
+    iteration: ITER-C-03
+    status: planned
+    owner: "maintainer"
+    kind: risk-mitigation
+    terminal_reason: >-
+      One decision with two candidate implementations, neither chosen. Decomposing before the
+      choice would bake in an answer that has not been argued.
+    risks:
+      - RISK-0003
+    # Two ways to do it, and they are not equivalent. Renaming `tests/test_docs.py` to
+    # `tests/test_validate_docs.py` makes the shipped rule work and costs a churn commit.
+    # Adding a derivation rule that maps a test module to the module it imports is more
+    # general and more likely to be wrong. The ADR is the deliverable before the code is.

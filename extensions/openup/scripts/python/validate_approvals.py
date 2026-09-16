@@ -166,9 +166,24 @@ def _split_names(cell: str) -> set[str]:
 def approvals_in_scope(graph) -> list[dict[str, Any]]:
     """Every approval in the graph, tagged with what it approves and that thing's state.
 
-    Two shapes, both defined by `$defs/approval`: an artifact carries a list under `approvals`,
-    an edge carries a single object under `approval`. They are collected into one list so a
-    check reads "every approval" rather than "every approval on an artifact, and separately".
+    Three shapes, all defined by `$defs/approval`: an artifact carries a list under
+    `approvals`, an edge carries a single object under `approval`, and a risk carries one
+    under `acceptance_approval`. They are collected into one list so a check reads "every
+    approval" rather than "every approval on an artifact, and separately".
+
+    The risk shape was missing until SpecUP governed itself and accepted a risk of its own.
+    Accepting a live risk is the §59 decision most likely to be taken quietly — the schema
+    says so in that field's own description, and RISK-000 requires the approval to be there —
+    yet every APV check looked straight past it, so the one approval in this repository was
+    the one nothing verified. That is the shape of the gap worth naming: the checks covered
+    the stores an approval is usually written in, not the decision class they exist to cover.
+
+    Registered as `state: "accepted"`, which is a risk status rather than a governance state.
+    Deliberate: `require_witness_at_or_above` names artifact states, and mapping a risk
+    acceptance onto one of them would let a floor set for requirement baselines silently start
+    failing risk acceptances too. `accepted` is not in `STATE_ORDER`, so `_at_or_above` returns
+    False for it and APV-005 skips it by construction rather than by a special case. APV-001 to
+    APV-004 all apply, so a risk accepted with no commit still warns.
     """
     found: list[dict[str, Any]] = []
 
@@ -177,6 +192,15 @@ def approvals_in_scope(graph) -> list[dict[str, Any]]:
             found.append({
                 "subject": artifact_id,
                 "state": artifact.get("status", "DRAFT"),
+                "approval": approval,
+            })
+
+    for risk_id, risk in sorted(getattr(graph, "risks", {}).items()):
+        approval = risk.get("acceptance_approval") or {}
+        if approval:
+            found.append({
+                "subject": f"{risk_id} (accepted)",
+                "state": "accepted",
                 "approval": approval,
             })
 

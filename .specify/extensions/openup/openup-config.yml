@@ -1,0 +1,242 @@
+# SpecUP governing SpecUP — the project configuration.
+#
+# ANSWERS
+#   every value specup.md leaves undefined for THIS repository: where SpecUP's own stores
+#   live, what its traceability perimeter is, and which gate it is actually held to.
+#
+# DOES NOT ANSWER
+#   what any other project should use. The defaults that ship to other projects are in
+#   `extensions/openup/openup-config.yml`, which is a PRODUCT artifact. This file is a
+#   PROJECT artifact. They are two different documents that happen to share a schema.
+#
+# FILLED IN BADLY WHEN
+#   the two are conflated. `load_config` looks in `.specify/extensions/openup/` first and
+#   falls back to `extensions/openup/`, so before this file existed SpecUP was governed by
+#   the defaults it ships — and every adjustment to SpecUP's own posture would have silently
+#   re-tuned the starting point of every project that installs it. That is the specific
+#   mistake this file prevents, and it is worth stating because the fallback makes it
+#   invisible: nothing warns you that the config you are editing is the one you publish.
+#
+# CHECKED BY
+#   every validator reads this file. NOTHING checks that these values are right for SpecUP —
+#   a perimeter narrowed to hide a failure and a perimeter narrowed for a good reason are the
+#   same edit. That is why each narrowing below carries its reason.
+#
+# AUTHORITY
+#   the maintainer, through `.specify/governance/change-control.md`. There is exactly one,
+#   which is itself registered as RISK-0001.
+
+schema_version: "1.0"
+
+lifecycle:
+  # SpecUP has shipped 0.1.0 and 0.1.1 and is building 0.1.2. That is CONSTRUCTION, and
+  # setting it honestly has an immediate cost: the gate SpecUP is held to becomes
+  # GATE-INITIAL_OPERATIONAL_CAPABILITY, which is the strictest one before release.
+  #
+  # `existing-project.md` names the alternative as a failure mode — "Setting phase: INCEPTION
+  # on a system in production. You will hold the wrong gate and learn nothing." A released
+  # tool claiming Inception would pass its own Inception gate on day one and report a green
+  # audit, which is the decorated outcome the same guide warns about two paragraphs earlier.
+  phase: CONSTRUCTION
+  iteration: ITER-C-02
+
+wbs:
+  depth_policy: semantic
+  never_terminal_above: 3
+  max_children_warn: 25
+  store: .specify/wbs/wbs.yaml
+
+risk:
+  high_exposure_threshold: 0.40
+  critical_exposure_threshold: 0.65
+  require_mitigation_at_or_above: high
+  require_verification_at_or_above: high
+  require_residual_reduction: true
+  store: .specify/risks/risk-register.yaml
+
+artifacts:
+  stores:
+    # `specs/*/artifacts.yaml` is in the shipped default and is deliberately absent here:
+    # SpecUP has no `specs/` directory, and listing a store that cannot exist would leave a
+    # reader looking for per-feature registries that were never part of this repository.
+    - .specify/traceability/requirements.yaml
+
+approvals:
+  allowed_signers: .specify/governance/allowed-signers
+
+  # null, and the reason is specific to this repository rather than inherited from the
+  # default. SpecUP's approval matrix names one person for every row. A witness requirement
+  # that one person satisfies by signing their own approval is a ceremony, not a control, and
+  # raising this floor would record a second signature that does not exist.
+  #
+  # APV-004 therefore warns on every approval here and the gap stays visible, which is the
+  # accurate state: SpecUP's governance is currently witnessed by nobody. See RISK-0001.
+  require_witness_at_or_above: null
+
+docs:
+  # Empty on the first audit, on purpose, and this is the ratchet `using-specup.md` describes
+  # rather than an exemption. DOC-001 and DOC-003 warn here over SpecUP's own scripts, and
+  # they warn about something real: the scripts document their modules and most of their
+  # functions, and almost none of them name a governing artifact, because the artifacts did
+  # not exist until this file did.
+  #
+  # DOC-002 fails regardless and cannot be listed or delisted. It found real defects on the
+  # first run over this repository — see `.specify/traceability/index.md`.
+  enforce: []
+  max_docstring_lines: 40
+
+traceability:
+  stores:
+    - .specify/traceability/traceability.yaml
+    # Machine-owned. `derive_edges.py --write` rewrites it wholesale; never hand-edit it.
+    - .specify/traceability/derived.yaml
+
+  # THE BEACHHEAD: the seventeen Python modules that are the governance engine.
+  #
+  # `existing-project.md` calls the perimeter "the most consequential decision in the whole
+  # adoption" and says to take one actively-developed component rather than the repository.
+  # For SpecUP that component is `extensions/openup/scripts/python/` — it changes every
+  # release, it is what every documented check runs from, and each module already names the
+  # specup.md section it answers to in its own module docstring. That last property is why
+  # recovery here is cheap and why the requirements in
+  # `.specify/traceability/requirements.yaml` could be written at all.
+  #
+  # OUT, with reasons rather than by omission:
+  #
+  #   tools/                 two build scripts. Their contract is
+  #                          `docs/runbooks/publishing-to-spec-kit.md` and
+  #                          `tests/test_catalog.py`, and nothing in specup.md governs release
+  #                          machinery. Bringing them in would mean authoring requirements
+  #                          nobody would consult. Revisit when the release process changes.
+  #   tests/                 excluded by `**/test_*.*` below, as in every SpecUP perimeter.
+  #                          A test file that a derivation rule recognises AND the perimeter
+  #                          counts is counted twice: it derives a `tests` edge and reports as
+  #                          an untraced source file.
+  #   extensions/openup/     schemas, templates, workflows and commands. They are governed
+  #   (everything else)      content rather than source, and `perimeter_files()` is
+  #                          file-granular — a template would need an `implements` edge of
+  #                          its own, which is bookkeeping with no reader.
+  #   catalog/, bundles/,    distribution manifests. Generated or near-generated.
+  #   presets/, workflows/
+  #
+  # Widening this is the ratchet, and it is a decision: `tools/` next, when the release
+  # process it serves is itself written down as requirements.
+  perimeter:
+    include:
+      - "extensions/openup/scripts/python/**"
+    exclude:
+      # NOT in the shipped default, and it should be: `perimeter_files()` walks the working
+      # tree rather than the index, so on any Python project that has been run once, every
+      # `.pyc` under `__pycache__/` is an in-perimeter source file that no requirement will
+      # ever reach. SpecUP found this on itself. Carried into the shipped default in the same
+      # change, because every project installing SpecUP would hit it.
+      - "**/__pycache__/**"
+      - "**/*.generated.*"
+      - "**/__snapshots__/**"
+      - "**/node_modules/**"
+      - "**/*.test.*"
+      - "**/*.spec.*"
+      - "**/*_test.*"
+      - "**/*_spec.*"
+      - "**/*-test.*"
+      - "**/*Test.*"
+      - "**/test_*.*"
+      - "**/test-*.*"
+
+  coverage_thresholds:
+    # Unlowered, and that is a measurement rather than an aspiration: the recovery in
+    # `requirements.yaml` reaches every module in the perimeter, so both figures are met
+    # today. `existing-project.md` warns that "an existing project that reports 100% coverage
+    # on day one has not been governed; it has been decorated" — the defence against that
+    # reading is not a lower number, it is the provenance mix beside it, which says how
+    # little of this graph anything can check. `.specify/traceability/index.md` reports it.
+    forward: 1.00
+    backward: 1.00
+
+  # `approved` in the shipped default. Lowered here, as a recorded decision: nothing in this
+  # repository is BASELINED yet, so the rule binds nothing either way, and setting a floor
+  # that needs a signature SpecUP cannot produce (see approvals above) would make the first
+  # baseline unreachable rather than deliberate. Raise this to `approved` in the same change
+  # that adds a second signer to the allowed-signers file.
+  baseline_min_provenance: asserted
+
+gherkin:
+  # SpecUP has no `.feature` files. The glob is kept at its default shape so that adding the
+  # first one lands where every other project's would; it currently matches nothing, and
+  # `acceptance_scenarios_passing` fails at the Construction gate because of it.
+  features_glob: "specs/*/acceptance/**/*.feature"
+  require_ac_tag: true
+  require_requirement_tag: true
+  # TRC-012. Left on. SpecUP's acceptance criteria have no scenarios executing them, and
+  # turning this off would remove the report of that rather than the condition.
+  require_scenario_per_ac: true
+
+testing:
+  stem_suffixes: [".test", ".spec", "_test", "_spec", "-test", "Test"]
+  stem_prefixes: ["test_", "test-"]
+
+contracts:
+  # SpecUP publishes no OpenAPI or AsyncAPI document. Its interfaces are a command line and a
+  # JSON verdict shape, neither of which this block can describe. `critical_contracts_defined`
+  # fails at the Elaboration gate as a result, and that is accurate rather than a gap to be
+  # papered over: the verdict shape IS a contract, it IS depended on by every workflow, and
+  # nothing in this repository specifies it.
+  openapi_glob: "specs/*/contracts/*.openapi.{yaml,yml,json}"
+  asyncapi_glob: "specs/*/contracts/*.asyncapi.{yaml,yml,json}"
+  microcks:
+    enabled: false
+
+gates:
+  # Unchanged from the shipped definitions, and deliberately so. `existing-project.md` allows
+  # removing a condition that cannot apply to a brownfield system, with a comment saying why.
+  # Nothing here qualifies: every condition SpecUP fails is one it genuinely has not met, and
+  # deleting the ones that are inconvenient is how a gate becomes decorative.
+  GATE-LIFECYCLE_OBJECTIVES:
+    phase: INCEPTION
+    conditions:
+      - vision_present
+      - stakeholders_identified
+      - initial_risks_registered
+      - wbs_levels_1_to_3_valid
+      - requirements_have_owners
+
+  GATE-LIFECYCLE_ARCHITECTURE:
+    phase: ELABORATION
+    conditions:
+      - architecture_baselined
+      - all_high_risks_have_mitigation
+      - requirements_traceable
+      - critical_contracts_defined
+      - security_review_complete
+      - wbs_valid
+      - human_approvals_witnessed
+
+  GATE-INITIAL_OPERATIONAL_CAPABILITY:
+    phase: CONSTRUCTION
+    conditions:
+      - wbs_valid
+      - forward_coverage_met
+      - backward_coverage_met
+      - acceptance_scenarios_passing
+      - definition_of_done_met
+      - no_open_critical_risks
+      - no_orphans
+
+  GATE-PRODUCT_RELEASE:
+    phase: TRANSITION
+    conditions:
+      - all_gates_passed
+      - release_evidence_complete
+      - no_open_high_risks
+      - traceability_final
+      - security_validation_passed
+      - human_approvals_witnessed
+
+audit:
+  fail_on:
+    - broken_references
+    - orphan_requirements
+    - orphan_wbs_nodes
+    - unmitigated_high_risk
+    - coverage_below_threshold
+    - dangling_docstring_anchor

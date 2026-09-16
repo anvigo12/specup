@@ -469,8 +469,18 @@ bundles/specup/                    bundle.yml + the working-tree installer
 catalog/                           the four published catalog documents (generated)
 tools/                             archive + catalog generators
 examples/                          a worked program + the deliverable it governs
-tests/                             395 tests + fixtures
+tests/                             397 tests + fixtures
+.specify/                          SpecUP's OWN governance tree — it governs itself with
+                                   itself, fails its own Construction gate, and says why
 ```
+
+`.specify/` is the project tree, not a second copy of the product. It holds SpecUP's
+requirements, WBS, risks and traceability, plus a config that is deliberately separate from
+the one under `extensions/openup/`: that one is the default every installing project
+inherits, this one is how SpecUP governs itself, and conflating them would mean re-tuning
+every new project's starting point whenever SpecUP tuned its own. Start at
+[`.specify/traceability/index.md`](.specify/traceability/index.md), which records the real
+figures and the seven defects that running the tool on itself exposed.
 
 ---
 
@@ -504,7 +514,7 @@ every audit.
 
 ```bash
 python3 -m pip install pyyaml jsonschema referencing pytest
-python3 -m pytest tests/ -q          # 387 passed, 8 skipped
+python3 -m pytest tests/ -q          # 389 passed, 8 skipped
 ```
 
 The 8 skips are the engine-validation tests. To run them, install spec-kit:
@@ -512,7 +522,7 @@ The 8 skips are the engine-validation tests. To run them, install spec-kit:
 ```bash
 uv venv .venv && uv pip install --python .venv/bin/python specify-cli==1.0.6 pytest
 uv pip install --python .venv/bin/python -r extensions/openup/requirements.txt
-.venv/bin/python -m pytest tests/ -q  # 395 passed
+.venv/bin/python -m pytest tests/ -q  # 397 passed
 ```
 
 Or with [Taskfile](docs/dev/taskfile.md), which wraps both suites and the release pipeline:
@@ -591,11 +601,21 @@ evidence fails two.
   codes — but no pipeline is authored (§62–63).
 - **`python3` in shell steps.** Windows hosts normally have `python`; adjust the `run:` lines
   or provide a shim.
-- **Governance overhead is unmeasured.** `specup.md` §65 warns that process can outgrow its
-  value, and §57 implies ~10 artifact fetches per task against §33's example of 421 tasks.
-  The context hierarchy is what the scalability argument rests on, and it now exists and is
-  checked — but nothing measures the actual cost per unit of delivered work, and that is the
-  thing most likely to sink the approach.
+- **Governance overhead is measured once, by its author, on itself.** `specup.md` §65 warns
+  that process can outgrow its value, and §57 implies ~10 artifact fetches per task against
+  §33's example of 421 tasks. There is now one data point: 0.1.2 governs SpecUP with SpecUP,
+  and setting the tree up took a single sitting and produced 18 requirements, 13 WBS nodes,
+  4 risks and 74 edges over a 17-file perimeter. **That is not a measurement.** It was done by
+  the person who wrote the tool, on a repository whose layout the tool was designed around,
+  with no second reviewer and no delivery to compare the cost against. Treat it as an
+  existence proof that the process terminates, and nothing more. The figures are in
+  `.specify/traceability/index.md`.
+- **SpecUP's own audit fails, and the numbers are not flattering.** Backward coverage is 100%
+  over a perimeter its author chose, and **84% of its graph is `asserted`** — one person's
+  judgement, which no check can confirm. Its own `test-file-naming-convention` rule reproduces
+  exactly one of its edges, because SpecUP names test files after the behaviour under test
+  rather than after the module. `RISK-0003` records that; the Construction gate fails on
+  `acceptance_scenarios_passing`, and it is not being repaired by hand.
 
 ## License
 

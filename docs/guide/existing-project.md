@@ -194,16 +194,36 @@ trackers, existing specs, API documentation, compliance obligations — and regi
 ones you can point at a source for.
 
 ```yaml
-requirements:
+# .specify/traceability/requirements.yaml
+artifacts:
   - id: REQ-PAY-0001
+    type: requirement
     title: Idempotent payment capture
     owner: payments-team
-    state: APPROVED          # it is already built and in production
+    status: REVIEW           # the code is in production; this statement of it is not reviewed
     source: "JIRA PAY-4471"
-    acceptance:
-      - id: AC-PAY-0001-0001
-        statement: Replaying a capture with the same idempotency key returns the original result
+
+  # An acceptance criterion is its own artifact with its own id, not a field on a
+  # requirement. The link between them is an edge in traceability.yaml:
+  #   AC-PAY-0001-0001 --verifies--> REQ-PAY-0001
+  - id: AC-PAY-0001-0001
+    type: acceptance-criterion
+    title: Replaying a capture with the same idempotency key returns the original result
+    owner: payments-team
+    status: DRAFT
 ```
+
+The top-level key is `artifacts`, `type` is required, and the state field is `status`. This
+registry is **not** schema-validated, so every one of those is silent when wrong: a document
+under `requirements:` loads as an empty registry and the audit reports zero requirements
+rather than an error. Read a coverage figure of `{"edges": 0}` after recovery as a shape
+problem before assuming the edges are missing.
+
+**Note the state.** `REVIEW`, not `APPROVED`, even though the code has been in production for
+years. Two different objects are in play: the behaviour is shipped, and the sentence
+describing it was written today by whoever did the recovery. Nobody has read it back against
+the source it cites. Marking it `APPROVED` records a review that did not happen, which is what
+§31 means by "generated does not mean approved". Move it when someone has actually read it.
 
 For behaviour that demonstrably exists but has no recorded intent, that absence is itself a
 finding worth writing down. Register the requirement with `source: "recovered from
@@ -328,10 +348,22 @@ forever:
 ```yaml
   status: accepted
   acceptance_approval:
-    approved_by: "Head of Engineering"
-    date: 2026-09-12
-    rationale: "Rewrite scheduled Q2; interim manual verification in place."
+    by: "Head of Engineering"
+    at: "2026-09-12T00:00:00Z"
+    note: "Rewrite scheduled Q2; interim manual verification in place."
 ```
+
+Unlike the artifact registry, the risk register **is** schema-validated and refuses unknown
+keys, so `approved_by`, `date` or `rationale` here fails `RISK-000` outright. The three fields
+are `by`, `at` (RFC 3339) and the optional `note` and `commit` — the same `approval` shape
+used everywhere else, which is why `validate_approvals.py` can check a risk acceptance with
+the same `APV-001` to `APV-004` it applies to a requirement baseline.
+
+Accepting is not the same as ignoring. `accepted` exempts the risk from `RISK-004` and
+`RISK-005` and stops `TRC-008` reporting it as an orphan — which is correct, because a
+recorded decision is not a gap — so the approval is the whole of what makes it a decision. A
+high-exposure risk left at `open` with no mitigation is the honest alternative; a high-exposure
+risk quietly set to `accepted` with no approval fails the schema, by design.
 
 ---
 

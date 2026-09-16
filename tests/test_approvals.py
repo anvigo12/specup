@@ -51,6 +51,29 @@ def test_a_blank_approval_matrix_fails(project):
     assert_fails(project.run("validate_approvals"), "APV-000")
 
 
+def test_a_risk_acceptance_is_an_approval_and_is_checked_like_one(project):
+    """Accepting a live risk is a §59 decision, and it is the one written somewhere else.
+
+    An artifact keeps approvals under `approvals`, an edge under `approval`, and a risk under
+    `acceptance_approval` — which every APV check looked past until SpecUP governed itself and
+    accepted a risk of its own. The gap was invisible because the fixture had no accepted risk
+    to reveal it, so this test adds one: the approval must be counted, and approving under a
+    name the matrix does not record must fail exactly as it does anywhere else.
+    """
+    project.risk("RISK-0007")(lambda r: r.update(
+        status="accepted",
+        acceptance_approval={"by": "product-owner", "at": "2026-09-10T09:00:00Z"},
+    ))
+    verdict = project.run("validate_approvals")
+    assert verdict.status == "PASS", f"failing: {sorted(failing(verdict))}"
+    assert any("RISK-0007" in item for check in verdict.checks for item in check.evidence), \
+        "the risk acceptance was not collected into scope"
+
+    project.risk("RISK-0007")(lambda r: r.update(
+        acceptance_approval={"by": "some-agent", "at": "2026-09-10T09:00:00Z"}))
+    assert_fails(project.run("validate_approvals"), "APV-003")
+
+
 def test_an_approver_the_matrix_does_not_name_fails(project):
     """The specific escape this closes: approving under a name nobody agreed to."""
     project.artifact("TC-AUTH-0031")(

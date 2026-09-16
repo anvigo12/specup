@@ -199,9 +199,10 @@ def named_sources(doc: str) -> set[str]:
     `TR 03111` are one source rather than three — a claim of independence made three times over
     one document is the exact failure this exists to catch.
 
-    Governed ids are matched first and removed before the other two patterns run. `REQ-AUTH-0014`
-    otherwise yields the anchor AND the tail `AUTH-0014` as a standard reference, so a docstring
-    citing one requirement would satisfy a check that asks for two sources.
+    Governed ids are matched first and removed before the other two patterns run. A governed id
+    of the form `REQ-<DOMAIN>-<NNNN>` otherwise yields the anchor AND the tail `<DOMAIN>-<NNNN>`
+    as a standard reference, so a docstring citing one requirement would satisfy a check that
+    asks for two sources.
 
     This counts **names**, and cannot judge independence. Two ids in one docstring may still
     be two readings of one page, which is the failure this whole check descends from. What it

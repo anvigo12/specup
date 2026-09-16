@@ -2,7 +2,7 @@
 
 **Audience:** anyone working *on* SpecUP.
 
-[Taskfile.yml](../../Taskfile.yml) wraps the repo's development, packaging and release
+[Taskfile.yaml](../../Taskfile.yaml) wraps the repo's development, packaging and release
 commands. It is a convenience layer for contributors and nothing else — see
 [The boundary](#the-boundary) below, which is the part worth reading even if you never run
 `task`.
@@ -31,8 +31,8 @@ task            # list everything
 
 | Task | What it runs |
 |---|---|
-| `task test` | `python3 -m pytest tests/ -q` — 387 passed, 8 skipped |
-| `task test:engine` | the same suite under `.venv`, with spec-kit importable — 395 passed |
+| `task test` | `python3 -m pytest tests/ -q` — 389 passed, 8 skipped |
+| `task test:engine` | the same suite under `.venv`, with spec-kit importable — 397 passed |
 | `task test:both` | both, in order |
 
 The two suites are not redundant, and `test:both` is the one to run before pushing. Eight
@@ -127,7 +127,7 @@ From here, follow [the publishing runbook](../runbooks/publishing-to-spec-kit.md
 
 ## The boundary
 
-**Everything in `Taskfile.yml` is for developing, testing, packaging or publishing SpecUP.
+**Everything in `Taskfile.yaml` is for developing, testing, packaging or publishing SpecUP.
 Nothing SpecUP *runs* goes through it.**
 
 No workflow `run:` field may call `task`. No gate may be evaluated through it. No extension
@@ -141,7 +141,7 @@ manifest's `requires.tools`.
 Validators live under `.specify/extensions/openup/`, a directory `specify extension add` owns
 and reinstalls. Tampering with one is visible and gets reverted on the next update.
 
-A `Taskfile.yml` lives at a project root. Editing it is an unremarkable act that leaves no
+A `Taskfile.yaml` lives at a project root. Editing it is an unremarkable act that leaves no
 trace anywhere Spec Kit looks.
 
 So if a gate were evaluated through `task gate`, redefining that task as `exit 0` would become

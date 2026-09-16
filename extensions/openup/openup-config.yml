@@ -136,6 +136,11 @@ traceability:
       - "**/*.generated.*"
       - "**/__snapshots__/**"
       - "**/node_modules/**"
+      # Build output that is not source. perimeter_files() walks the WORKING TREE rather than
+      # git's index, so on any Python project that has been run once every .pyc under
+      # __pycache__/ counts as an in-perimeter file no requirement will ever reach — backward
+      # coverage then falls every time somebody executes the code. Found by SpecUP on itself.
+      - "**/__pycache__/**"
       # Keep these in step with testing.stem_suffixes / stem_prefixes below. A test file that
       # a derivation rule recognises but the perimeter does not is counted twice over: it
       # derives a `tests` edge AND reports as an untraced source file, so backward coverage

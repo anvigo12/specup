@@ -1,0 +1,472 @@
+# SpecUP's own governed artifact registry.
+#
+# ANSWERS
+#   what SpecUP is obliged to do, where that obligation comes from, and who owns it.
+#
+# DOES NOT ANSWER
+#   how any of it relates. That is traceability.yaml.
+#
+# FILLED IN BADLY WHEN
+#   a requirement is written FROM the code it is meant to govern. That is the failure this
+#   registry came closest to committing, and it is worth naming precisely.
+#
+#   Every module in the perimeter already states, in its own module docstring, which
+#   specup.md section it answers to. Recovering a requirement from that docstring would have
+#   been fast and would have produced a graph where the requirement, the implementation and
+#   the check all descend from one reading — they would agree because they share an origin,
+#   which is the independent-oracle failure the ADR template warns about.
+#
+#   So each requirement below was written from the specup.md section, and the docstring was
+#   used only to find WHICH section to read. That is a weaker independence than it sounds:
+#   the pointer came from the code. What it buys is that the requirement says what §N
+#   obliges rather than what the module happens to do, so the two can now disagree — and a
+#   requirement that cannot disagree with its implementation is not governing anything.
+#
+# CHECKED BY
+#   TRC-002 fails an edge pointing at an unregistered id; requirements_have_owners fails the
+#   Inception gate over a missing owner; DOC-002 fails a docstring naming an id that is not
+#   here. NOTHING checks that a requirement is a true reading of the section it cites. That
+#   is a human reading, and `.specify/governance/approval-matrix.md` says whose.
+#
+# AUTHORITY
+#   the maintainer. Moving anything here past REVIEW needs a recorded approval, and SpecUP
+#   has no second signer to record one — see RISK-0001.
+#
+# ---------------------------------------------------------------------------
+# WHY EVERYTHING IS AT `REVIEW`, INCLUDING REQUIREMENTS WHOSE CODE HAS SHIPPED.
+#
+# `docs/guide/existing-project.md` suggests `APPROVED` for recovered requirements on the
+# grounds that the behaviour "is already built and in production". That conflates two
+# different objects. The CODE is shipped. The STATEMENT OF INTENT below was written today, by
+# recovery, and nobody has read it against the section it cites. Marking it APPROVED would
+# record a review that did not happen, which is the one thing `specup.md` §31 is about:
+# generated does not mean approved.
+#
+# REVIEW is the accurate state and it has a visible cost — `baseline_min_provenance` never
+# engages, so TRC-009 checks nothing here. That cost is the correct one to pay.
+
+schema_version: "1.0"
+
+artifacts:
+
+  # -- why SpecUP exists ----------------------------------------------------------------
+
+  - id: BUS-OBJ-0001
+    type: business-objective
+    title: "A claim made in a governed repository can be checked by a machine instead of believed"
+    status: REVIEW
+    owner: "maintainer"
+    priority: critical
+    source: specup.md
+    cites:
+      - document: "specup.md"
+        clause: "§3 Core Design Principle, §71 Architectural Thesis"
+        value: "governance is only real when it is machine-checkable and consequential"
+    # Falsifiable in one direction only, which is the honest shape for an objective: a single
+    # governance claim that no check can reach contradicts it. SpecUP currently has several,
+    # and they are written down rather than smoothed over — see the Limitations section of
+    # README.md and the `contracts:` block of the config.
+
+  # -- the obligations, one per specup.md section that has code behind it ----------------
+  #
+  # Ordered by the section they recover, not by importance. Every `source:` is a path a
+  # reader can open; every `cites.clause` is the part of it that was read.
+
+  - id: REQ-WBS-0001
+    type: requirement
+    title: "Work breakdown invariants that no JSON Schema can express must be enforced against the graph"
+    status: REVIEW
+    owner: "maintainer"
+    priority: high
+    source: specup.md
+    cites:
+      - document: "specup.md"
+        clause: "§18 WBS Invariants, §32 Governance Invariants"
+        value: "single parent, level agrees with the dotted id, a risk-mitigation node names a risk"
+    # §18 and §65 contradict each other on depth — every leaf at L7 versus "do not create
+    # seven levels of narrative". The requirement deliberately does not pick a side: the
+    # choice is a configured policy (`wbs.depth_policy`) and the config is where it is
+    # recorded, because both readings are defensible and a project has to be able to say
+    # which one it took.
+
+  - id: REQ-RISK-0001
+    type: requirement
+    title: "A risk at or above the configured exposure threshold must reach real work and a way to prove the reduction"
+    status: REVIEW
+    owner: "maintainer"
+    priority: high
+    source: specup.md
+    cites:
+      - document: "specup.md"
+        clause: "§19 Risk Register, §32 Risk invariant, §39 Risk-Driven Planning"
+        value: "the register is not passive documentation"
+    # §19 never defines "high". The threshold is a configured number, and that is stated in
+    # the requirement rather than hidden in it: a requirement that named 0.40 would make
+    # every project that chose a different number non-conformant to SpecUP's own spec.
+
+  - id: REQ-TRACE-0001
+    type: requirement
+    title: "Traceability must answer in both directions from one stored direction"
+    status: REVIEW
+    owner: "maintainer"
+    priority: critical
+    source: specup.md
+    cites:
+      - document: "specup.md"
+        clause: "§20 Bi-Directional Traceability, §21 Machine-Readable Model, §22"
+        value: "what implements this requirement, and what requirements does this file affect"
+    # The "from one stored direction" clause is the requirement's whole content. Two
+    # hand-maintained datasets would satisfy §20 read literally and would drift, which §22 is
+    # about. Storing active voice and deriving the inverse is what makes drift impossible
+    # rather than merely discouraged.
+
+  - id: REQ-TRACE-0002
+    type: requirement
+    title: "Coverage must be computed over a declared perimeter, and every untraced in-perimeter file reported"
+    status: REVIEW
+    owner: "maintainer"
+    priority: high
+    source: specup.md
+    cites:
+      - document: "specup.md"
+        clause: "§53 Traceability Coverage Metrics, §54 Orphan Detection"
+        value: "forward, backward and verification coverage; orphan artifacts are a finding"
+    # §54 flags every untraced source file. At file granularity over a whole repository that
+    # is unusable, so the perimeter is what makes the check survivable — and the perimeter is
+    # also how a project makes its coverage figure meaningless without lying. Nothing checks
+    # a perimeter for honesty. `.specify/extensions/openup/openup-config.yml` says so beside
+    # SpecUP's own.
+
+  - id: REQ-TRACE-0003
+    type: requirement
+    title: "An edge marked `derived` must be reproducible by a named rule, and one that is not must be reported"
+    status: REVIEW
+    owner: "maintainer"
+    priority: critical
+    source: extensions/openup/schemas/ID-GRAMMAR.md
+    cites:
+      - document: "extensions/openup/schemas/ID-GRAMMAR.md"
+        clause: "§3 Provenance"
+        value: "the agent that writes the code is otherwise the agent that writes the proof"
+    # The one requirement here whose source is not specup.md. §21 requires `derived_by` to be
+    # present and never that it be true, so the obligation had to be authored rather than
+    # recovered — ID-GRAMMAR.md is where it was authored, and citing specup.md for it would
+    # claim a normative basis that does not exist.
+
+  - id: REQ-DONE-0001
+    type: requirement
+    title: "A work item is done only when the graph computes it done, never when a status field says so"
+    status: REVIEW
+    owner: "maintainer"
+    priority: critical
+    source: specup.md
+    cites:
+      - document: "specup.md"
+        clause: "§29 Definition of Done, §31 Governance States"
+        value: "DONE is a computed governance state rather than a casual AI declaration"
+
+  - id: REQ-READY-0001
+    type: requirement
+    title: "A task is executable only when it satisfies the Definition of Ready, and the highest-exposure ready work comes first"
+    status: REVIEW
+    owner: "maintainer"
+    priority: medium
+    source: specup.md
+    cites:
+      - document: "specup.md"
+        clause: "§28 Definition of Ready, §39 Risk-Driven Planning"
+        value: "a task is not executable merely because it exists"
+
+  - id: REQ-GATE-0001
+    type: requirement
+    title: "Every gate condition must be a predicate a machine evaluates and a name in configuration must resolve to one"
+    status: REVIEW
+    owner: "maintainer"
+    priority: critical
+    source: specup.md
+    cites:
+      - document: "specup.md"
+        clause: "§30 Lifecycle and Quality Gates, §55 Quality Gate Philosophy"
+        value: "a gate must be machine-checkable and evidence-producing"
+    # The second clause is the one that bites: §30 names conditions and never implements
+    # them, so a project could name anything. A condition with no predicate behind it fails
+    # GATE-000 rather than passing silently, which is the difference between a gate and a
+    # heading.
+
+  - id: REQ-AUDIT-0001
+    type: requirement
+    title: "The governance state of a repository must be observable in one report rather than inferred from several"
+    status: REVIEW
+    owner: "maintainer"
+    priority: high
+    source: specup.md
+    cites:
+      - document: "specup.md"
+        clause: "§33 /speckit.audit"
+        value: "one filesystem-first compliance report"
+
+  - id: REQ-VIEW-0001
+    type: requirement
+    title: "Human-readable governance views must be generated from the canonical machine-readable stores"
+    status: REVIEW
+    owner: "maintainer"
+    priority: medium
+    source: specup.md
+    cites:
+      - document: "specup.md"
+        clause: "§47 Generated Views, §65 Avoiding Process Bloat"
+        value: "do not manually maintain traceability documents"
+
+  - id: REQ-CTX-0001
+    type: requirement
+    title: "Every governed directory must be navigable as directory to operating contract to context map to one artifact, and every id on that path must resolve"
+    status: REVIEW
+    owner: "maintainer"
+    priority: high
+    source: specup.md
+    cites:
+      - document: "specup.md"
+        clause: "§9 The index.md Context Map, §56 Progressive Context, §57 Minimal Context"
+        value: "an agent loads the one artifact it needs rather than the repository"
+
+  - id: REQ-APV-0001
+    type: requirement
+    title: "An approval that claims a human must be checkable against a version-controlled trust root, and one that cannot be must be reported as claimed rather than witnessed"
+    status: REVIEW
+    owner: "maintainer"
+    priority: critical
+    source: specup.md
+    cites:
+      - document: "specup.md"
+        clause: "§59 Human Approval Boundaries, §31 Governance States"
+        value: "business scope, baselines, high-risk acceptance and release are reserved for a named human"
+    # Closed in 0.1.2 and the README bullet that said otherwise was rewritten. The module
+    # docstring in approve_edge.py was not, and still claimed "which is not implemented"
+    # until this workstream read it. That is what a requirement with no anchor costs: the
+    # correction landed in the document a reader finds first and nowhere else.
+
+  - id: REQ-IMPACT-0001
+    type: requirement
+    title: "The set of artifacts a change reaches must be computable before the change is made"
+    status: REVIEW
+    owner: "maintainer"
+    priority: medium
+    source: specup.md
+    cites:
+      - document: "specup.md"
+        clause: "§52 Change Impact Analysis, §22"
+        value: "a computed impact set before a governed artifact is changed"
+
+  - id: REQ-INIT-0001
+    type: requirement
+    title: "Scaffolding a governance tree must never overwrite authored content, and must be safe to re-run"
+    status: REVIEW
+    owner: "maintainer"
+    priority: high
+    source: specup.md
+    cites:
+      - document: "specup.md"
+        clause: "§5 Repository Architecture, §31 Governance States"
+        value: "generated does not mean approved, and its converse"
+    # Verified on this repository rather than only in a fixture: the scaffold ran over a
+    # populated tree in this workstream and preserved every authored file. It also seeded
+    # `src/AGENTS.md` into a repository that has no `src/`, which is recorded as RISK-0004.
+
+  - id: REQ-DOC-0001
+    type: requirement
+    title: "A docstring must be the complete working context for the unit it documents: anchored, bounded, honest about what it claims to have cross-checked, and finite"
+    status: REVIEW
+    owner: "maintainer"
+    priority: high
+    source: extensions/openup/scripts/python/validate_docs.py
+    cites:
+      - document: "specup.md"
+        clause: "§56 Progressive Context Architecture, §57 Minimal Context for an L7 Task"
+        value: "the agent gets the one artifact it needs and nothing else arrives"
+    # AN ADDITION, NOT A RECOVERY. §56-57 argue for progressive disclosure down to the file
+    # and stop there; nothing in specup.md says anything about a docstring. The extension
+    # from "the one artifact" to "the one function" is SpecUP's, it is defensible, and
+    # `source:` points at the module that makes it rather than at a section that does not.
+    # README.md's "Corrections to specup.md" is where deviations like this are listed.
+
+  # -- quality attributes ---------------------------------------------------------------
+
+  - id: NON-FR-CORE-0001
+    type: non-functional-requirement
+    title: "Every validator must read one graph, loaded from the filesystem, with no state that is not in a file"
+    status: REVIEW
+    owner: "maintainer"
+    priority: critical
+    source: specup.md
+    cites:
+      - document: "specup.md"
+        clause: "§4 Filesystem-First Compliance, FS-001 Filesystem Authority, FS-002 No Invisible State"
+        value: "if it is not in the filesystem it does not exist"
+
+  - id: NON-FR-CORE-0002
+    type: non-functional-requirement
+    title: "A run that could not be evaluated must exit 2 and must never be reported as a governance failure"
+    status: REVIEW
+    owner: "maintainer"
+    priority: critical
+    source: docs/guide/using-specup.md
+    cites:
+      - document: "docs/guide/using-specup.md"
+        clause: "the exit-code contract"
+        value: "0 pass, 1 governance failure, 2 could not evaluate"
+    # Also an addition. specup.md has no exit-code contract at all, and the distinction it
+    # draws is the one a CI branch depends on: a missing dependency reported as a FAIL tells
+    # a team its governance is broken when its environment is.
+
+  - id: NON-FR-DOCS-0001
+    type: non-functional-requirement
+    title: "Every check named in the operating manual must exist in the code, and every check in the code must be named in the manual"
+    status: REVIEW
+    owner: "maintainer"
+    priority: high
+    source: docs/guide/using-specup.md
+    cites:
+      - document: "docs/guide/using-specup.md"
+        clause: "§6, the check reference"
+        value: "every check id, its severity, and what it does and does not verify"
+    # THE ONE REQUIREMENT HERE THAT NOTHING VERIFIES, AND IT IS LEFT THAT WAY ON PURPOSE.
+    #
+    # It is implemented — by WBS-1.1.2.6, the release sweep, which is a person reading both
+    # sides. It is not verified: no test compares the manual with the code, so TRC-006 reports
+    # 17 of 18 requirements verified and `requirements_traceable` fails on this one.
+    #
+    # The cheap repair is to delete this requirement, and the graph would then report 100%
+    # verification over a project whose documentation has drifted four times in two releases.
+    # The obligation is real whether or not it is registered; registering it is what makes the
+    # gap appear in a number instead of in a memory. RISK-0002 is the same fact as a risk.
+
+  # -- evidence the risk register points at ---------------------------------------------
+
+  - id: EVID-0006
+    type: evidence
+    title: "Generated coverage view — the derived-edge counts SpecUP cannot fake"
+    status: REVIEW
+    owner: "maintainer"
+    source: .specify/traceability/coverage.md
+    # `derived_verified` counts edges a rule reproduced from the filesystem on the run that
+    # wrote this document. Relabelling an edge `derived` does not raise it — TRC-010 fails the
+    # edge instead. That is why RISK-0003's verification reference is a generated document
+    # rather than a test: the test would assert its own premise.
+
+  # -- the test suite, as governed artifacts ---------------------------------------------
+  #
+  # Registered so that verification is a graph fact rather than a claim in a README. Each
+  # `source` is a real file; the `verifies` edges are in traceability.yaml.
+  #
+  # THESE ARE ASSERTED AND CANNOT BE DERIVED, AND THE REASON IS SPECIFIC TO THIS REPOSITORY.
+  # `test-file-naming-convention` strips a configured marker from the test file's stem and
+  # looks for that stem inside the perimeter — `tests/test_docs.py` therefore asks for
+  # `docs.py`, and the module it actually exercises is `validate_docs.py`. SpecUP names its
+  # test files after the behaviour under test rather than after the module, so its own
+  # derivation rule reproduces none of its own `tests` edges. See RISK-0003.
+
+  - id: UNIT-CORE-0001
+    type: unit-test
+    title: "Validator behaviour over a mutated good fixture (99 tests)"
+    status: REVIEW
+    owner: "maintainer"
+    source: tests/test_validators.py
+
+  - id: UNIT-DRV-0001
+    type: unit-test
+    title: "Derivation rules and the derived store (25 tests)"
+    status: REVIEW
+    owner: "maintainer"
+    source: tests/test_derivers.py
+
+  - id: UNIT-APV-0001
+    type: unit-test
+    title: "Approval verification against a real signed commit (15 tests)"
+    status: REVIEW
+    owner: "maintainer"
+    source: tests/test_approvals.py
+
+  - id: UNIT-DOC-0001
+    type: unit-test
+    title: "The docstring contract, DOC-000 to DOC-006 (33 tests)"
+    status: REVIEW
+    owner: "maintainer"
+    source: tests/test_docs.py
+
+  - id: UNIT-INIT-0001
+    type: unit-test
+    title: "Scaffolding and view generation over a populated tree (8 tests)"
+    status: REVIEW
+    owner: "maintainer"
+    source: tests/test_init.py
+
+  # -- evidence --------------------------------------------------------------------------
+  #
+  # What a WBS node marked `done` points at. DOD-001 checks that each reference resolves; it
+  # does not open the file, so evidence here is a pointer a reviewer can follow rather than
+  # anything the machine has read.
+
+  - id: EVID-0001
+    type: evidence
+    title: "SpecUP 0.1.1 release notes"
+    status: REVIEW
+    owner: "maintainer"
+    source: docs/runbooks/release-notes-0.1.1.md
+
+  - id: EVID-0002
+    type: evidence
+    title: "Approval verification: the validator and its end-to-end signature tests"
+    status: REVIEW
+    owner: "maintainer"
+    source: extensions/openup/scripts/python/validate_approvals.py
+
+  - id: EVID-0003
+    type: evidence
+    title: "The docstring contract: the validator and its tests"
+    status: REVIEW
+    owner: "maintainer"
+    source: extensions/openup/scripts/python/validate_docs.py
+
+  - id: EVID-0004
+    type: evidence
+    title: "Templates carrying the five-slot frame, asserted by tests/test_templates.py"
+    status: REVIEW
+    owner: "maintainer"
+    source: tests/test_templates.py
+
+  - id: EVID-0005
+    type: evidence
+    title: "The worked example, pinned to the exact set of conditions it fails"
+    status: REVIEW
+    owner: "maintainer"
+    source: tests/test_examples.py
+
+  # -- iterations ------------------------------------------------------------------------
+  #
+  # Registered because `belongs-to` points at them: `wbs-iteration-field` reads each node's
+  # `iteration:` field and produces one edge per node, and an unregistered iteration makes
+  # every one of those edges fail TRC-002.
+
+  - id: ITER-C-01
+    type: iteration
+    title: "Construction iteration 1 — SpecUP 0.1.1"
+    status: REVIEW
+    owner: "maintainer"
+    phase: CONSTRUCTION
+
+  - id: ITER-C-02
+    type: iteration
+    title: "Construction iteration 2 — SpecUP 0.1.2"
+    status: REVIEW
+    owner: "maintainer"
+    phase: CONSTRUCTION
+
+  - id: ITER-C-03
+    type: iteration
+    title: "Construction iteration 3 — SpecUP 0.1.3"
+    status: DRAFT
+    owner: "maintainer"
+    phase: CONSTRUCTION
+    # DRAFT rather than REVIEW, and the difference is not cosmetic: 0.1.2's scope was argued
+    # and written down, 0.1.3's has one scheduled node and a plan file. Registering it at the
+    # same state as the iteration that is being delivered would say they are equally decided.

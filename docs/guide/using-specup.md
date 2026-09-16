@@ -1095,6 +1095,20 @@ than a missing one, because it reports compliance it never established.
 context map is something a reader will try to follow, so it is something that must resolve.
 `GATE-*` and `TRACE-*` are exempt, being referenced in prose rather than registered.
 
+Two consequences worth knowing before you write a context map.
+
+**A check id is id-shaped.** `WBS-004` and `RISK-005` match the pattern for a WBS node and a
+risk, resolve to nothing, and are reported. That is the check working, not a false positive —
+it cannot tell a citation from a reference. Name those checks in prose inside an `index.md`.
+`TRC-`, `DOC-`, `CTX-` and `APV-` share no prefix with an artifact type and are safe.
+
+**A nested governed tree is skipped.** A directory with its own `.specify/` is a project root,
+so its context maps describe a different graph and this run never loads it. Without that,
+every repository shipping an example or a test fixture would report that tree's ids as
+dangling — which is how SpecUP found it, on itself, with 28 violations from `examples/` and
+`tests/fixtures/`. Skipping is a statement about scope: the nested tree is not validated here,
+and needs its own run.
+
 ### `validate_approvals.py` — 6 checks
 
 specup.md §59 reserves a class of decision for a named human. Until 0.1.2 nothing checked that
@@ -1118,6 +1132,21 @@ An approval carries a provenance level, mirroring the one an edge carries:
 | `APV-005` | FAIL | Every approval at or above `approvals.require_witness_at_or_above` is witnessed | The ratchet. `null` by default, so an upgrading project is told without being broken. Set it to `BASELINED` once your approvals carry commits, and **raise it as a decision — never lower it to make a run go green** |
 
 Metrics: `approvals`, `witnessed`, `claimed`, `named_approvers[]`, `witness_floor`.
+
+**Three places an approval is written, and all three are in scope.**
+
+| Where | Key | Shape |
+|---|---|---|
+| An artifact | `approvals` | a list |
+| A traceability edge | `approval` | one object, written by `approve_edge.py` |
+| A risk | `acceptance_approval` | one object; required when `status` is `accepted` |
+
+The risk shape was missed until 0.1.2's own self-governance accepted a risk. Accepting a live
+risk is the §59 decision most likely to be taken quietly, the risk schema requires the approval
+to be there, and every `APV-*` check looked straight past it. `APV-001` to `APV-004` now apply
+to it. `APV-005` does not: its floor names governance states (`BASELINED` and its successors),
+and `accepted` is a risk status, so a floor set for requirement baselines cannot quietly start
+failing risk acceptances as well.
 
 **A missing `git` binary is exit 2, not a FAIL.** So is a project that declares a commit while
 sitting outside a git repository. Reporting either as a governance failure would send someone

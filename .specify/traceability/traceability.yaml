@@ -1,0 +1,355 @@
+# SpecUP's own relation store — the hand-asserted half.
+#
+# ANSWERS
+#   how SpecUP's obligations, its code and its tests connect.
+#
+# DOES NOT ANSWER
+#   what any of them are. That is requirements.yaml, wbs.yaml and risk-register.yaml.
+#
+# FILLED IN BADLY WHEN
+#   an edge is written because it makes a coverage figure move. Every edge below is a
+#   judgement by one person and is labelled `asserted`, which is the accurate label and also
+#   the weakest one: no check in this repository can tell whether any of them is true.
+#
+# CHECKED BY
+#   TRC-002 fails an edge whose endpoints do not resolve, TRC-003 fails one whose relation is
+#   illegal for its endpoint types, TRC-004 fails a cycle, TRC-010 fails a `derived` label a
+#   rule cannot reproduce. NOTHING checks that an `asserted` edge is true.
+#
+# AUTHORITY
+#   the maintainer. Promotion to `approved` needs a signature this project cannot witness —
+#   RISK-0001.
+#
+# ---------------------------------------------------------------------------
+# WHAT IS DELIBERATELY NOT HERE: `tests` EDGES.
+#
+# Eleven of the edges in this graph are `derived`, all from `wbs-iteration-field`, and they
+# live in derived.yaml. The obvious way to add more would be to write one
+# `UNIT-* --tests--> <module>` edge per test file by hand. That is exactly what
+# `test-file-naming-convention` exists to recover, and it recovers none of them here because
+# SpecUP names its test files after the behaviour under test rather than after the module
+# (`tests/test_docs.py` for `validate_docs.py`).
+#
+# Writing them by hand would put a hand-maintained copy of a machine-recoverable fact into
+# the store, and the provenance mix would look identical to a project where the rule worked.
+# RISK-0003 is that gap stated as a risk, and WBS-1.1.3.1 is the work that closes it. Leaving
+# the edges out is what keeps the risk visible.
+
+schema_version: "1.0"
+scope: ".specify"
+
+edges:
+
+  # -- why each obligation exists -------------------------------------------------------
+  #
+  # Every requirement refines the one business objective. Repetitive, and it is the §20 chain:
+  # without these, each requirement is a rule with no stated reason, and TRC-008 would report
+  # the ones nothing else touches as orphans.
+
+  - from: REQ-WBS-0001
+    relation: refines
+    to: BUS-OBJ-0001
+    provenance: asserted
+  - from: REQ-RISK-0001
+    relation: refines
+    to: BUS-OBJ-0001
+    provenance: asserted
+  - from: REQ-TRACE-0001
+    relation: refines
+    to: BUS-OBJ-0001
+    provenance: asserted
+  - from: REQ-TRACE-0002
+    relation: refines
+    to: BUS-OBJ-0001
+    provenance: asserted
+  - from: REQ-TRACE-0003
+    relation: refines
+    to: BUS-OBJ-0001
+    provenance: asserted
+  - from: REQ-DONE-0001
+    relation: refines
+    to: BUS-OBJ-0001
+    provenance: asserted
+  - from: REQ-READY-0001
+    relation: refines
+    to: BUS-OBJ-0001
+    provenance: asserted
+  - from: REQ-GATE-0001
+    relation: refines
+    to: BUS-OBJ-0001
+    provenance: asserted
+  - from: REQ-AUDIT-0001
+    relation: refines
+    to: BUS-OBJ-0001
+    provenance: asserted
+  - from: REQ-VIEW-0001
+    relation: refines
+    to: BUS-OBJ-0001
+    provenance: asserted
+  - from: REQ-CTX-0001
+    relation: refines
+    to: BUS-OBJ-0001
+    provenance: asserted
+  - from: REQ-APV-0001
+    relation: refines
+    to: BUS-OBJ-0001
+    provenance: asserted
+  - from: REQ-IMPACT-0001
+    relation: refines
+    to: BUS-OBJ-0001
+    provenance: asserted
+  - from: REQ-INIT-0001
+    relation: refines
+    to: BUS-OBJ-0001
+    provenance: asserted
+  - from: REQ-DOC-0001
+    relation: refines
+    to: BUS-OBJ-0001
+    provenance: asserted
+  - from: NON-FR-CORE-0001
+    relation: refines
+    to: BUS-OBJ-0001
+    provenance: asserted
+  - from: NON-FR-CORE-0002
+    relation: refines
+    to: BUS-OBJ-0001
+    provenance: asserted
+  - from: NON-FR-DOCS-0001
+    relation: refines
+    to: BUS-OBJ-0001
+    provenance: asserted
+
+  # -- what implements what -------------------------------------------------------------
+  #
+  # One edge per module in the traceability perimeter, which is what makes backward coverage
+  # mean anything here: TRC-007 asks whether an in-perimeter file is connected to intent, and
+  # these are the connections. A module with two edges implements two obligations; that is
+  # not double-counting, it is a module that would need splitting if the two ever diverged.
+
+  - from: extensions/openup/scripts/python/validate_wbs.py
+    relation: implements
+    to: REQ-WBS-0001
+    provenance: asserted
+
+  - from: extensions/openup/scripts/python/validate_risk.py
+    relation: implements
+    to: REQ-RISK-0001
+    provenance: asserted
+
+  - from: extensions/openup/scripts/python/validate_trace.py
+    relation: implements
+    to: REQ-TRACE-0001
+    provenance: asserted
+  - from: extensions/openup/scripts/python/validate_trace.py
+    relation: implements
+    to: REQ-TRACE-0002
+    provenance: asserted
+
+  # Two modules, one obligation. derivers.py holds the rules and derive_edges.py is the
+  # command that writes and compares the store; neither is useful without the other, and
+  # REQ-TRACE-0003 is about the pair.
+  - from: extensions/openup/scripts/python/derivers.py
+    relation: implements
+    to: REQ-TRACE-0003
+    provenance: asserted
+  - from: extensions/openup/scripts/python/derive_edges.py
+    relation: implements
+    to: REQ-TRACE-0003
+    provenance: asserted
+
+  - from: extensions/openup/scripts/python/validate_done.py
+    relation: implements
+    to: REQ-DONE-0001
+    provenance: asserted
+
+  - from: extensions/openup/scripts/python/select_work.py
+    relation: implements
+    to: REQ-READY-0001
+    provenance: asserted
+
+  - from: extensions/openup/scripts/python/evaluate_gate.py
+    relation: implements
+    to: REQ-GATE-0001
+    provenance: asserted
+
+  - from: extensions/openup/scripts/python/audit.py
+    relation: implements
+    to: REQ-AUDIT-0001
+    provenance: asserted
+
+  - from: extensions/openup/scripts/python/render_views.py
+    relation: implements
+    to: REQ-VIEW-0001
+    provenance: asserted
+
+  - from: extensions/openup/scripts/python/validate_context.py
+    relation: implements
+    to: REQ-CTX-0001
+    provenance: asserted
+
+  # approve_edge.py writes the claim and validate_approvals.py is what makes it checkable.
+  # The module docstring in the first one said the binding "is not implemented" for the whole
+  # of 0.1.2 until this edge was written and somebody read both ends.
+  - from: extensions/openup/scripts/python/approve_edge.py
+    relation: implements
+    to: REQ-APV-0001
+    provenance: asserted
+  - from: extensions/openup/scripts/python/validate_approvals.py
+    relation: implements
+    to: REQ-APV-0001
+    provenance: asserted
+
+  - from: extensions/openup/scripts/python/validate_docs.py
+    relation: implements
+    to: REQ-DOC-0001
+    provenance: asserted
+
+  - from: extensions/openup/scripts/python/impact.py
+    relation: implements
+    to: REQ-IMPACT-0001
+    provenance: asserted
+
+  - from: extensions/openup/scripts/python/init_openup.py
+    relation: implements
+    to: REQ-INIT-0001
+    provenance: asserted
+
+  - from: extensions/openup/scripts/python/openup_model.py
+    relation: implements
+    to: NON-FR-CORE-0001
+    provenance: asserted
+  - from: extensions/openup/scripts/python/openup_model.py
+    relation: implements
+    to: NON-FR-CORE-0002
+    provenance: asserted
+
+  # The only obligation implemented by work rather than by code. There is no module that
+  # keeps the manual true; there is a person, doing it at release time.
+  - from: WBS-1.1.2.6
+    relation: implements
+    to: NON-FR-DOCS-0001
+    provenance: asserted
+
+  # -- what verifies what ---------------------------------------------------------------
+  #
+  # A `verifies` edge from a test artifact is what moves a requirement into the verified half
+  # of the coverage figure. These say which suite covers which obligation; they do not say
+  # how well, and nothing here measures that. A suite that asserted nothing would produce the
+  # same edge.
+
+  - from: UNIT-CORE-0001
+    relation: verifies
+    to: REQ-WBS-0001
+    provenance: asserted
+  - from: UNIT-CORE-0001
+    relation: verifies
+    to: REQ-RISK-0001
+    provenance: asserted
+  - from: UNIT-CORE-0001
+    relation: verifies
+    to: REQ-TRACE-0001
+    provenance: asserted
+  - from: UNIT-CORE-0001
+    relation: verifies
+    to: REQ-TRACE-0002
+    provenance: asserted
+  - from: UNIT-CORE-0001
+    relation: verifies
+    to: REQ-DONE-0001
+    provenance: asserted
+  - from: UNIT-CORE-0001
+    relation: verifies
+    to: REQ-READY-0001
+    provenance: asserted
+  - from: UNIT-CORE-0001
+    relation: verifies
+    to: REQ-GATE-0001
+    provenance: asserted
+  - from: UNIT-CORE-0001
+    relation: verifies
+    to: REQ-AUDIT-0001
+    provenance: asserted
+  - from: UNIT-CORE-0001
+    relation: verifies
+    to: REQ-VIEW-0001
+    provenance: asserted
+  - from: UNIT-CORE-0001
+    relation: verifies
+    to: REQ-CTX-0001
+    provenance: asserted
+  - from: UNIT-CORE-0001
+    relation: verifies
+    to: REQ-IMPACT-0001
+    provenance: asserted
+  - from: UNIT-CORE-0001
+    relation: verifies
+    to: NON-FR-CORE-0001
+    provenance: asserted
+  # tests/test_validators.py asserts the exit code itself, not merely the verdict: a store
+  # that will not load must produce 2 from validate_trace.py and from audit.py.
+  - from: UNIT-CORE-0001
+    relation: verifies
+    to: NON-FR-CORE-0002
+    provenance: asserted
+
+  - from: UNIT-DRV-0001
+    relation: verifies
+    to: REQ-TRACE-0003
+    provenance: asserted
+
+  - from: UNIT-APV-0001
+    relation: verifies
+    to: REQ-APV-0001
+    provenance: asserted
+
+  - from: UNIT-DOC-0001
+    relation: verifies
+    to: REQ-DOC-0001
+    provenance: asserted
+
+  - from: UNIT-INIT-0001
+    relation: verifies
+    to: REQ-INIT-0001
+    provenance: asserted
+
+  # NON-FR-DOCS-0001 has no verifier and no edge here says otherwise. TRC-006 reports 17 of
+  # 18, and the missing one is the requirement that the documentation matches the code.
+
+  # -- risk -----------------------------------------------------------------------------
+
+  - from: WBS-1.1.3.1
+    relation: mitigates
+    to: RISK-0003
+    provenance: asserted
+
+  # -- evidence -------------------------------------------------------------------------
+  #
+  # `evidences` runs from an Evidence artifact to the node, gate or risk it supports. DOD-001
+  # already checks the `evidence:` field on each WBS node; these edges are what make the same
+  # fact traversable — impact.py can reach the evidence for a node, which the field alone
+  # does not allow.
+
+  - from: EVID-0001
+    relation: evidences
+    to: WBS-1.1.1.1
+    provenance: asserted
+  - from: EVID-0002
+    relation: evidences
+    to: WBS-1.1.2.1
+    provenance: asserted
+  - from: EVID-0003
+    relation: evidences
+    to: WBS-1.1.2.2
+    provenance: asserted
+  - from: EVID-0004
+    relation: evidences
+    to: WBS-1.1.2.3
+    provenance: asserted
+  - from: EVID-0005
+    relation: evidences
+    to: WBS-1.1.2.4
+    provenance: asserted
+  - from: EVID-0006
+    relation: evidences
+    to: RISK-0003
+    provenance: asserted

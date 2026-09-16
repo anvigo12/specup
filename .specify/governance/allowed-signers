@@ -1,0 +1,53 @@
+# Allowed signers — the trust root for approvals.
+#
+# Authored, not generated. This file decides whose signature counts as a human approval, and
+# `validate_approvals.py` (APV-002) verifies every `approval.commit` against it with
+# `git -c gpg.ssh.allowedSignersFile=<this file> verify-commit`.
+#
+# ANSWERS — whose signature counts as a human approval.
+#
+# DOES NOT ANSWER — who may approve what. That is `approval-matrix.md`, and the two are
+# deliberately separate: the matrix says who may decide, this file says how we recognise
+# them. Someone can be in one and not the other, and both directions are a real finding.
+#
+# WHY IT IS HERE AND NOT IN YOUR GLOBAL GIT CONFIG
+#
+# A trust root a reviewer cannot see in the diff is one an agent could have written. Keeping it
+# in version control means adding a signer is a reviewable change with an author and a date,
+# and the same repository gives the same answer on every machine. A machine-local
+# `gpg.ssh.allowedSignersFile` would make the verdict depend on who ran the check.
+#
+# FILLED IN BADLY WHEN
+#
+# - An empty file. APV-002 then fails every declared commit, which is correct but unhelpful:
+#   it means the project claims witnessed approvals and trusts nobody to give them.
+# - A key that belongs to a CI robot or an agent. That key can approve, which converts the
+#   whole mechanism back into the thing it replaced. Machine identities sign builds, not
+#   governance decisions.
+# - A principal that does not match the committer. git matches on the principal, so a typo
+#   fails closed — the approval reads as unwitnessed rather than as trusted.
+#
+# CHECKED BY
+#
+# APV-002 only. Nothing checks that the people listed here are the people in
+# `approval-matrix.md` — that correspondence is APV-003's job, and it compares names rather
+# than keys. Someone listed here but not in the matrix can sign a commit git trusts and still
+# fail APV-003, which is the intended order: the matrix says who may decide, this file says
+# how we recognise them.
+#
+# FORMAT
+#
+# One signer per line: <principal> <keytype> <key>
+# The principal is normally the signer's email address, matching `user.email` on their commits.
+#
+#   ada@example.org ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAA...
+#   grace@example.org ssh-rsa AAAAB3NzaC1yc2EAAAADAQAB...
+#
+# For OpenPGP signatures, leave this file empty and configure a keyring instead; APV-002 will
+# then verify against that. The file is still required to exist, so that the decision to rely
+# on a keyring is visible here rather than implicit.
+#
+# AUTHORITY
+#
+# Adding or removing a line is a governance change under `change-control.md`. It is not an
+# edit an agent makes, and an agent that proposes one should say so in a pull request.

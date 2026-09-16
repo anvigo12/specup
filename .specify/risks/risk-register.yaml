@@ -1,0 +1,141 @@
+# SpecUP's own risk register.
+#
+# ANSWERS
+#   what could stop SpecUP being what it claims to be, how exposed it is, and whose problem
+#   each one is.
+#
+# DOES NOT ANSWER
+#   defects. A defect is a thing that is wrong now and belongs in an issue; a risk is a thing
+#   that may be wrong later. Two entries below sit close to that line and say which side they
+#   are on.
+#
+# FILLED IN BADLY WHEN
+#   a probability is chosen after looking at the threshold. Exposure is probability x impact
+#   and 0.40 is where mitigation and verification become mandatory, so any number just under
+#   it buys silence. Each estimate below is written with its reasoning attached, which does
+#   not make it right but does make it arguable.
+#
+# CHECKED BY
+#   RISK-001 recomputes every exposure, RISK-004 and RISK-005 fail a high risk with no
+#   mitigation and no verification reference, RISK-006 checks the link from both ends, and
+#   TRC-008 reports an unmitigated high risk as an orphan. NOTHING checks that the register
+#   is complete — a risk nobody wrote down is invisible to every check here.
+#
+# AUTHORITY
+#   the maintainer, who is also the owner of every entry. That is RISK-0001.
+#
+# Every risk here was live on 2026-09-16. Nothing historical has been backfilled: a register
+# of resolved risks is an archive, and `docs/guide/existing-project.md` says not to build one.
+
+schema_version: "1.0"
+
+risks:
+
+  - id: RISK-0001
+    title: "Every approval SpecUP records is signed by the only person who could have recorded it"
+    description: >-
+      SpecUP has one maintainer. `.specify/governance/allowed-signers` therefore has at most
+      one principal, and an approval verified against it proves that the maintainer approved
+      their own work — which is what the file already says. APV-002 would pass and the second
+      pair of eyes that specup.md §59 is actually about would still be absent. The exposure is
+      to the claim, not to the code: a governance tool whose own baselines are self-approved
+      has demonstrated the mechanism and not the control.
+    category: resource
+    probability: 0.9
+    impact: 0.6
+    exposure: 0.54
+    phase_identified: CONSTRUCTION
+    iteration_identified: ITER-C-02
+    owner: "maintainer"
+
+    # ACCEPTED, and the acceptance is itself unwitnessed. A solo project cannot manufacture a
+    # second signer, and recording a mitigation node for work that cannot be scheduled would
+    # be worse than accepting it: it would read as a plan. `accepted` exempts this from
+    # RISK-004 and RISK-005, which is the schema doing what it is for — an accepted risk is a
+    # decision, not a gap — and APV-004 still warns on every claimed approval in the project,
+    # so the underlying state stays visible on every run.
+    #
+    # Revisit when a second person has commit rights. That is the event that changes this,
+    # and nothing before it does.
+    status: accepted
+    acceptance_approval:
+      by: "maintainer"
+      at: "2026-09-16T00:00:00Z"
+      note: >-
+        Accepted for 0.1.2. One maintainer, so no approval in this repository can be witnessed
+        by a second person, including this one. Reopen when a second signer exists.
+
+  - id: RISK-0002
+    title: "Nothing checks that the operating manual describes the code that shipped"
+    description: >-
+      `docs/guide/using-specup.md` names every check id, its severity and its count. All of it
+      is prose. The only automated defences are `tests/test_catalog.py`, which compares built
+      digests, and `tests/test_extension_manifest.py`, which compares declared files with the
+      files on disk — neither reads a sentence. A check renamed in code and not in the manual
+      leaves a reader running a command that does not exist, and the 0.1.2 sweep found four
+      such drifts by hand.
+    category: operational
+    probability: 0.6
+    impact: 0.5
+    exposure: 0.30
+    phase_identified: CONSTRUCTION
+    iteration_identified: ITER-C-02
+    status: open
+    owner: "maintainer"
+    # Below the 0.40 threshold, so it carries no mitigation node and TRC-008 does not report
+    # it. That is the register working rather than a loophole: the cost is a manual grep
+    # before each release, which is affordable at this size and would not be at ten times it.
+    # Raise the probability, not the threshold, when the manual outgrows one reader.
+
+  - id: RISK-0003
+    title: "An error in SpecUP's own traceability graph would not be detectable by SpecUP"
+    description: >-
+      The provenance model exists so that a machine can re-derive an edge rather than take the
+      author's word for it. Over this repository it recovers almost nothing, for a specific
+      reason: `test-file-naming-convention` strips a marker from a test file's stem and looks
+      for that stem inside the perimeter, so `tests/test_docs.py` asks for `docs.py` while the
+      module it exercises is `validate_docs.py`. SpecUP names its test files after the
+      behaviour under test rather than after the module, so the rule reproduces none of its
+      `tests` edges. What remains derivable is `wbs-iteration-field`, which restates a field.
+      The consequence is not that the graph is wrong — it is that nothing would tell anyone if
+      it were, which is the exact circularity ID-GRAMMAR.md §3 describes.
+    category: technical
+    probability: 0.6
+    impact: 0.7
+    exposure: 0.42
+    phase_identified: CONSTRUCTION
+    iteration_identified: ITER-C-02
+    status: open
+    owner: "maintainer"
+    # Above the threshold, so mitigation and verification are both mandatory and both are
+    # here. The mitigation is real work in a real iteration, not a placeholder.
+    mitigation:
+      - WBS-1.1.3.1
+    # The regenerated coverage view is the oracle: `derived_verified` is a count of edges a
+    # rule reproduced from the filesystem THIS RUN, so it cannot be moved by relabelling.
+    # Whether the mitigation worked is a number in that document, which is why the document
+    # is the verification reference rather than a test that would assert its own premise.
+    verification:
+      - EVID-0006
+
+  - id: RISK-0004
+    title: "The scaffold seeds an operating contract into `src/`, which not every project has"
+    description: >-
+      `init_openup.py` hard-codes `src/AGENTS.md` in its seed map. Run on this repository,
+      whose code is under `extensions/openup/scripts/python/`, it created a `src/` directory
+      that had never existed. Harmless once and misleading at scale: the contract that binds
+      an agent writing code ends up in a directory the agent never opens, and CTX-003 passes
+      anyway because it only looks for an AGENTS.md at or above a GOVERNED directory, none of
+      which is a source directory.
+    category: technical
+    probability: 0.4
+    impact: 0.2
+    exposure: 0.08
+    phase_identified: CONSTRUCTION
+    iteration_identified: ITER-C-02
+    status: open
+    owner: "maintainer"
+    # A defect more than a risk, and it is here rather than in an issue tracker because this
+    # repository has no issue tracker in the graph. The fix is a `--source-dir` argument; it
+    # is not scheduled for 0.1.2 because changing the seed map changes what every project
+    # gets, and that decision deserves its own iteration rather than an aside in this one.

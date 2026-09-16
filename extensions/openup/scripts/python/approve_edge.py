@@ -7,16 +7,19 @@ edge if it no longer matches). Nobody can produce that hash by hand, so shipping
 without this tool would recreate the defect it closes: a required field nobody can write
 correctly.
 
-    approve_edge.py --from REQ-AUTH-0014 --relation refines --to BUS-OBJ-0017 \\
+    approve_edge.py --from REQ-<DOMAIN>-<NNNN> --relation refines --to BUS-OBJ-<NNNN> \\
                     --by product-owner [--commit <sha>] [--note "..."]
 
 The file is edited in place, one list item at a time, so the comments and ordering of a
 hand-maintained store survive. Exit 0 on success, 1 if the approval is refused, 2 if the
 graph will not load or the edge does not exist.
 
-HONEST LIMIT: this binds an approval to content. It does not prove a human was involved —
-an agent can run this command and pass --by product-owner. The only real anchor is
---commit pointing at a signed commit, verified against git, which is not implemented.
+HONEST LIMIT: this binds an approval to content, and `--commit` is what binds it to a
+person. Without that flag an agent can run this command and pass `--by product-owner`, and
+the approval records a name and nothing else; validate_approvals.py reports it as `claimed`
+under APV-004 rather than `witnessed`. With it, APV-001 resolves the commit and APV-002
+verifies its signature against `.specify/governance/allowed-signers`. This tool does not
+verify anything itself — it writes the claim, and the validator is what makes it checkable.
 """
 
 from __future__ import annotations

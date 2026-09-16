@@ -1,13 +1,13 @@
 """Keep the task runner above the enforcement boundary.
 
-Taskfile.yml is for developing, testing, packaging and publishing SpecUP. Nothing
+The Taskfile is for developing, testing, packaging and publishing SpecUP. Nothing
 SpecUP *runs* may go through it, and this file is what makes that a rule rather
 than an intention.
 
 The reason is governance, not tooling preference. Validators live under
 `.specify/extensions/openup/`, a directory `specify extension add` owns and
 reinstalls, so tampering with one is visible and gets reverted on update. A
-`Taskfile.yml` sits at a project root, where editing it is an unremarkable act
+Taskfile sits at a project root, where editing it is an unremarkable act
 that leaves no trace anywhere Spec Kit looks. If a gate were evaluated through
 `task gate`, redefining that task as `exit 0` would be a clean, reviewable-looking
 way to turn a failing gate green — precisely what `speckit.openup.gate.md`
@@ -28,7 +28,17 @@ import pytest
 import yaml
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parent.parent
-TASKFILE = REPO_ROOT / "Taskfile.yml"
+
+# go-task accepts four spellings and this repository has used two of them. Pinning one meant a
+# rename turned these tests into skips rather than failures — the boundary stopped being
+# checked and the suite still reported green, which is the failure mode this file exists to
+# prevent one level up.
+TASKFILE = next(
+    (REPO_ROOT / name for name in ("Taskfile.yml", "Taskfile.yaml", "taskfile.yml",
+                                   "taskfile.yaml")
+     if (REPO_ROOT / name).is_file()),
+    REPO_ROOT / "Taskfile.yml",
+)
 WORKFLOW_PATHS = sorted((REPO_ROOT / "workflows").glob("*/workflow.yml"))
 COMMAND_PATHS = sorted((REPO_ROOT / "extensions" / "openup" / "commands").glob("*.md"))
 PRESET_PATHS = sorted((REPO_ROOT / "presets").glob("*/**/*.md"))
@@ -46,7 +56,7 @@ def walk_steps(steps):
             yield from walk_steps(case.get("steps"))
 
 
-@pytest.mark.skipif(not TASKFILE.is_file(), reason="no Taskfile.yml in this repo")
+@pytest.mark.skipif(not TASKFILE.is_file(), reason="no Taskfile at the repo root")
 def test_taskfile_is_valid_yaml_and_declares_version_3():
     data = yaml.safe_load(TASKFILE.read_text())
     assert str(data.get("version")) == "3"
@@ -87,7 +97,7 @@ def test_no_preset_guidance_tells_the_agent_to_run_task(path):
         )
 
 
-@pytest.mark.skipif(not TASKFILE.is_file(), reason="no Taskfile.yml in this repo")
+@pytest.mark.skipif(not TASKFILE.is_file(), reason="no Taskfile at the repo root")
 def test_the_task_runner_is_never_a_shipped_dependency():
     """`task` must not appear in any manifest's `requires.tools`.
 

@@ -890,6 +890,29 @@ def test_a_missing_index_warns_rather_than_fails(project):
     assert any(c.id == "CTX-001" and c.status == "WARN" for c in verdict.checks)
 
 
+def test_a_nested_project_tree_is_not_read_as_part_of_this_graph(project):
+    """A repository that ships an example or a fixture holds a second governed tree, and its
+    context maps describe a second graph.
+
+    Found by running this validator over SpecUP itself: `examples/my-program/` and
+    `tests/fixtures/good/` produced 28 dangling references between them, every one of which
+    resolves in the tree it belongs to. A directory with its own `.specify/` is a project
+    root, so its maps are skipped — not validated-and-passed, which is a different claim.
+    """
+    nested = project.root / "vendor" / "other-program"
+    (nested / ".specify" / "lifecycle").mkdir(parents=True)
+    (nested / ".specify" / "lifecycle" / "index.md").write_text(
+        "# Another program\n\nREQ-ELSEWHERE-0001 lives in a graph this run never loads.\n")
+    assert project.run("validate_context").status == "PASS"
+
+    # And the exemption is bounded by that `.specify/`: an index.md in an ordinary
+    # subdirectory of THIS project is still this project's map, and still has to resolve.
+    plain = project.root / "vendor" / "notes"
+    plain.mkdir(parents=True)
+    (plain / "index.md").write_text("# Notes\n\nREQ-ELSEWHERE-0002 is not registered.\n")
+    assert_fails(project.run("validate_context"), "CTX-002")
+
+
 def test_a_wbs_node_naming_a_skill_that_does_not_exist_fails(project):
     project.node("WBS-1.2.3.4.1.1.2")(lambda n: n.update(skills=["telepathy"]))
     assert_fails(project.run("validate_context"), "CTX-004")
