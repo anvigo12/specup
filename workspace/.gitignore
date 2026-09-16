@@ -1,0 +1,13 @@
+# workspace/ is the home for SpecUP-governed projects, and nothing inside it belongs to
+# SpecUP. It is committed as an empty folder: this file is the only tracked content.
+#
+# What lands here is a user's own program and application — their `.specify/` governance,
+# their source, and whatever reference material their domain needs. Some of that is
+# copyrighted (the cits-crypto worked example reads BSI and IEEE standards documents), some
+# of it is a nested git repository with its own history, and none of it is SpecUP's to
+# redistribute.
+#
+# A project here is governed BY SpecUP; it is not part of SpecUP.
+
+*
+!.gitignore
