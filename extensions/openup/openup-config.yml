@@ -56,6 +56,29 @@ artifacts:
     # one feature is visible to all of them: the graph is one graph.
     - specs/*/artifacts.yaml
 
+approvals:
+  # specup.md s59 reserves a class of decision for a named human. Until 0.1.2 nothing checked
+  # that one had been involved: an agent could run `approve_edge.py --by product-owner` exactly
+  # as a person could. validate_approvals.py checks it, and these two keys are how.
+
+  # The trust root. A signed commit is the only thing that ties an approval to a person, and
+  # this file decides whose signatures count. It is version-controlled on purpose: a trust root
+  # a reviewer cannot see in the diff is one the agent could have written. Format is git's
+  # `gpg.ssh.allowedSignersFile` - one `<principal> <keytype> <key>` per line.
+  allowed_signers: .specify/governance/allowed-signers
+
+  # The ratchet. A governance state at or beyond which an approval MUST be witnessed by a
+  # verified signature, or null to check nothing.
+  #
+  # null by default, and that is a decision rather than timidity: defaulting it to BASELINED
+  # would fail the first audit of every project upgrading from 0.1.1, over approvals recorded
+  # before the field existed. APV-004 warns on every claimed approval regardless, so the gap is
+  # visible from day one - raising this floor is the deliberate act that makes it consequential.
+  #
+  # Set it to BASELINED once your approvals carry commits. Raise it as a decision; never lower
+  # it to make a run go green.
+  require_witness_at_or_above: null
+
 traceability:
   # Where relation stores live. All matching files are merged into ONE graph at load time.
   # specup.md s5 puts WBS/risk/traceability at BOTH .specify/ and specs/<feature>/ without
@@ -160,6 +183,7 @@ gates:
       - critical_contracts_defined
       - security_review_complete
       - wbs_valid
+      - human_approvals_witnessed
 
   GATE-INITIAL_OPERATIONAL_CAPABILITY:
     phase: CONSTRUCTION
@@ -180,6 +204,7 @@ gates:
       - no_open_high_risks
       - traceability_final
       - security_validation_passed
+      - human_approvals_witnessed
 
 audit:
   # s33 report. The provenance mix is always emitted and is deliberately NOT configurable:

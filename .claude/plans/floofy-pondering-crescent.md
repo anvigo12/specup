@@ -1,169 +1,337 @@
-# A detailed usage guide for SpecUP
+# SpecUP v0.1.2 — implementation plan
 
 ## Context
 
-SpecUP is complete and verified: three Spec Kit layers plus a bundle, 13 command-line entry
-points, 231 tests passing, all ten audit gaps closed at
-[701c682](https://github.com/anvigo12/specup/commit/701c682).
+SpecUP 0.1.1 enforces an OpenUP lifecycle over an agent it does not own. Its central claim is
+that governance is only real when it is machine-checkable and consequential. Two of its own
+claims do not meet that bar:
 
-What it does not have is an operating manual. `docs/` currently holds:
+- **`README.md:548-553`** — *"An approval binds content, not a human... an agent can run
+  `approve_edge.py --by product-owner` exactly as a human can. The only real anchor is
+  `approval.commit` pointing at a signed commit, verified against git, **which is not
+  implemented**."* So "final authority rests with explicit human approval" is prose.
+- The three binding standards and every template are prompt-level. Nothing checks that a
+  docstring carries the context an agent needs to act correctly on a unit of code.
 
-| Document | What it is |
-|---|---|
-| [docs/guide/README.md](docs/guide/README.md) | Concepts and architecture — *what* SpecUP is and *why* it is shaped that way |
-| [docs/guide/new-project.md](docs/guide/new-project.md) | Greenfield adoption journey |
-| [docs/guide/existing-project.md](docs/guide/existing-project.md) | Brownfield adoption journey |
-| [README.md](README.md) | Project pitch, verification record, limitations |
+v0.1.2 closes both, ships the templates that teach the model, and makes SpecUP govern itself.
+It is **MIT throughout, adds no runtime dependency, and touches no bundle or workflow**, so it
+is releasable independently of the Open SWE work.
 
-Nothing answers the question a person has on day 40: *a check just failed — what is `TRC-010`,
-why does it exist, and what do I type?* The check ids (`WBS-000`–`011`, `RISK-000`–`007`,
-`TRC-000`–`013`, `DOD-001`–`006`, `DOR-001`–`009`, `CTX-001`–`004`, `SEL-000`–`002`,
-`DRV-001`–`004`, `VIEW-001`–`002`) appear in validator output and in nine agent commands, and
-are defined nowhere a user can read. Same for the config keys, the artifact/WBS/risk/edge field
-sets, and the three-way exit contract.
+**The Open SWE runtime moves to 0.1.3.** Its research is complete and recorded in §7 below so
+it is not re-derived. Splitting was a deliberate call: the broker and container are the two
+items that could invalidate a release, and nine independently useful workstreams should not
+wait behind them.
 
-**The deliverable:** `docs/guide/using-specup.md` — a standalone operational manual, readable
-without the other three, built around one worked example carried end to end.
+### Two decisions taken during planning
 
-### Assessment of the current state (what the guide has to describe)
-
-- **Three layers, one enforcer.** Preset and extension are prompt-level; only a workflow
-  `shell` step's exit code stops anything. Bundle is distribution.
-- **13 CLIs** under `extensions/openup/scripts/python/`, 8 of which emit the
-  `Verdict` shape; every one takes `--root`, `--json`, `--out`; exit `0`/`1`/`2`.
-  Verified: they run with no `PYTHONPATH` set, since Python puts the script's own directory on
-  `sys.path`.
-- **14 relations**, stored once in active voice, inverses derived at load time.
-- **23 gate condition declarations over 22 implementations** across 4 gates.
-- **3 of 5 derivation rules implemented**; the other two are reported, never trusted.
-- **Two honest limits** the guide must state plainly: nothing parses a contract document, and
-  an approval binds content, not a human.
+1. **The permission artifact is a *grant*, not a *capability*.** "Capability" is already taken:
+   `SKILL.md` files are *capability contracts* (`specup.md:494`, `README.md:442`,
+   `DOR-009`). A permissions file called `capability-profile` would sit beside six shipped
+   capability contracts meaning procedures. 0.1.3 uses `resolve_grant.py` →
+   `.specify/evidence/grants/<run-id>.json`.
+2. **Approvals get a signature, and therefore a provenance level** — mirroring the
+   `derived`/`asserted`/`approved` model the project already applies to edges.
 
 ---
 
-## The document
+## Scope
 
-`docs/guide/using-specup.md`. Audience line at the top: **engineers and leads operating a
-SpecUP-governed repository day to day.**
+| # | Workstream | Closes |
+|---|---|---|
+| 1 | `validate_approvals.py` — `APV-001..004`, signed-commit verification | `README.md:548-553` |
+| 2 | `validate_docs.py` — `DOC-001..005`, the docstring contract | new |
+| 3 | Meta-cognitive rewrite of the shipped templates, with the `cits-crypto` harvest | new |
+| 4 | `examples/` generic program + project, materialised into `workspace/` | new |
+| 5 | SpecUP governs itself | `.specify/` holds only caches today |
+| 6 | Documentation sweep + release mechanics | four live drifts |
 
-### The worked example
+---
 
-One thread, from `tests/fixtures/good`, carried through every section: **`REQ-AUTH-0014`,
-"Vehicle must authenticate using a valid certificate."** The reader watches it become a
-requirement, decompose into `WBS-1.2.3.4.1.1.1–3`, acquire `RISK-0007`, gain edges, bind to
-`SCEN-AUTH-0031`, get approved, pass the Definition of Done, and clear
-`GATE-LIFECYCLE_ARCHITECTURE`.
+## 1. `validate_approvals.py` — make human approval mechanical
 
-Every command output in the guide is **real output already captured** by running the validators
-against that fixture during this planning pass — the audit report, the 23-artifact impact
-fan-out, the traceability metrics block, `derive_edges` with its `DRV-004` skip, `select_work`
-warning that nothing is ready. Nothing is invented or prettified.
+**The model.** An approval acquires a provenance level, exactly as an edge has one:
 
-### Structure
+| Level | Meaning |
+|---|---|
+| `witnessed` | `approval.commit` resolves **and** carries a signature that verifies against the project's allowed signers |
+| `claimed` | a name and a date, and nothing that ties them to a person |
 
-1. **Before you start** — the three-way exit contract (`0` pass, `1` governance failure, `2`
-   could-not-evaluate), why collapsing `2` into `1` would lie to the operator, the universal
-   `--root/--json/--out` flags, and where the scripts live (same literal path for agent and
-   workflow — extension commands get no `{SCRIPT}` substitution).
-2. **Install and scaffold** — `install.py --project`, `requirements.txt` (skipping it makes
-   every validator exit `2`), `init_openup.py --program`, then `render_views.py --write`
-   because the three generated governance documents are deliberately not seeded.
-3. **The daily loop** — the five commands a person actually runs, in order, with the reason
-   each one exists: `select_work` → work → `derive_edges --write` → `validate_*` →
-   `render_views --write` → `audit`.
-4. **The data model, by store** — one subsection per store with the full field set from its
-   schema, the fixture excerpt, and what each field is *for*:
-   - `requirements.yaml` (artifact registry) — the `artifactType` enum, `status` state machine,
-     why `BASELINED`+ requires `approvals` and `owner`.
-   - `wbs.yaml` — the seven levels; **segment count is the level**; `kind` driving conditional
-     invariants; `terminal_reason` under `semantic` vs `strict`; the L7 contract
-     (owner + iteration + ≥1 requirement).
-   - `risk-register.yaml` — exposure = p × i, the two thresholds, residual reduction, why
-     `mitigation` must name WBS nodes and not prose, `acceptance_approval`.
-   - `traceability.yaml` / `derived.yaml` — the 14 relations with domain → range, provenance,
-     why the inverse is never stored, why `derived.yaml` is machine-owned.
-   - Source paths as identity, and the `GOVERNANCE_FILES` hard exclusion.
-5. **Provenance, and why the model needs it** — the circularity argument; the `derived` /
-   `asserted` / `approved` table; `TRC-010` re-running the rule; `TRC-013` re-hashing the
-   endpoints; the `LIFECYCLE_KEYS` exclusion (advancing `APPROVED → BASELINED` must not void a
-   signature, editing the requirement must); source paths fingerprinting as the path, not the
-   bytes. Worked `approve_edge.py` invocation plus its three refusals (derived store, derived
-   edge, unresolvable endpoint) and the HONEST LIMIT.
-6. **Check reference** — the core of the document. A table per validator: id, severity,
-   what it checks, why it exists, what to do when it fires. All ~55 ids, sourced from the
-   code, not restated from memory. Severity split called out where it is deliberate:
-   `CTX-001`/`003` warn, `CTX-002`/`004` fail — *a missing map is a gap, a misleading map is a
-   defect*; `TRC-013` warns and demotes rather than failing, so people do not abandon
-   `approved` entirely.
-7. **Gates** — the four gates, all 23 declarations, each condition's one-line meaning taken
-   from `DESCRIPTIONS`; the two invariants (absence of evidence is not evidence; conditions
-   fail closed); `traceability_final`'s 50% independently-verifiable bar and why it counts
-   `derived_verified + approved_verified` rather than the labels.
-8. **Running a phase workflow** — the shared ending block, why `continue_on_error: true`
-   strengthens rather than weakens it, the override record, and the Construction fan-out.
-9. **The nine agent commands** — what each is for, what it must not do (the `speckit.openup.gate`
-   prohibitions verbatim in substance), and which validator sits behind it.
-10. **Changing a baselined artifact** — `impact.py` first (real 23-artifact fan-out), the
-    change-control steps, expecting approvals to withdraw themselves, re-baseline, re-gate.
-11. **Configuration reference** — every key in `openup-config.yml`, its default, which check
-    reads it, and when to change it. Explicit warning that list-valued keys **replace rather
-    than merge** (this is why `GOVERNANCE_FILES` is hard-coded).
-12. **Troubleshooting** — symptom → cause → fix, covering every failure I can name from the
-    code: exit 2 everywhere, `WBS-001` level disagreement, orphan floods, `TRC-010`/`011`/`012`,
-    stale views, `SEL-000` no open iteration, `DOR-009`/`CTX-004` missing skill, unimplemented
-    condition names.
-13. **What SpecUP does not do** — contracts unparsed, Microcks deferred, two rules
-    unimplemented, no CI, no commit-trailer validation, approval ≠ human, overhead unmeasured.
-14. **Where to go next** — links to the three existing guide pages, `ID-GRAMMAR.md`, and
-    `specup.md`.
+The trust root is a version-controlled project artifact: **`.specify/governance/allowed-signers`**
+(the `gpg.ssh.allowedSignersFile` format). Reviewable, diffable, and a governance change when
+it changes — the same property that makes `extensions/openup/` trustworthy per
+`docs/dev/taskfile.md:139-151`.
 
-### Rules for writing it
+**Checks.** Follow the `Id | Sev | Checks | Why, and what to do` table form of
+`docs/guide/using-specup.md:979-997`.
 
-- Every command shown uses the installed path `.specify/extensions/openup/scripts/python/…`,
-  the form a reader will actually type.
-- Every claim traces to code. No check id, threshold, count or field name goes in that I have
-  not read in this session.
-- State counts exactly: 14 relations, 22 condition implementations over 23 declarations, 3 of 5
-  derivation rules, 8 verdict-emitting validators of 13 CLIs.
-- Reason before mechanism, throughout — the user asked for *why*, and most of this design is
-  only defensible once the failure it prevents is named.
+| Id | Sev | Checks |
+|---|---|---|
+| `APV-000` | FAIL | The approvals in scope parse; git is a repository *(a missing git binary is exit 2, not FAIL — a setup fault)* |
+| `APV-001` | FAIL | A declared `approval.commit` resolves to a real commit (`git cat-file -e`) |
+| `APV-002` | FAIL | That commit's signature verifies (`git verify-commit --raw`) against `allowed-signers` |
+| `APV-003` | FAIL | `approval.by` resolves to a named human in `.specify/governance/approval-matrix.md` |
+| `APV-004` | **WARN** | An approval with no `commit` is `claimed`, not `witnessed` |
 
-### One-line index updates
+`APV-004` warns rather than fails **because it is a data migration, not a defect** — existing
+approvals predate the field. It ratchets via a new config key, which is the documented habit at
+`using-specup.md:1714-1726` ("Lower a threshold only as a decision, never to make a run go
+green"):
 
-- [docs/README.md](docs/README.md) — add the row under **Guide**.
-- [docs/guide/README.md](docs/guide/README.md) — add to the numbered contents and the adoption
-  cross-links.
+```yaml
+approvals:
+  require_witness_at_or_above: BASELINED   # default; null disables
+  allowed_signers: .specify/governance/allowed-signers
+```
 
-### One pre-existing error found while assessing
+`APV-003` is the check that forces `approval-matrix.md` to be filled in. It ships with a blank
+"who" column today and says so itself: *"If nobody is named here, anyone can override anything
+and the gate is decorative"* (`extensions/openup/templates/approval-matrix-template.md:67`).
 
-[docs/guide/README.md](docs/guide/README.md) says the relation set is "a closed set of
-**sixteen**" and then lists fourteen; the schema enum has fourteen. One-word fix, offered
-separately so it does not hide inside the new file's diff.
+**Files**
+
+- new `extensions/openup/scripts/python/validate_approvals.py`
+- **`extensions/openup/extension.yml`** — declare the script, or
+  `tests/test_extension_manifest.py:139` fails on set-equality (`on_disk == declared`)
+- `extensions/openup/openup-config.yml` — the `approvals:` block
+- new `extensions/openup/templates/allowed-signers-template` + declare it (`:148` same rule)
+- `evaluate_gate.py` — a `human_approvals_witnessed` condition on
+  `GATE-LIFECYCLE_ARCHITECTURE` and `GATE-PRODUCT_RELEASE`
+
+**Reuse.** `base_parser()`, `Verdict`, `run()`, `emit()`, `write_out()` from
+`openup_model.py:144,72,153,136,123`. `graph.artifacts` for `approvals[]`, and the edge stores
+for edge approvals. Note `_record` is copy-pasted in four validators
+(`validate_wbs.py:168`, `validate_risk.py:175`, `validate_trace.py:308`,
+`validate_context.py:115`) — **promote it into `openup_model.py` and update the four**, rather
+than adding a fifth copy.
+
+**Honesty constraint.** `README.md:548-553` must be rewritten, not deleted. The new statement:
+a *witnessed* approval is a human act, bounded by the trust root; a *claimed* one is still only
+a name. Overstating this would be the exact defect the bullet exists to prevent.
+
+---
+
+## 2. `validate_docs.py` — the docstring contract
+
+> *"All internal and external API docstrings must be descriptive and focused enough to form its
+> current working context only."*
+
+The code-level form of progressive disclosure (`specup.md` §56-57): a docstring is the
+**complete working context for the unit it documents, and nothing more**.
+
+| Id | Sev | Checks | Why |
+|---|---|---|---|
+| `DOC-001` | FAIL | Every exported symbol in the perimeter has a docstring | Undocumented is unusable at bounded context |
+| `DOC-002` | FAIL | It names a governing artifact — a `REQ-`, `NON-FR-` or `ADR-` id that resolves | An unanchored docstring cannot be checked against intent |
+| `DOC-003` | FAIL | It states something the unit must **not** do, or when it refuses | The boundary is the half that gets omitted, and the half that matters |
+| `DOC-004` | FAIL | A docstring claiming a cross-check names **two distinct sources** | The `cits-crypto` failure, generalised — see §3 |
+| `DOC-005` | **WARN** | Bounded length (~40 lines) | A docstring carrying an argument is an ADR in disguise; link the ADR |
+
+`DOC-005` warns because `using-specup.md:973-977` sets the principle — *"a missing thing warns;
+a misleading thing fails"* — and a long docstring is neither. It is a smell, and a hard failure
+would push people to delete reasoning rather than move it.
+
+**Scope, stated plainly.** Python only, via `ast`. Non-Python perimeter files are counted and
+reported `SKIP`, never passed. This follows the `contracts:` precedent at
+`using-specup.md:1690-1699`, whose "Read by" column literally says `Nothing` and then says so.
+
+**Reuse.** `graph.perimeter_files()` (`openup_model.py:573`) and `graph.exists()` (`:533`) for
+`DOC-002` resolution — note the artifact registry is **never schema-validated** (verified:
+`schema_errors()` is called with only `wbs`, `risk`, `traceability`), so `graph.exists()` is the
+resolution primitive, not a schema hook.
+
+**Files.** New script + `extension.yml` declaration + a `docs:` config block + `audit.py`
+(`:28-34`, `:74-75`, `:80-81`, and `render()` all hard-code five section keys).
+
+---
+
+## 3. Meta-cognitive templates, and the `cits-crypto` harvest
+
+Every shipped template gains a five-part frame:
+
+```markdown
+<!-- WHAT QUESTION THIS ANSWERS — and what it does not. A template that does not draw
+     its own boundary gets filled with whatever the author had nearby. -->
+<!-- HOW YOU CAN TELL THIS IS WRONG — the failure mode, named specifically. -->
+<!-- WHAT CHECKS IT — the check id, and what it does and does not verify. If nothing
+     checks it, say so. -->
+<!-- WORKED EXAMPLE — a real excerpt from the cits-crypto project, reasoning intact. -->
+<!-- WHERE AUTHORITY SITS — who decides this is done. Past DRAFT, a named human. -->
+```
+
+"How you can tell this is wrong" has to be written from experience. That is what the worked
+example is for.
+
+| What happened in `cits-crypto` | Where it lands |
+|---|---|
+| The SSP truth table was transcribed from a *reading of the rule* rather than the page, and the predicate written to cross-check it came from the same misreading. **They agreed, and both were wrong.** | ADR template gains the *independent-oracle* pattern; `DOC-004` checks it |
+| `NOT_EVALUATED` as a third verdict, never rounded | Preset guidance; already SpecUP's own exit contract |
+| Every value carried document + edition + clause via a custom `cites:` key | `cites:` documented as a convention — **not** a schema change; the registry is unvalidated, so a convention is all a schema edit would buy |
+| Closing a risk failed: the schema wanted a mitigation node that did not exist yet; status became `mitigating` | Risk template documents the honest intermediate state |
+| ADR-0001 decided a normative conflict and **RISK-0010 stayed open** | ADR template: mandatory *Revisit when*; deciding ≠ closing |
+| Twice a value was reconstructed from memory instead of re-read, and was wrong both times | `AGENTS.md` template rule: **re-read before asserting** |
+| A human caught a scope error no validator could have | §1 |
+
+**Files.** Edit the existing templates under `extensions/openup/templates/` — editing avoids the
+set-equality manifest test entirely. Four phrases are test-locked by
+`tests/test_preset.py:246-256` and must survive: *"do not lower a threshold"*, *"absence of
+evidence is not evidence"*, *"stop and report"*, *"generated does not mean approved"*.
+
+---
+
+## 4. `examples/` — the generic program and project
+
+`workspace/` is committed as an **empty folder** (`143346d`) and its contents are ignored, so the
+example cannot live there. It ships tracked in `examples/` and is *materialised into*
+`workspace/`:
+
+```
+examples/my-program/     the GOVERNANCE — "My Program". WBS-1 is a program.
+examples/my-project/     the APPLICATION — what gets built.
+```
+
+Self-describing throughout: every file states what it is for, what would make it wrong, and what
+checks it. It **passes `GATE-LIFECYCLE_OBJECTIVES` and fails `GATE-LIFECYCLE_ARCHITECTURE` on
+the same five conditions a real project fails at that point** — a template that shipped green
+would teach that the gates are decorative.
+
+`cits-crypto` stays as the worked example the templates cite. It is not a template: it is a real
+project with a real normative corpus, and that difference is the point.
+
+---
+
+## 5. SpecUP governs itself
+
+`.specify/` holds three cache directories and nothing else. For a release claiming "production
+grade", that is the first thing a reviewer checks.
+
+Follow `docs/guide/existing-project.md` as written — it is the brownfield journey, and this is
+its first real execution. Its Phase 6 rule, *"turn on enforcement, last"*, is the ordering
+constraint.
+
+Expect discomfort. Backward coverage over `extensions/`, `tools/` and `tests/` will fail at
+first. The honest response is to **record the real figure**, per
+`existing-project.md:10-13`: *"An existing project that reports 100% coverage on day one has not
+been governed; it has been decorated."*
+
+This also produces the first real number for `README.md:566-569` — governance overhead,
+currently unmeasured. One project is not a measurement, and the release should say so.
+
+---
+
+## 6. Documentation sweep and release mechanics
+
+**Four live drifts, all verified this session:**
+
+| Drift | Truth |
+|---|---|
+| Test counts: `README.md:451` "248", `:484` "189 passed, 8 skipped", `:492` "197 passed", `docs/dev/taskfile.md:34-35` | **273 passed / 8 skipped** without spec-kit; **281 passed** with it |
+| `INIT-003` documented at `using-specup.md:293` but absent from the §6 check reference (`:1167-1170` says "2 checks") | three |
+| Check count: `using-specup.md:970` "55 named checks" vs `release-notes-0.1.0.md:60` "62" | reconcile, then extend for `DOC-*`/`APV-*` |
+| `docs/runbooks/release-plan-0.1.2.md` describes the **unsplit** release | revise into 0.1.2 + 0.1.3 |
+
+**Release mechanics** (`docs/runbooks/publishing-to-spec-kit.md`):
+
+- `docs/runbooks/release-notes-0.1.2.md` is a **hard requirement** — `gh release create
+  --notes-file` consumes it. Follow the 0.1.1 form: what did *not* change, then Upgrading, then
+  a per-component version table.
+- Bump `extensions/openup/extension.yml:6` (still `0.1.1` — the only version string outside git
+  tags), `bundles/specup/bundle.yml`, `presets/openup-governance/preset.yml`.
+- `task release:check` → `task release:catalog`. `tests/test_catalog.py:150` rebuilds every
+  component and compares digests, so content drift under an unchanged version fails.
+- Workflows are untouched, so they rebuild to identical digests — state that, as 0.1.1 did.
+- **Do not route anything through `task`** — `tests/test_taskfile_boundary.py` forbids a
+  workflow, command or manifest reaching the task runner.
+
+---
+
+## 7. Carried forward to 0.1.3 — research already done
+
+Recorded so it is not re-derived. Every item verified this session.
+
+**Licensing.** `deepagents` 0.7.14 MIT · `langchain-core` 1.6.3 MIT · `langgraph` 1.2.11 MIT ·
+**`langgraph-api` 0.14.1 Elastic-2.0** · Open SWE itself **MIT**. SpecUP can adopt Open SWE and
+stay MIT, provided graphs run **in-process** and it never depends on `langgraph-api`.
+`deepagents` needs Python **≥3.11**; SpecUP declares `>=3.10` at `bundle.yml:26` and
+`extension.yml:23`, so the new bundle declares `>=3.11`.
+
+**Open SWE is Python**, with three documented extension points — `get_agent()` in
+`agent/server.py` is the single assembly point:
+
+| Point | Mechanism | Use |
+|---|---|---|
+| Middleware | `awrap_tool_call` hook, appended in `get_agent()` | the grant broker |
+| Sandbox backend | implement `SandboxBackendProtocol`; register in `agent/sandboxes/providers/registry.py` | the container |
+| Prompts | `AGENTS.md` at repo root is already read into the system prompt | the disclosure entry point |
+
+**The finding that shapes enforcement.** Per the deepagents docs, *"the only method a provider
+must implement is `execute()`"* — `read`, `write`, `edit`, `ls`, `glob`, `grep` are all built on
+it by `BaseSandbox`. **Every file and shell operation funnels through one method.** That splits
+the tool inventory:
+
+- **Container enforces** (routes through `execute()`): `read_file`, `write_file`, `edit_file`,
+  `ls`, `glob`, `execute`
+- **Broker brokers** (does not): `http_request`, `fetch_url`, `web_search`,
+  `commit_and_open_pr`, `request_pr_review`, `task`
+
+`agent/sandboxes/providers/` has `daytona/e2b/langsmith/local/modal/runloop` and **no
+`docker.py`** — so a SpecUP docker backend is genuinely additive and plausibly upstreamable.
+
+**Four constraints 0.1.3 inherits:**
+
+1. **`specup.md` has *nothing* on execution.** Verified keyword counts over 3,382 lines:
+   `docker` 0, `container` 0, `sandbox` 0, `isolat*` 0, `permission` 0, `privileg*` 0,
+   `runtime` 0, `subprocess` 0. The five `capabilit*` hits all mean a skill or a WBS level. The
+   authority layer traces to §51/§56-57/§59-60; **the containment layer has no textual basis at
+   all.** `README.md:454-477` has a "Corrections to `specup.md`" section — 0.1.3 needs its
+   mirror, an *Additions* section, or two-thirds of it reads as unsourced.
+2. **A bundle cannot enforce** (`using-specup.md:1112-1124` — "Bundle | No | Distribution
+   only"). The broker's authority must come from a workflow shell step or the container.
+3. **No `{{ inputs.* }}` in any `run:` field** — hard-enforced by
+   `tests/test_workflows.py:84-99` with `allowed = {"context.run_id"}`. A rendered docker
+   invocation is a `run:` field.
+4. **Exit code 2 inverts at the broker.** Everywhere else `2` means "not a governance failure"
+   (`using-specup.md:68-83`). At the broker, `2` **denies**. Defensible, and it must be said in
+   exactly those words because the manual teaches the opposite.
+
+**Blockers for a second bundle or fifth workflow** (all currently red the moment either
+appears): `tests/test_bundle.py:166`, `tests/test_workflows.py:62` and `:126` (`EXPECTED_GATES`
+KeyError), `tests/test_catalog.py:81` and `:106`, plus hardcoded `bundles/specup` paths in
+`Taskfile.yml:69,76,83,90,106,119`, `tools/build_archives.py:39`, `tools/build_catalog.py:53`.
+
+**Loose end.** `openswe/` is untracked scaffolding — six empty dirs plus two zero-byte files
+(`docker-compose.yml`, `bbpe/bbpe-codec.toon`), never committed, never mentioned in any commit
+message. `langfuse`, `db/neo4j`, `db/clickhouse` and `bbpe` appear in **no design document**.
+Either record their intent or remove them before 0.1.3; leaving undocumented scaffolding in a
+release whose §9 is the honesty section is the wrong trade.
 
 ---
 
 ## Verification
 
-1. **Every example is real.** Re-run each captured command against `tests/fixtures/good` and
-   diff the output against what the guide prints:
+1. **Both suites, both ways** — the pair is the check (`docs/dev/taskfile.md:38-42`):
    ```bash
-   python3 extensions/openup/scripts/python/audit.py --root tests/fixtures/good
-   python3 extensions/openup/scripts/python/impact.py --root tests/fixtures/good --of REQ-AUTH-0014
-   python3 extensions/openup/scripts/python/validate_trace.py --root tests/fixtures/good --json
-   python3 extensions/openup/scripts/python/derive_edges.py --root tests/fixtures/good
-   python3 extensions/openup/scripts/python/select_work.py --root tests/fixtures/good
+   task test        # expect 273 passed, 8 skipped
+   task test:engine # expect 281 passed
    ```
-2. **Every check id exists.** Grep each id quoted in the guide out of
-   `extensions/openup/scripts/python/` and confirm the set in the guide equals the set in the
-   code, in both directions — a documented check that does not exist is the exact defect the
-   guide warns about.
-3. **Every config key exists.** Cross-check the configuration table against
-   `extensions/openup/openup-config.yml` and `DEFAULT_CONFIG` in `openup_model.py`.
-4. **Every relative link resolves.** Check each `](…)` target exists on disk.
-5. **The suite still passes**, since `tests/test_taskfile_boundary.py` and the manifest tests
-   read repository files:
+2. **New checks have tests in the existing form** — mutate `tests/fixtures/good/` and assert the
+   failure, via `conftest.py`'s `Project` mutators and `assert_fails()`. There is no `bad`
+   fixture by design.
+3. **Signature verification is tested end to end** — a temp repo, a real signed commit, and an
+   unsigned one; assert `APV-002` passes on the first and fails on the second. A mocked
+   signature would test nothing.
+4. **Every check id in the docs exists in the code, in both directions.** Grep the `DOC-*` and
+   `APV-*` sets out of `scripts/python/` and diff against `using-specup.md` §6. A documented
+   check that does not exist is the defect the guide itself warns about.
+5. **The generic example fails the Elaboration gate on exactly the expected conditions:**
    ```bash
-   python3 -m pytest tests/ -q
+   python3 .specify/extensions/openup/scripts/python/evaluate_gate.py \
+       --gate GATE-LIFECYCLE_ARCHITECTURE --root examples/my-program
    ```
-
-No source file changes, so no behaviour to re-verify beyond that.
+   If it ever passes, the template has been filled in for the reader and the lesson is gone.
+6. **SpecUP's own audit runs and its real numbers are recorded**, not tuned:
+   ```bash
+   python3 extensions/openup/scripts/python/audit.py --json
+   ```
+7. **Release gate:** `task release:check`, then the six steps of
+   `docs/runbooks/publishing-to-spec-kit.md`, including the clean-project install in §5 — which
+   must report **six** components, not zero.

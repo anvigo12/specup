@@ -3,7 +3,7 @@ schema_version: "1.0"
 extension:
   id: openup
   name: "OpenUP Governed Lifecycle"
-  version: "0.1.1"
+  version: "0.1.2"
   description: "Adds the OpenUP lifecycle to Spec Kit: phases, iterations, a seven-level WBS, an executable risk register, bi-directional traceability, and machine-checkable milestone gates."
   category: "process"
   effect: "read-write"
@@ -102,6 +102,10 @@ provides:
       file: templates/approval-matrix-template.md
       description: "Who may approve what, per s59's human approval boundaries"
 
+    - name: openup-allowed-signers
+      file: templates/allowed-signers-template.txt
+      description: "The trust root APV-002 verifies an approval's signed commit against"
+
     - name: openup-change-control
       file: templates/change-control-template.md
       description: "How a change to a baselined artifact is assessed, approved and absorbed"
@@ -183,6 +187,11 @@ provides:
     - name: impact
       file: scripts/python/impact.py
       description: "Report what a change to one artifact reaches, in both directions (s52)"
+      runtimes: [python]
+
+    - name: validate-approvals
+      file: scripts/python/validate_approvals.py
+      description: "Verify that approvals bind a named human, by a signed commit git can check"
       runtimes: [python]
 
     - name: validate-context

@@ -191,12 +191,13 @@ workflow step.
 | `validate_risk.py` | 8 | exposure arithmetic, residual reduction, mitigation and verification for high risks, both-ends agreement |
 | `validate_trace.py` | 14 | endpoint resolution, relation type legality, duplicates, cycles, forward/backward coverage, orphans, provenance floor, **derivation reproducibility**, **approval binding**, scenario coverage |
 | `validate_done.py` | 6 | the Definition of Done, computed from the graph rather than declared |
+| `validate_approvals.py` | 6 | the approval matrix names somebody, approvers are named in it, and a declared commit exists and carries a signature this project trusts |
 | `derive_edges.py` | 4 | what the derivation rules recover; `--write` regenerates the machine-owned store |
 | `render_views.py` | 2 | the generated Markdown views are present and match their sources; `--write` regenerates them |
 | `approve_edge.py` | — | records a human approval, bound by hash to the content approved |
 | `impact.py` | — | what a change to one artifact reaches, in both directions (§52) |
 | `select_work.py` | 3 | Definition of Ready, risk-first ordering |
-| `evaluate_gate.py` | 22 conditions | every condition name declared in config |
+| `evaluate_gate.py` | 23 conditions | every condition name declared in config |
 | `audit.py` | — | the aggregate §33 report |
 
 **Exit 2 is not exit 1.** A graph that fails to load is a setup fault, not a governance
@@ -545,12 +546,18 @@ evidence fails two.
   [`speckit.openup.trace.md`](extensions/openup/commands/speckit.openup.trace.md) but have
   no code behind them, so an edge claiming one of them cannot be reproduced. `TRC-010`
   reports those edges as unverified rather than counting them as machine-checkable.
-- **An approval binds content, not a human.** `approved_endpoints_hash` proves an edge still
-  matches what was signed off (`TRC-013`), and that is all it proves. Nothing establishes that
-  a person was involved: an agent can run `approve_edge.py --by product-owner` exactly as a
-  human can. The only real anchor is `approval.commit` pointing at a signed commit, verified
-  against git, which is not implemented. Read `approved` as "someone took accountability under
-  this name", never as "a human checked this".
+- **An approval binds a human only when it is witnessed.** Since 0.1.2 an approval has two
+  levels, and the difference is the whole of what can be claimed. **Witnessed**: the approval
+  names a commit, the commit exists, and its signature verifies against
+  `.specify/governance/allowed-signers` — a trust root kept in version control, so the answer
+  does not depend on the machine the check runs on (`APV-001`, `APV-002`). **Claimed**: a name
+  and a date, and nothing tying them to a person — `approve_edge.py --by product-owner` is
+  still something an agent can run, and a claimed approval proves exactly as much as it did in
+  0.1.1. `APV-004` warns on every claimed approval and the audit prints the witnessed/claimed
+  split, so the gap is visible rather than assumed away; `approvals.require_witness_at_or_above`
+  is the ratchet that makes it fail. Two further limits stand: the trust root is only as good
+  as the keys listed in it, and `approved_endpoints_hash` still proves only that an edge
+  matches what was signed off (`TRC-013`), not that the signer read it.
 - **The three binding standards are unenforced by design, for now.** `language-rules.md`,
   `coding-rules.md` and `security-practices.md` are prompt-level rules: the root `AGENTS.md`
   and Principle VIII of the constitution bind an agent to them, and a human reviewer is the

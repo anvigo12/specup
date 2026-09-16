@@ -175,6 +175,7 @@ class Project:
 
     def gate(self, gate_name: str):
         import evaluate_gate
+        import validate_approvals
         import validate_done
         import validate_risk
         import validate_trace
@@ -192,6 +193,7 @@ class Project:
             risk=validate_risk.validate(Args()),
             trace=validate_trace.validate(Args()),
             done=validate_done.validate(Args()),
+            approvals=validate_approvals.validate(Args()),
         )
         return evaluate_gate.evaluate(gate_name, ctx)
 

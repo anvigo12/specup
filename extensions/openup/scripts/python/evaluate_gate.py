@@ -22,6 +22,7 @@ import sys
 from dataclasses import dataclass
 from typing import Any, Callable
 
+import validate_approvals
 import validate_done
 import validate_risk
 import validate_trace
@@ -60,6 +61,10 @@ class GateContext:
     risk: Verdict
     trace: Verdict
     done: Verdict
+    # Optional so the two other construction sites (audit.py, the test fixture) keep working
+    # unchanged. A condition reading it gets the fail-closed answer from ctx.check() when it
+    # was not supplied, which is the right default: an unevaluated check is not a pass.
+    approvals: Verdict | None = None
     _depth: int = 0
 
     def check(self, verdict: Verdict, check_id: str) -> tuple[bool, list[str]]:
@@ -119,6 +124,34 @@ def _architecture(ctx: GateContext):
         problems.append("no architecture decisions (ADR-nnnn) registered")
     problems += [f"{aid} is still {adrs[aid].get('status', 'DRAFT')}" for aid in unapproved]
     return not problems, f"{len(adrs)} ADR(s), {len(unapproved)} not yet approved", problems
+
+
+@condition("human_approvals_witnessed",
+           'Every approval names someone the approval matrix records, and the matrix names '
+           'somebody. Signature verification of a declared commit is APV-002.')
+def _human_approvals(ctx: GateContext):
+    """s59 reserves this class of decision for a named human. This is where that binds.
+
+    Reads APV-000 and APV-003 only, deliberately. APV-002 (does the signature verify) and
+    APV-005 (is a witness required at this state) depend on a project having adopted signed
+    approvals, which is a ratchet a project turns on rather than a bar every project must
+    clear on upgrade. What every project must clear is weaker and still worth having: the
+    matrix names somebody, and nobody approved under a name it does not record.
+    """
+    if ctx.approvals is None:
+        return False, "approvals were not evaluated", [
+            "the gate was evaluated without an approvals verdict — absence of evidence is "
+            "not evidence"
+        ]
+    problems: list[str] = []
+    for check_id in ("APV-000", "APV-003"):
+        ok, evidence = ctx.check(ctx.approvals, check_id)
+        if not ok:
+            problems += evidence
+    return not problems, \
+        f"{ctx.approvals.metrics.get('approvals', 0)} approval(s), " \
+        f"{len(ctx.approvals.metrics.get('named_approvers', []))} named approver(s)", \
+        problems
 
 
 @condition("critical_contracts_defined",
@@ -395,6 +428,7 @@ def main() -> int:
             risk=validate_risk.validate(sub),
             trace=validate_trace.validate(sub),
             done=validate_done.validate(sub),
+            approvals=validate_approvals.validate(sub),
         )
     except GraphError as exc:
         payload = {"validator": f"gate:{args.gate}", "status": "ERROR", "error": str(exc)}

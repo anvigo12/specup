@@ -19,6 +19,7 @@ from openup_model import (
     Verdict,
     base_parser,
     load_graph,
+    record,
     run,
     schema_errors,
     wbs_level,
@@ -63,7 +64,7 @@ def validate(args: Any) -> Verdict:
         for nid, node in graph.wbs.items()
         if node.get("level") != wbs_level(nid)
     ]
-    _record(verdict, "WBS-001", mismatched, "declared level matches the id's segment count")
+    record(verdict, "WBS-001", mismatched, "declared level matches the id's segment count")
 
     # WBS-002 — parent is the id minus its last segment, and it exists
     bad_parents: list[str] = []
@@ -78,7 +79,7 @@ def validate(args: Any) -> Verdict:
             bad_parents.append(f"{nid}: parent should be {expected}, got {declared or 'none'}")
         elif expected not in graph.wbs:
             bad_parents.append(f"{nid}: parent {expected} does not exist")
-    _record(verdict, "WBS-002", bad_parents, "every node has exactly one existing parent")
+    record(verdict, "WBS-002", bad_parents, "every node has exactly one existing parent")
 
     # WBS-003 — exactly one root
     roots = [nid for nid in graph.wbs if wbs_level(nid) == 1]
@@ -110,7 +111,7 @@ def validate(args: Any) -> Verdict:
             bad_leaves.append(f"{nid}: L{level} leaf terminates above L7 without a terminal_reason")
         else:
             early_terminations.append(nid)
-    _record(verdict, "WBS-004", bad_leaves, f"all {len(leaves)} leaves satisfy depth_policy '{policy}'")
+    record(verdict, "WBS-004", bad_leaves, f"all {len(leaves)} leaves satisfy depth_policy '{policy}'")
 
     # WBS-005..007 — referenced ids resolve
     _check_refs(verdict, graph, "WBS-005", "requirements", graph.artifacts, "requirement")
@@ -124,7 +125,7 @@ def validate(args: Any) -> Verdict:
         for dep in node.get("dependencies", []) or []
         if dep not in graph.wbs
     ]
-    _record(verdict, "WBS-008", missing_deps, "all dependency targets exist")
+    record(verdict, "WBS-008", missing_deps, "all dependency targets exist")
 
     # WBS-009 — dependency graph is acyclic
     cycle = _dependency_cycle(graph.wbs)
@@ -139,7 +140,7 @@ def validate(args: Any) -> Verdict:
         phase, iteration = node.get("phase"), node.get("iteration")
         if phase and iteration and iteration.split("-")[1] != PHASE_LETTER.get(phase):
             inconsistent.append(f"{nid}: iteration {iteration} does not belong to phase {phase}")
-    _record(verdict, "WBS-010", inconsistent, "iterations agree with their node's phase")
+    record(verdict, "WBS-010", inconsistent, "iterations agree with their node's phase")
 
     # WBS-011 — breadth warning: a very wide parent usually means a missing level
     wide = [
@@ -165,13 +166,6 @@ def validate(args: Any) -> Verdict:
     return verdict
 
 
-def _record(verdict: Verdict, check_id: str, failures: list[str], ok_message: str) -> None:
-    if failures:
-        verdict.fail(check_id, f"{len(failures)} violation(s)", failures)
-    else:
-        verdict.ok(check_id, ok_message)
-
-
 def _check_refs(
     verdict: Verdict, graph: Any, check_id: str, field: str, universe: dict, label: str
 ) -> None:
@@ -181,7 +175,7 @@ def _check_refs(
         for ref in node.get(field, []) or []
         if ref not in universe
     ]
-    _record(verdict, check_id, missing, f"all referenced {label} ids resolve")
+    record(verdict, check_id, missing, f"all referenced {label} ids resolve")
 
 
 def _dependency_cycle(nodes: dict[str, dict]) -> list[str] | None:

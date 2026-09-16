@@ -23,7 +23,7 @@ import re
 import sys
 from typing import Any
 
-from openup_model import Verdict, base_parser, load_graph, run
+from openup_model import Verdict, base_parser, load_graph, record, record_warning, run
 
 # Directories that must carry an index.md: the governance tree, plus each feature spec.
 GOVERNED_DIRECTORIES = (
@@ -40,6 +40,16 @@ ID_TOKEN = re.compile(
 
 # Referenced in prose but not resolvable as artifacts, and not meant to be.
 NOT_ARTIFACTS = re.compile(r"^(?:GATE-|TRACE-)")
+
+# Why the severities split the way they do: a missing map is a gap in ergonomics; a map that
+# misleads is a defect.
+#
+# CTX-001 and CTX-003 warn. An existing project adopting SpecUP should not fail its first audit
+# over absent documentation, and no claim about evidence depends on either.
+#
+# CTX-002 and CTX-004 fail. A reference that does not resolve is not a gap — it sends an agent
+# looking for something that is not there, and an agent willing to infer will fill the hole
+# itself. That is the s51 failure the whole model exists to prevent.
 
 
 def _feature_directories(graph) -> list[str]:
@@ -58,8 +68,8 @@ def validate(args: Any) -> Verdict:
     expected += _feature_directories(graph)
     missing = [f"{directory}/index.md is missing — an agent navigating here has no map"
                for directory in expected if not (graph.root / directory / "index.md").is_file()]
-    _warn(verdict, "CTX-001", missing,
-          f"all {len(expected)} governed directory(s) carry an index.md")
+    record_warning(verdict, "CTX-001", missing,
+                   f"all {len(expected)} governed directory(s) carry an index.md")
 
     # CTX-002 — every id an index.md names actually resolves
     #
@@ -77,8 +87,8 @@ def validate(args: Any) -> Verdict:
                 continue
             if not graph.exists(identifier):
                 dangling.append(f"{rel}: names {identifier}, which resolves to nothing")
-    _record(verdict, "CTX-002", dangling,
-            f"every identifier in {len(indexes)} index.md file(s) resolves in the graph")
+    record(verdict, "CTX-002", dangling,
+           f"every identifier in {len(indexes)} index.md file(s) resolves in the graph")
 
     # CTX-003 — an AGENTS.md is reachable above every governed directory
     #
@@ -90,8 +100,8 @@ def validate(args: Any) -> Verdict:
         if not any((graph.root.joinpath(*parts[:depth]) / "AGENTS.md").is_file()
                    for depth in range(len(parts), -1, -1)):
             unreachable.append(f"{directory}/ has no AGENTS.md at or above it")
-    _warn(verdict, "CTX-003", unreachable,
-          "every governed directory has an operating contract above it")
+    record_warning(verdict, "CTX-003", unreachable,
+                   "every governed directory has an operating contract above it")
 
     # CTX-004 — a skill a WBS node names must exist
     missing_skills = []
@@ -100,7 +110,7 @@ def validate(args: Any) -> Verdict:
             if not (graph.root / "skills" / skill / "SKILL.md").is_file():
                 missing_skills.append(f"{node_id}: names skill '{skill}', "
                                       f"but skills/{skill}/SKILL.md does not exist")
-    _record(verdict, "CTX-004", missing_skills, "every skill a WBS node names exists")
+    record(verdict, "CTX-004", missing_skills, "every skill a WBS node names exists")
 
     skills = sorted(p.parent.name for p in graph.root.glob("skills/*/SKILL.md"))
     verdict.metrics = {
@@ -110,28 +120,6 @@ def validate(args: Any) -> Verdict:
         "dangling_references": len(dangling),
     }
     return verdict
-
-
-def _record(verdict: Verdict, check_id: str, failures: list[str], ok_message: str) -> None:
-    if failures:
-        verdict.fail(check_id, f"{len(failures)} violation(s)", failures)
-    else:
-        verdict.ok(check_id, ok_message)
-
-
-def _warn(verdict: Verdict, check_id: str, problems: list[str], ok_message: str) -> None:
-    """A missing map is a gap in ergonomics; a map that misleads is a defect.
-
-    CTX-001 and CTX-003 warn: an existing project that adopts SpecUP should not fail its
-    first audit over absent documentation, and no claim about evidence depends on these.
-    CTX-002 and CTX-004 fail, because a reference that does not resolve is not a gap — it
-    sends an agent looking for something that is not there, and an agent willing to infer
-    will fill the hole itself. That is the s51 failure the whole model exists to prevent.
-    """
-    if problems:
-        verdict.warn(check_id, f"{len(problems)} gap(s)", problems)
-    else:
-        verdict.ok(check_id, ok_message)
 
 
 if __name__ == "__main__":

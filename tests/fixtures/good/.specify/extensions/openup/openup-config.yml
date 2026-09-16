@@ -69,6 +69,7 @@ gates:
       - critical_contracts_defined
       - security_review_complete
       - wbs_valid
+      - human_approvals_witnessed
 
   GATE-INITIAL_OPERATIONAL_CAPABILITY:
     phase: CONSTRUCTION
@@ -89,6 +90,7 @@ gates:
       - no_open_high_risks
       - traceability_final
       - security_validation_passed
+      - human_approvals_witnessed
 
 audit:
   report_provenance_mix: true

@@ -3,7 +3,7 @@ schema_version: "1.0"
 preset:
   id: "openup-governance"
   name: "OpenUP Governance"
-  version: "0.1.1"
+  version: "0.1.2"
   description: "Composes OpenUP lifecycle governance into Spec Kit's own constitution, spec, plan and tasks templates, and wraps /tasks and /implement with the governed execution contract."
   author: "Aniket Gore"
   repository: "https://github.com/anvigo12/specup"

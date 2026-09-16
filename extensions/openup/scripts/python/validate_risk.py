@@ -11,7 +11,7 @@ from __future__ import annotations
 import sys
 from typing import Any
 
-from openup_model import Verdict, base_parser, load_graph, run, schema_errors
+from openup_model import Verdict, base_parser, load_graph, record, run, schema_errors
 
 EPSILON = 1e-9
 
@@ -52,7 +52,7 @@ def validate(args: Any) -> Verdict:
         for rid, risk in graph.risks.items()
         if "exposure" in risk and abs(risk["exposure"] - exposures[rid]) > EPSILON
     ]
-    _record(verdict, "RISK-001", drifted, "all stored exposures equal probability x impact")
+    record(verdict, "RISK-001", drifted, "all stored exposures equal probability x impact")
 
     # RISK-002 — same for residual exposure
     residual_drift = []
@@ -66,7 +66,7 @@ def validate(args: Any) -> Verdict:
             residual_drift.append(
                 f"{rid}: residual_exposure {risk['residual_exposure']} but computed {computed:.4f}"
             )
-    _record(verdict, "RISK-002", residual_drift, "all residual exposures are internally consistent")
+    record(verdict, "RISK-002", residual_drift, "all residual exposures are internally consistent")
 
     # RISK-003 — mitigation that does not reduce exposure is a no-op
     not_reduced = []
@@ -79,7 +79,7 @@ def validate(args: Any) -> Verdict:
                 not_reduced.append(
                     f"{rid}: residual exposure {residual:.4f} is not below current {exposures[rid]:.4f}"
                 )
-    _record(verdict, "RISK-003", not_reduced, "residual exposure is strictly below current exposure")
+    record(verdict, "RISK-003", not_reduced, "residual exposure is strictly below current exposure")
 
     # RISK-004 — high-exposure risks must be mitigated by real WBS work
     unmitigated = []
@@ -94,7 +94,7 @@ def validate(args: Any) -> Verdict:
         for wbs_id in mitigations:
             if wbs_id not in graph.wbs:
                 unmitigated.append(f"{rid}: mitigation {wbs_id} does not exist in the WBS")
-    _record(
+    record(
         verdict, "RISK-004", unmitigated,
         f"every open risk at or above exposure {mitigate_at} has existing mitigation work",
     )
@@ -107,7 +107,7 @@ def validate(args: Any) -> Verdict:
         and risk.get("status") not in {"closed", "accepted"}
         and not (risk.get("verification", []) or [])
     ]
-    _record(verdict, "RISK-005", unverified, "every high-exposure risk declares how it will be verified")
+    record(verdict, "RISK-005", unverified, "every high-exposure risk declares how it will be verified")
 
     # RISK-006 — the mitigation edge must agree from both ends
     disagreements = []
@@ -123,7 +123,7 @@ def validate(args: Any) -> Verdict:
                 )
             if rid not in (node.get("risks", []) or []):
                 disagreements.append(f"{wbs_id} is listed as mitigating {rid} but does not reference it back")
-    _record(verdict, "RISK-006", disagreements, "mitigation links agree from both the risk and the WBS")
+    record(verdict, "RISK-006", disagreements, "mitigation links agree from both the risk and the WBS")
 
     # RISK-007 — a risk cannot be mitigated without evidence
     without_evidence = []
@@ -140,7 +140,7 @@ def validate(args: Any) -> Verdict:
                 f"{rid}: status '{risk['status']}' but no evidence on the risk or on "
                 f"{', '.join(node_evidence)}"
             )
-    _record(verdict, "RISK-007", without_evidence, "every mitigated risk is backed by evidence")
+    record(verdict, "RISK-007", without_evidence, "every mitigated risk is backed by evidence")
 
     open_risks = {
         rid: exposures[rid]
@@ -170,13 +170,6 @@ def validate(args: Any) -> Verdict:
 
 def _ratio(numerator: int, denominator: int) -> float:
     return 1.0 if denominator == 0 else numerator / denominator
-
-
-def _record(verdict: Verdict, check_id: str, failures: list[str], ok_message: str) -> None:
-    if failures:
-        verdict.fail(check_id, f"{len(failures)} violation(s)", failures)
-    else:
-        verdict.ok(check_id, ok_message)
 
 
 if __name__ == "__main__":

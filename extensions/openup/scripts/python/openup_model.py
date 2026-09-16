@@ -120,6 +120,38 @@ class Verdict:
         return "\n".join(lines)
 
 
+def record(verdict: Verdict, check_id: str, failures: list[str], ok_message: str) -> None:
+    """Record one check: FAIL listing every violation, or PASS with the reason it held.
+
+    The shape every validator wants. It lived as an identical private copy in four of them
+    until a fifth was needed; a helper duplicated once is a convenience, duplicated five times
+    it is four places for the failure message to drift apart.
+
+    Does NOT decide severity. A check that should warn rather than fail calls `record_warning`,
+    and the choice between them is a governance decision made per check id, never a default.
+    """
+    if failures:
+        verdict.fail(check_id, f"{len(failures)} violation(s)", failures)
+    else:
+        verdict.ok(check_id, ok_message)
+
+
+def record_warning(verdict: Verdict, check_id: str, problems: list[str], ok_message: str) -> None:
+    """Record one check as a WARN rather than a FAIL, so it never changes the exit code.
+
+    The governing principle, from the operating manual: **a missing thing warns; a misleading
+    thing fails.** A gap someone has not filled in yet should not stop an existing project's
+    first audit; a statement that actively misleads an agent must.
+
+    Use this only where that argument holds and is written down next to the check. A warning
+    chosen to keep a run green is the defect the gates exist to reject.
+    """
+    if problems:
+        verdict.warn(check_id, f"{len(problems)} gap(s)", problems)
+    else:
+        verdict.ok(check_id, ok_message)
+
+
 def write_out(path: str | None, payload: dict[str, Any]) -> None:
     """Persist a verdict to disk as durable evidence.
 

@@ -30,24 +30,24 @@ An agent may propose each of these. None may be silently authorized by one.
 
 | Decision | Who approves | Recorded as |
 |---|---|---|
-| Business scope | | `BUS-OBJ-*` status → `APPROVED` |
-| Requirement baseline | | `REQ-*` status → `BASELINED`, with `approvals` |
-| Architecture baseline | | `ADR-*` status → `APPROVED`; architecture gate |
-| High-risk acceptance | | `RISK-*` status → `accepted` (fails `RISK-000` without an approval) |
-| Breaking API change | | `CONTRACT-*` supersession |
-| Security exception | | `SECURE-*` plus security evidence |
-| Release | | `GATE-PRODUCT_RELEASE` |
+| Business scope | product-owner | `BUS-OBJ-*` status → `APPROVED` |
+| Requirement baseline | product-owner | `REQ-*` status → `BASELINED`, with `approvals` |
+| Architecture baseline | architect | `ADR-*` status → `APPROVED`; architecture gate |
+| High-risk acceptance | product-owner | `RISK-*` status → `accepted` (fails `RISK-000` without an approval) |
+| Breaking API change | architect | `CONTRACT-*` supersession |
+| Security exception | security-team | `SECURE-*` plus security evidence |
+| Release | release-owner | `GATE-PRODUCT_RELEASE` |
 
 ## Gate approvals (s60)
 
 | Gate | Required evidence | Who approves |
 |---|---|---|
-| `GATE-LIFECYCLE_OBJECTIVES` | vision, stakeholders, initial risks, WBS L1–L3 | |
-| `GATE-LIFECYCLE_ARCHITECTURE` | architecture, ADRs, high-risk mitigation, contracts, security review | |
-| Iteration ready | tasks meeting the Definition of Ready | |
-| Iteration complete | tests, scenarios, traceability, evidence | |
-| `GATE-INITIAL_OPERATIONAL_CAPABILITY` | coverage, acceptance results, no critical risks | |
-| `GATE-PRODUCT_RELEASE` | full audit, security validation, release documents | |
+| `GATE-LIFECYCLE_OBJECTIVES` | vision, stakeholders, initial risks, WBS L1–L3 | product-owner |
+| `GATE-LIFECYCLE_ARCHITECTURE` | architecture, ADRs, high-risk mitigation, contracts, security review | architect |
+| Iteration ready | tasks meeting the Definition of Ready | iteration-owner |
+| Iteration complete | tests, scenarios, traceability, evidence | qa-lead |
+| `GATE-INITIAL_OPERATIONAL_CAPABILITY` | coverage, acceptance results, no critical risks | backend-lead |
+| `GATE-PRODUCT_RELEASE` | full audit, security validation, release documents | release-owner |
 
 The machine-checkable conditions behind each gate are listed in the generated
 `quality-gates.md`. This table records who is accountable when those conditions pass — and who
@@ -60,8 +60,8 @@ act, not a bypass: the run log records who overrode what and when.
 
 | Rule | |
 |---|---|
-| Who may override a failing gate | |
+| Who may override a failing gate | product-owner |
 | What must be recorded | the failing condition, the reason, and the remediation commitment |
-| When the remediation is due | |
+| When the remediation is due | the next iteration boundary |
 
 If nobody is named here, anyone can override anything and the gate is decorative.

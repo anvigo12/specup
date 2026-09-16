@@ -45,6 +45,10 @@ SEEDS = {
     "stakeholders-template.md": ".specify/lifecycle/stakeholders.md",
     "change-control-template.md": ".specify/governance/change-control.md",
     "approval-matrix-template.md": ".specify/governance/approval-matrix.md",
+    # The trust root APV-002 verifies a signed approval commit against. Seeded empty of keys
+    # and full of reasoning: a project that never adds a signer gets warned by APV-004 rather
+    # than silently trusting nobody, and the file explains why it is version-controlled.
+    "allowed-signers-template.txt": ".specify/governance/allowed-signers",
     # The three standards the agent operating contract binds it to. Seeded rather than read
     # out of the extension directory on purpose: a project may amend a rule, and a rule it
     # cannot amend is one it will work around instead. The amendment is then a visible diff

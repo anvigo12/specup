@@ -19,7 +19,8 @@ from typing import Any
 
 import derivers
 from openup_model import (
-    ACYCLIC, SKIP, Verdict, approval_hash, base_parser, load_graph, run, schema_errors,
+    ACYCLIC, SKIP, Verdict, approval_hash, base_parser, load_graph, record, run,
+    schema_errors,
 )
 
 REQUIREMENT_TYPES = {"requirement", "non-functional-requirement"}
@@ -76,7 +77,7 @@ def validate(args: Any) -> Verdict:
     schema_failures: list[str] = []
     for rel, doc in sorted(graph.raw_stores.items()):
         schema_failures += [f"{rel}: {err}" for err in schema_errors(doc, "traceability.schema.json")]
-    _record(verdict, "TRC-000", schema_failures,
+    record(verdict, "TRC-000", schema_failures,
             f"all {len(graph.raw_stores)} traceability store(s) conform to traceability.schema.json")
 
     # TRC-001 — duplicate triples across merged stores
@@ -96,7 +97,7 @@ def validate(args: Any) -> Verdict:
         for edge in graph.edges
         if edge.status != "broken" and not (graph.exists(edge.from_id) and graph.exists(edge.to_id))
     ]
-    _record(verdict, "TRC-002", broken, f"all {len(graph.edges)} edges resolve at both ends")
+    record(verdict, "TRC-002", broken, f"all {len(graph.edges)} edges resolve at both ends")
 
     # TRC-003 — relations are type-legal
     illegal = []
@@ -108,7 +109,7 @@ def validate(args: Any) -> Verdict:
             illegal.append(f"{edge}: '{edge.relation}' cannot start at a {from_type or 'unknown id'}")
         if allowed_to is not None and to_type not in allowed_to:
             illegal.append(f"{edge}: '{edge.relation}' cannot end at a {to_type or 'unknown id'}")
-    _record(verdict, "TRC-003", illegal, "every relation is legal for its endpoint types")
+    record(verdict, "TRC-003", illegal, "every relation is legal for its endpoint types")
 
     # TRC-004 — acyclicity
     cycles = []
@@ -116,7 +117,7 @@ def validate(args: Any) -> Verdict:
         cycle = graph.find_cycle(relation)
         if cycle:
             cycles.append(f"{relation}: {' -> '.join(cycle)}")
-    _record(verdict, "TRC-004", cycles, f"no cycles on {', '.join(ACYCLIC)}")
+    record(verdict, "TRC-004", cycles, f"no cycles on {', '.join(ACYCLIC)}")
 
     # TRC-005 / TRC-006 — forward coverage
     requirements = graph.requirements()
@@ -176,7 +177,7 @@ def validate(args: Any) -> Verdict:
                 if grammar.type_of(a) == "contract"
                 and not graph.follow(a, "conforms-to", reverse=True)
                 and not graph.follow(a, "validates", reverse=True)]
-    _record(verdict, "TRC-008", orphans, "no orphan artifacts")
+    record(verdict, "TRC-008", orphans, "no orphan artifacts")
 
     # TRC-009 — provenance of edges touching baselined artifacts
     minimum = config["traceability"].get("baseline_min_provenance", "approved")
@@ -196,7 +197,7 @@ def validate(args: Any) -> Verdict:
         and edge.provenance != "derived"
         and rank[edge.provenance] < rank[minimum]
     ]
-    _record(verdict, "TRC-009", weak, f"edges on baselined artifacts meet provenance '{minimum}'")
+    record(verdict, "TRC-009", weak, f"edges on baselined artifacts meet provenance '{minimum}'")
 
     # TRC-010 / TRC-011 / TRC-012 — is 'derived' true, or only claimed?
     derivations = derivers.derive_all(graph)
@@ -222,13 +223,13 @@ def validate(args: Any) -> Verdict:
                 f"{edge}: claims derived_by '{rule}', but that rule does not reproduce it "
                 f"from the filesystem — the edge is an assertion wearing a derived label"
             )
-    _record(verdict, "TRC-010", false_claims,
+    record(verdict, "TRC-010", false_claims,
             f"{verified} derived edge(s) reproduced by the rule they name"
             + (f"; {unverified} await an unimplemented rule" if unverified else ""))
 
     missing = [f"{rule} produces {' --'.join(triple[:2])}--> {triple[2]}, which no store declares"
                for triple, rule in sorted(produced.items()) if triple not in stored]
-    _record(verdict, "TRC-011", missing,
+    record(verdict, "TRC-011", missing,
             f"all {len(produced)} rule-derivable edge(s) are present in the graph")
 
     criteria = [aid for aid in graph.artifacts if grammar.type_of(aid) == "acceptance-criterion"]
@@ -238,7 +239,7 @@ def validate(args: Any) -> Verdict:
     if not config["gherkin"].get("require_scenario_per_ac", True):
         verdict.add("TRC-012", SKIP, "gherkin.require_scenario_per_ac is disabled in config")
     else:
-        _record(verdict, "TRC-012", uncovered,
+        record(verdict, "TRC-012", uncovered,
                 f"all {len(criteria)} acceptance criterion(s) have at least one scenario")
 
     # TRC-013 — is 'approved' still about the content that was approved?
@@ -303,13 +304,6 @@ def validate(args: Any) -> Verdict:
 
 def _ratio(numerator: int, denominator: int) -> float:
     return 1.0 if denominator == 0 else numerator / denominator
-
-
-def _record(verdict: Verdict, check_id: str, failures: list[str], ok_message: str) -> None:
-    if failures:
-        verdict.fail(check_id, f"{len(failures)} violation(s)", failures)
-    else:
-        verdict.ok(check_id, ok_message)
 
 
 def _threshold(

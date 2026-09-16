@@ -18,6 +18,7 @@ from dataclasses import dataclass
 from typing import Any
 
 import evaluate_gate
+import validate_approvals
 import validate_context
 import validate_done
 import validate_risk
@@ -31,6 +32,8 @@ FAIL_CONDITIONS = {
     "orphan_wbs_nodes": ("validate-trace", "TRC-008"),
     "unmitigated_high_risk": ("validate-risk", "RISK-004"),
     "coverage_below_threshold": ("validate-trace", "TRC-005"),
+    # s59: an approval under a name the matrix does not record is not an approval.
+    "unnamed_approver": ("validate-approvals", "APV-003"),
 }
 
 
@@ -48,6 +51,7 @@ def audit(args: Any) -> tuple[dict[str, Any], int]:
     risk = validate_risk.validate(sub)
     trace = validate_trace.validate(sub)
     done = validate_done.validate(sub)
+    approvals = validate_approvals.validate(sub)
     context = validate_context.validate(sub)
 
     phase = config["lifecycle"].get("phase")
@@ -61,7 +65,7 @@ def audit(args: Any) -> tuple[dict[str, Any], int]:
     if gate_name:
         ctx = evaluate_gate.GateContext(
             root=graph.root, graph=graph, config=config,
-            wbs=wbs, risk=risk, trace=trace, done=done,
+            wbs=wbs, risk=risk, trace=trace, done=done, approvals=approvals,
         )
         gate = evaluate_gate.evaluate(gate_name, ctx)
 
@@ -72,13 +76,14 @@ def audit(args: Any) -> tuple[dict[str, Any], int]:
             continue
         validator, check_id = target
         verdict = {"validate-wbs": wbs, "validate-risk": risk, "validate-trace": trace,
-                   "validate-done": done, "validate-context": context}[validator]
+                   "validate-done": done, "validate-context": context,
+                   "validate-approvals": approvals}[validator]
         failing = next((c for c in verdict.checks if c.id == check_id and c.status == "FAIL"), None)
         if failing:
             reasons.append(f"{check_id} {name}: {failing.message}")
 
     sections = {"wbs": wbs, "risk": risk, "traceability": trace, "done": done,
-                "context": context}
+                "context": context, "approvals": approvals}
     if gate:
         sections["gate"] = gate
 
@@ -185,6 +190,27 @@ def render(report: dict[str, Any]) -> str:
         f"  Skills:          {', '.join(ctx.get('skills', [])) or '-'}",
         f"  Dangling refs:   {ctx.get('dangling_references', 0)}",
         f"  Status: {sections['context']['status']}",
+        "",
+    ]
+
+    # The approval witness mix, and it is deliberately printed next to the evidence mix above
+    # rather than folded into it. Those two "approved" numbers count different things: an edge
+    # is `approved` when someone signed off on content that still matches, and an approval is
+    # `witnessed` when git can verify a person made it. A project can be 100% approved and 0%
+    # witnessed, and reporting one number would hide exactly that.
+    apv = sections["approvals"]["metrics"]
+    approvals_total = apv.get("approvals", 0) or 1
+    witnessed = apv.get("witnessed", 0)
+    claimed = apv.get("claimed", 0)
+    floor = apv.get("witness_floor")
+    lines += [
+        "Approvals",
+        f"  witnessed: {witnessed:>4}  ({witnessed / approvals_total:.0%})  a signature git verified",
+        f"  claimed:   {claimed:>4}  ({claimed / approvals_total:.0%})  a name, and nothing tying "
+        f"it to a person",
+        f"  Named approvers: {', '.join(apv.get('named_approvers', [])) or '-'}",
+        f"  Witness floor:   {floor or 'not set (approvals.require_witness_at_or_above)'}",
+        f"  Status: {sections['approvals']['status']}",
         "",
     ]
 
