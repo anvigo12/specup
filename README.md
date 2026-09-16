@@ -125,7 +125,7 @@ Step 3 installs the extension, then the preset, then the four workflows. The ord
 cosmetic: the preset's guidance calls validators the extension installs.
 
 **Do not skip the `pip install`.** Without `PyYAML` every validator exits 2; without the two
-schema libraries, five of the nine do — `audit.py` among them. A workflow then halts on its
+schema libraries, five of the eleven do — `audit.py` among them. A workflow then halts on its
 setup-fault branch rather than passing a gate it could not evaluate. That is the designed
 behaviour, and a confusing way to discover a missing dependency.
 
@@ -181,17 +181,20 @@ anti-bloat rule; the default `semantic` policy lets a leaf terminate early when 
 
 ## Validators
 
-Eleven CLIs. Each emits a JSON verdict on stdout and exits `0` pass / `1` fail / `2`
+Fifteen CLIs. Each emits a JSON verdict on stdout and exits `0` pass / `1` fail / `2`
 could-not-evaluate. That dual contract is what lets one script serve both an agent and a
 workflow step.
 
 | Script | Checks | Covers |
 |---|---|---|
+| `init_openup.py` | 3 | what the scaffold created, what it left alone, and whether the views rendered |
 | `validate_wbs.py` | 12 | level/id agreement, parentage, single root, depth policy, reference resolution, dependency cycles |
 | `validate_risk.py` | 8 | exposure arithmetic, residual reduction, mitigation and verification for high risks, both-ends agreement |
 | `validate_trace.py` | 14 | endpoint resolution, relation type legality, duplicates, cycles, forward/backward coverage, orphans, provenance floor, **derivation reproducibility**, **approval binding**, scenario coverage |
 | `validate_done.py` | 6 | the Definition of Done, computed from the graph rather than declared |
 | `validate_approvals.py` | 6 | the approval matrix names somebody, approvers are named in it, and a declared commit exists and carries a signature this project trusts |
+| `validate_context.py` | 4 | the `AGENTS.md` / `index.md` / `SKILL.md` hierarchy, and that every id a context map names resolves |
+| `validate_docs.py` | 7 | a docstring is the working context for its unit — **anchored**, **bounded**, **honest** about what it claims to have cross-checked, and finite |
 | `derive_edges.py` | 4 | what the derivation rules recover; `--write` regenerates the machine-owned store |
 | `render_views.py` | 2 | the generated Markdown views are present and match their sources; `--write` regenerates them |
 | `approve_edge.py` | — | records a human approval, bound by hash to the content approved |
@@ -447,7 +450,7 @@ workflows/openup-{phase}/          the four phase workflows
 bundles/specup/                    bundle.yml + the working-tree installer
 catalog/                           the four published catalog documents (generated)
 tools/                             archive + catalog generators
-tests/                             248 tests + fixtures
+tests/                             332 tests + fixtures
 ```
 
 ---
@@ -482,7 +485,7 @@ every audit.
 
 ```bash
 python3 -m pip install pyyaml jsonschema referencing pytest
-python3 -m pytest tests/ -q          # 189 passed, 8 skipped
+python3 -m pytest tests/ -q          # 324 passed, 8 skipped
 ```
 
 The 8 skips are the engine-validation tests. To run them, install spec-kit:
@@ -490,7 +493,7 @@ The 8 skips are the engine-validation tests. To run them, install spec-kit:
 ```bash
 uv venv .venv && uv pip install --python .venv/bin/python specify-cli==1.0.6 pytest
 uv pip install --python .venv/bin/python -r extensions/openup/requirements.txt
-.venv/bin/python -m pytest tests/ -q  # 197 passed
+.venv/bin/python -m pytest tests/ -q  # 332 passed
 ```
 
 Or with [Taskfile](docs/dev/taskfile.md), which wraps both suites and the release pipeline:

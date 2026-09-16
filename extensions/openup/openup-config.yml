@@ -79,6 +79,33 @@ approvals:
   # it to make a run go green.
   require_witness_at_or_above: null
 
+docs:
+  # DOC-000..006, in validate_docs.py. The last step of progressive disclosure: an agent that
+  # opens one function gets its docstring and nothing else, so the docstring has to be the
+  # whole working context for that unit — anchored to a governing artifact, bounded by what
+  # the unit will not do, honest about what it claims to have cross-checked, and finite.
+
+  # The ratchet. Checks listed here FAIL; the rest WARN.
+  #
+  # Empty by default, for the same reason approvals.require_witness_at_or_above is null:
+  # an existing codebase has public symbols nobody documented against a requirement that did
+  # not exist when they were written, and failing its first audit over them teaches only that
+  # this validator should be switched off. The warnings are visible from day one; promoting a
+  # check is the deliberate act that makes it consequential.
+  #
+  # Ratchetable: DOC-001 (every exported symbol has a docstring), DOC-003 (the file anchors to
+  # a governing artifact), DOC-004 (the docstring states a boundary).
+  #
+  # NOT listable: DOC-002 and DOC-005 already fail and cannot be lowered — a dangling id and a
+  # false cross-check claim are misleading, not missing. DOC-006 is refused outright, and the
+  # validator says why: failing on docstring length makes deleting the reasoning the cheapest
+  # way to go green, and the reasoning is the part worth keeping.
+  enforce: []
+
+  # DOC-006's bound. A docstring longer than this is carrying an argument, which is an ADR in
+  # disguise; move it and link the ADR, which DOC-003 then anchors to.
+  max_docstring_lines: 40
+
 traceability:
   # Where relation stores live. All matching files are merged into ONE graph at load time.
   # specup.md s5 puts WBS/risk/traceability at BOTH .specify/ and specs/<feature>/ without
@@ -216,3 +243,7 @@ audit:
     - orphan_wbs_nodes
     - unmitigated_high_risk
     - coverage_below_threshold
+    # DOC-002 fails on its own, so listing it here changes no outcome. It is named so the
+    # audit's Reasons block says which docstring pointed at what, instead of leaving a reader
+    # to find it in the docs section.
+    - dangling_docstring_anchor

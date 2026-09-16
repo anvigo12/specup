@@ -99,3 +99,4 @@ audit:
     - orphan_requirements
     - unmitigated_high_risk
     - coverage_below_threshold
+    - dangling_docstring_anchor

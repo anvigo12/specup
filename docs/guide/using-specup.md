@@ -37,7 +37,7 @@ against that fixture, not an illustration.
 
 ### Everything is a script you can run yourself
 
-There are **13 command-line entry points** under
+There are **15 command-line entry points** under
 `.specify/extensions/openup/scripts/python/`. Nothing is agent-only. Whatever an agent or a
 workflow tells you about the state of the project, you can reproduce by typing the same
 command.
@@ -53,6 +53,8 @@ assertion; a verdict you can re-run is evidence. The whole design leans on the s
 | `validate_trace.py` | 14 checks on the traceability graph | `0` `1` `2` |
 | `validate_done.py` | 6 checks — the Definition of Done, computed | `0` `1` `2` |
 | `validate_context.py` | 4 checks on the `AGENTS.md` / `index.md` / `SKILL.md` hierarchy | `0` `1` `2` |
+| `validate_approvals.py` | 6 checks tying an approval to a person git can verify | `0` `1` `2` |
+| `validate_docs.py` | 7 checks on docstrings as the working context for one unit | `0` `1` `2` |
 | `derive_edges.py` | Reports (or with `--write`, regenerates) the mechanically-derivable edges | `0` `1` `2` |
 | `render_views.py` | Reports (or with `--write`, regenerates) the seven generated documents | `0` `1` `2` |
 | `select_work.py` | Applies the Definition of Ready; returns ready and blocked work | `0` `1` `2` |
@@ -61,7 +63,7 @@ assertion; a verdict you can re-run is evidence. The whole design leans on the s
 | `impact.py` | What a change to one artifact reaches, in both directions | `0` `2` |
 | `approve_edge.py` | Records a human approval on one edge | `0` `1` `2` |
 
-Ten of them emit the same verdict shape — `validator`, `status`, `checks[]`, `metrics`. Only
+Twelve of them emit the same verdict shape — `validator`, `status`, `checks[]`, `metrics`. Only
 `audit.py`, `impact.py` and `approve_edge.py` emit their own, because they answer different
 questions: an aggregate report, a traversal, and a write confirmation.
 
@@ -967,8 +969,8 @@ computing coverage over nothing.
 
 ## 6. Check reference
 
-55 named checks across nine validators, plus `GATE-000`. Every one is listed here with what it
-checks, why it exists, and what to do when it fires.
+69 named checks across eleven validators, plus `GATE-000`. Every one is listed here with what
+it checks, why it exists, and what to do when it fires.
 
 Severity is not uniform, and where it varies it is deliberate. The governing principle:
 **a missing thing warns; a misleading thing fails.** An absent context map is a gap in
@@ -1085,6 +1087,92 @@ than a missing one, because it reports compliance it never established.
 context map is something a reader will try to follow, so it is something that must resolve.
 `GATE-*` and `TRACE-*` are exempt, being referenced in prose rather than registered.
 
+### `validate_approvals.py` — 6 checks
+
+specup.md §59 reserves a class of decision for a named human. Until 0.1.2 nothing checked that
+one had been involved: an agent could run `approve_edge.py --by product-owner` exactly as a
+person could. These checks are what make that sentence mechanical.
+
+An approval carries a provenance level, mirroring the one an edge carries:
+
+| Level | Meaning |
+|---|---|
+| `witnessed` | `approval.commit` resolves **and** carries a signature that verifies against `approvals.allowed_signers` |
+| `claimed` | a name and a date, and nothing tying them to a person |
+
+| Id | Sev | Checks | Why, and what to do |
+|---|---|---|---|
+| `APV-000` | FAIL | `.specify/governance/approval-matrix.md` names at least one approver | Every other check is weaker without it. With the "who" column blank, anyone can approve anything and the matrix is decorative. **Fill in the column** |
+| `APV-001` | FAIL | A declared `approval.commit` resolves to a real commit here | A sha that is not in this repository is a citation to nothing |
+| `APV-002` | FAIL | That commit's signature verifies against the project's allowed signers | The trust root decides, not the presence of a signature — otherwise anyone who can commit can approve. A missing `allowed-signers` file fails here too, rather than passing silently |
+| `APV-003` | FAIL | `approval.by` is a name the matrix records | An approval under a name nobody agreed to is not an approval |
+| `APV-004` | **WARN** | Every approval declares a commit | A migration, not a defect: `commit` is optional in the schema and existing approvals predate the check. The warning makes the gap visible from day one |
+| `APV-005` | FAIL | Every approval at or above `approvals.require_witness_at_or_above` is witnessed | The ratchet. `null` by default, so an upgrading project is told without being broken. Set it to `BASELINED` once your approvals carry commits, and **raise it as a decision — never lower it to make a run go green** |
+
+Metrics: `approvals`, `witnessed`, `claimed`, `named_approvers[]`, `witness_floor`.
+
+**A missing `git` binary is exit 2, not a FAIL.** So is a project that declares a commit while
+sitting outside a git repository. Reporting either as a governance failure would send someone
+looking for a defect in their data rather than in their environment.
+
+The audit prints witnessed-versus-claimed next to the edge provenance mix, deliberately not
+folded into it. The two "approved" numbers count different things: an edge is `approved` when
+someone signed off on content that still matches, and an approval is `witnessed` when git can
+verify a person made it. A project can be 100% approved and 0% witnessed.
+
+### `validate_docs.py` — 7 checks
+
+The last step of progressive disclosure. §56–57 argues an agent should navigate `directory →
+AGENTS.md → index.md → the one artifact` rather than load the repository, and
+`validate_context.py` checks that hierarchy down to the file. This checks the step below it,
+inside the file: when an agent opens one function, its docstring is the whole context it gets
+and nothing else will arrive. Four properties, none of them stylistic — **anchored**,
+**bounded**, **honest**, **finite**.
+
+| Id | Sev | Checks | Why, and what to do |
+|---|---|---|---|
+| `DOC-000` | PASS / SKIP | What was analysed, and what was not | Scope, reported rather than assumed. **SKIP whenever any perimeter file went unread** |
+| `DOC-001` | **WARN\*** | Every exported symbol has a docstring | Opening it otherwise gives an agent the name and nothing else |
+| `DOC-002` | **FAIL** | Every governing id a docstring names resolves | `CTX-002` one level down. A docstring naming a superseded requirement does not merely fail to help: it tells an agent the unit is governed by something, and the agent will not find it and will decide for itself |
+| `DOC-003` | **WARN\*** | Each analysed file anchors to a `REQ-`, `NON-FR-`, `ADR-` or `SECURE-` id | Nothing the unit claims can be compared with what the project decided. **Per file, not per symbol** — the graph's unit of implementation is the source path, and demanding an id on every method teaches people to paste one everywhere |
+| `DOC-004` | **WARN\*** | The docstring states a boundary — what the unit will not do, or when it refuses | The half that gets omitted, and the half that matters. An agent not told the edge will infer one |
+| `DOC-005` | **FAIL** | A docstring claiming a cross-check names **two distinct sources** | The `cits-crypto` failure, generalised: a truth table was transcribed from a reading of a rule rather than from the page, and the predicate written to cross-check it came from the same misreading. They agreed, and both were wrong |
+| `DOC-006` | **WARN** | The docstring fits `docs.max_docstring_lines` (default 40) | A docstring carrying an argument is an ADR in disguise. Move it and link the ADR, which `DOC-003` then anchors to |
+
+Metrics: `perimeter_files`, `python_files`, `files_not_analysed`, `exported_symbols`,
+`documented`, `anchored_files`, `enforced[]`.
+
+**\* The ratchet.** The three starred checks warn by default and fail once listed in
+`docs.enforce`, for the same reason `approvals.require_witness_at_or_above` is `null`: an
+existing codebase has public symbols nobody documented against a requirement that did not exist
+when they were written, and failing its first audit over them teaches only that this validator
+should be switched off. The warnings are visible from day one; promoting a check is the
+deliberate act that makes it consequential.
+
+```yaml
+docs:
+  enforce: [DOC-001, DOC-003]    # these now FAIL; the rest warn
+  max_docstring_lines: 40
+```
+
+`DOC-002` and `DOC-005` are **not listable and cannot be lowered** — the governing principle
+puts them there, a missing thing warns and a misleading thing fails. `DOC-006` is refused
+outright and the validator exits 2 saying why: failing on docstring length makes deleting the
+reasoning the cheapest way to go green, and the reasoning is the part worth keeping. An id
+`docs.enforce` does not recognise is also exit 2, because a control that is off while its
+config says it is on is worse than one nobody configured.
+
+**Python only, via `ast`.** There is no parser here for any other language. A perimeter file
+this validator cannot read is counted by `DOC-000` as not analysed, never as passing — the
+same honesty the `contracts:` block owes about what nothing globs. The audit prints "analysed"
+and "in the perimeter" as two numbers for exactly this reason: a TypeScript project would
+otherwise read a green docs line as a statement about code nothing opened.
+
+`DOC-005` counts **names, not independence**. Two ids in one docstring may still be two
+readings of one page, which is how the `cits-crypto` truth table went wrong. What the check
+buys is that a claim of corroboration has to say what corroborated what; whether those two
+things are genuinely independent is a human judgement, and an ADR is where it gets recorded.
+
 ### `select_work.py` — 3 checks and 9 readiness rules
 
 | Id | Sev | Meaning |
@@ -1164,10 +1252,17 @@ The seven generated documents:
 one on disk on every run, which would turn `VIEW-001` into noise and train people to ignore
 it.
 
-### `init_openup.py` — 2 checks
+### `init_openup.py` — 3 checks
 
 `INIT-001` lists what was created; `INIT-002` lists what was left untouched. Both always pass;
 they are a report, not a gate.
+
+`INIT-003` reports whether the generated views were rendered, and is the one that can carry a
+non-PASS status. It exists because of the failure mode it covers: `render_views` exits 2 at
+import time when PyYAML is absent, which would kill this process before the verdict was
+written, so `--json` would exit 2 with empty stdout and a workflow step consuming the verdict
+would read malformed output instead of a check. Converting that to an `INIT-003` ERROR keeps
+the exit code and gives the caller something to parse.
 
 ### `evaluate_gate.py` — `GATE-000` plus one check per condition
 

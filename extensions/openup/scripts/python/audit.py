@@ -20,6 +20,7 @@ from typing import Any
 import evaluate_gate
 import validate_approvals
 import validate_context
+import validate_docs
 import validate_done
 import validate_risk
 import validate_trace
@@ -34,6 +35,9 @@ FAIL_CONDITIONS = {
     "coverage_below_threshold": ("validate-trace", "TRC-005"),
     # s59: an approval under a name the matrix does not record is not an approval.
     "unnamed_approver": ("validate-approvals", "APV-003"),
+    # s56-s57: a docstring naming a requirement that no longer exists is a context map that
+    # misleads, one level below the index.md files CTX-002 covers.
+    "dangling_docstring_anchor": ("validate-docs", "DOC-002"),
 }
 
 
@@ -53,6 +57,7 @@ def audit(args: Any) -> tuple[dict[str, Any], int]:
     done = validate_done.validate(sub)
     approvals = validate_approvals.validate(sub)
     context = validate_context.validate(sub)
+    docs = validate_docs.validate(sub)
 
     phase = config["lifecycle"].get("phase")
     iteration = config["lifecycle"].get("iteration")
@@ -77,13 +82,13 @@ def audit(args: Any) -> tuple[dict[str, Any], int]:
         validator, check_id = target
         verdict = {"validate-wbs": wbs, "validate-risk": risk, "validate-trace": trace,
                    "validate-done": done, "validate-context": context,
-                   "validate-approvals": approvals}[validator]
+                   "validate-approvals": approvals, "validate-docs": docs}[validator]
         failing = next((c for c in verdict.checks if c.id == check_id and c.status == "FAIL"), None)
         if failing:
             reasons.append(f"{check_id} {name}: {failing.message}")
 
     sections = {"wbs": wbs, "risk": risk, "traceability": trace, "done": done,
-                "context": context, "approvals": approvals}
+                "context": context, "approvals": approvals, "docs": docs}
     if gate:
         sections["gate"] = gate
 
@@ -211,6 +216,28 @@ def render(report: dict[str, Any]) -> str:
         f"  Named approvers: {', '.join(apv.get('named_approvers', [])) or '-'}",
         f"  Witness floor:   {floor or 'not set (approvals.require_witness_at_or_above)'}",
         f"  Status: {sections['approvals']['status']}",
+        "",
+    ]
+
+    # The last step of progressive disclosure, and the one place the report must not round up.
+    # "analysed" and "in the perimeter" are printed as two numbers because this validator reads
+    # Python only: a project whose perimeter is TypeScript would otherwise read a green docs
+    # line as a statement about code nothing here opened.
+    docs = sections["docs"]["metrics"]
+    analysed = docs.get("python_files", 0)
+    symbols = docs.get("exported_symbols", 0) or 1
+    lines += [
+        "Docstrings",
+        f"  Analysed:        {analysed} of {docs.get('perimeter_files', 0)} perimeter file(s)"
+        + (f"  ({docs.get('files_not_analysed', 0)} not analysed)"
+           if docs.get("files_not_analysed") else ""),
+        f"  Documented:      {docs.get('documented', 0)}/{docs.get('exported_symbols', 0)} "
+        f"exported symbol(s)  ({docs.get('documented', 0) / symbols:.0%})",
+        f"  Anchored:        {docs.get('anchored_files', 0)}/{analysed} file(s) name a "
+        f"governing artifact",
+        f"  Enforced:        {', '.join(docs.get('enforced', [])) or '-'}  "
+        f"(the rest warn; docs.enforce is the ratchet)",
+        f"  Status: {sections['docs']['status']}",
         "",
     ]
 

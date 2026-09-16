@@ -58,7 +58,7 @@ python3 -m pip install -r .specify/extensions/openup/requirements.txt
 ```
 
 The second line is not optional. Without `PyYAML` every validator exits `2`; without the two
-schema libraries, five of the nine do. Your workflows then halt on the setup-fault branch
+schema libraries, five of the eleven do. Your workflows then halt on the setup-fault branch
 rather than passing gates they could not evaluate. Confirm:
 
 ```bash

@@ -199,6 +199,11 @@ provides:
       description: "Validate the AGENTS.md / index.md / SKILL.md hierarchy and its references"
       runtimes: [python]
 
+    - name: validate-docs
+      file: scripts/python/validate_docs.py
+      description: "Check that a docstring is the whole working context for the unit it documents"
+      runtimes: [python]
+
     - name: validate-done
       file: scripts/python/validate_done.py
       description: "Check the Definition of Done against the graph for every node claiming done"
