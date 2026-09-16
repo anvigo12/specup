@@ -216,7 +216,7 @@ implemented, and on a brownfield repo two of them usually pay immediately:
 
 | Rule | What it needs from you | Typical brownfield yield |
 |---|---|---|
-| `test-file-naming-convention` | register each test file as a `UNIT-*`/`TC-*`/`INTG-*` artifact with `source:` | high — an existing suite is already named this way |
+| `test-file-naming-convention` | register each test file as a `UNIT-*`/`TC-*`/`INTG-*`/`E2E-*` artifact with `source:` | high — an existing suite is already named this way |
 | `wbs-iteration-field` | put `iteration:` on WBS nodes | free, once the skeleton exists |
 | `gherkin-tag-scan` | `@SCEN-`/`@AC-` tags in `.feature` files | low at first — most brownfield repos have no tagged features |
 

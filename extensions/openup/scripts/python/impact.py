@@ -37,7 +37,7 @@ GROUPS: list[tuple[str, tuple[str, ...]]] = [
     ("WBS nodes", ("wbs-node", "task")),
     ("Risks", ("risk",)),
     ("Contracts", ("contract", "microcks-test")),
-    ("Tests", ("test-case", "unit-test", "integration-test")),
+    ("Tests", ("test-case", "unit-test", "integration-test", "e2e-test")),
     ("Source files", ("source-artifact",)),
     ("Evidence", ("evidence",)),
     ("Iterations & gates", ("iteration", "gate")),

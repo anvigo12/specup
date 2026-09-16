@@ -423,7 +423,7 @@ Every governed artifact has exactly one id, zero-padded and regex-enforced.
 | WBS node | `WBS-<dotted path>` | `WBS-1.2.3.4.1.1.2` |
 | Risk | `RISK-<NNNN>` | `RISK-0007` |
 | Architecture decision | `ADR-<NNNN>` | `ADR-0019` |
-| Test case / unit / integration | `TC-`, `UNIT-`, `INTG-` `<DOMAIN>-<NNNN>` | `TC-AUTH-0031` |
+| Test case / unit / integration / e2e | `TC-`, `UNIT-`, `INTG-`, `E2E-` `<DOMAIN>-<NNNN>` | `TC-AUTH-0031` |
 | Contract | `CONTRACT-<DOMAIN>-<NNNN>` | `CONTRACT-AUTH-0001` |
 | Evidence | `EVID-<NNNN>` | `EVID-0001` |
 | Iteration | `ITER-[IECT]-<NN>` | `ITER-E-02` |
@@ -660,7 +660,7 @@ risks:
 | `exposure` | — | If present, recomputed as `probability × impact` and must match within 1e-9 |
 | `status` | yes | `open` `mitigating` `mitigated` `accepted` `closed` `materialized` |
 | `mitigation[]` | — | WBS ids. **Required at `mitigated`/`closed`** |
-| `verification[]` | — | `TC-`/`UNIT-`/`INTG-`/`MICROCKS-TEST-`/`EVID-` ids. **Required at `mitigated`/`closed`** |
+| `verification[]` | — | `TC-`/`UNIT-`/`INTG-`/`E2E-`/`MICROCKS-TEST-`/`EVID-` ids. **Required at `mitigated`/`closed`** |
 | `residual_probability` / `_impact` / `_exposure` | — | The first two come as a pair or not at all |
 | `acceptance_approval` | — | **Required at `status: accepted`** |
 | `evidence[]`, `history[]` | — | |

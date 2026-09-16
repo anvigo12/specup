@@ -34,7 +34,7 @@ fails. A register whose entries point nowhere is the passive documentation s19 r
    change:
    - add a WBS node with `kind: risk-mitigation` that lists this risk id
    - list that node under the risk's `mitigation`
-   - add a verification reference (`TC-*`, `UNIT-*`, `INTG-*`, `MICROCKS-TEST-*`, or `EVID-*`)
+   - add a verification reference (`TC-*`, `UNIT-*`, `INTG-*`, `E2E-*`, `MICROCKS-TEST-*`, or `EVID-*`)
 
    Both ends are checked (`RISK-006`). One end alone is not a link.
 

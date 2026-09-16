@@ -22,6 +22,7 @@
         { "$ref": "artifact.schema.json#/$defs/testCaseId" },
         { "$ref": "artifact.schema.json#/$defs/unitTestId" },
         { "$ref": "artifact.schema.json#/$defs/integrationTestId" },
+        { "$ref": "artifact.schema.json#/$defs/e2eTestId" },
         { "$ref": "artifact.schema.json#/$defs/microcksTestId" },
         { "$ref": "artifact.schema.json#/$defs/evidenceId" }
       ]

@@ -24,7 +24,7 @@ from openup_model import (
 )
 
 REQUIREMENT_TYPES = {"requirement", "non-functional-requirement"}
-TEST_TYPES = {"test-case", "unit-test", "integration-test"}
+TEST_TYPES = {"test-case", "unit-test", "integration-test", "e2e-test"}
 WORK_TYPES = {"wbs-node"}
 
 # Domain and range for each relation (ID-GRAMMAR.md s2). None means "any type".

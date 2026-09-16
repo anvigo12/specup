@@ -35,7 +35,7 @@ GOVERNED_DIRECTORIES = (
 # context map is something a reader will try to follow, so it is something that must resolve.
 ID_TOKEN = re.compile(
     r"\b(?:BUS-OBJ|REQ|NON-FR|FEAT|USR-STR|FLOW|AC|SCEN|WBS|RISK|TRACE|ADR|SECURE|TC|UNIT|"
-    r"INTG|CONTRACT|MICROCKS-TEST|EVID|ITER|GATE)-[A-Z0-9.\-]+\b"
+    r"INTG|E2E|CONTRACT|MICROCKS-TEST|EVID|ITER|GATE)-[A-Z0-9.\-]+\b"
 )
 
 # Referenced in prose but not resolvable as artifacts, and not meant to be.

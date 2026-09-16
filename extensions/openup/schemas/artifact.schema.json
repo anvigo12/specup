@@ -31,6 +31,7 @@
     "testCaseId": { "type": "string", "pattern": "^TC-[A-Z][A-Z0-9]{1,11}-[0-9]{4}$" },
     "unitTestId": { "type": "string", "pattern": "^UNIT-[A-Z][A-Z0-9]{1,11}-[0-9]{4}$" },
     "integrationTestId": { "type": "string", "pattern": "^INTG-[A-Z][A-Z0-9]{1,11}-[0-9]{4}$" },
+    "e2eTestId": { "type": "string", "pattern": "^E2E-[A-Z][A-Z0-9]{1,11}-[0-9]{4}$" },
     "contractId": { "type": "string", "pattern": "^CONTRACT-[A-Z][A-Z0-9]{1,11}-[0-9]{4}$" },
     "microcksTestId": { "type": "string", "pattern": "^MICROCKS-TEST-[0-9]{4}$" },
     "evidenceId": { "type": "string", "pattern": "^EVID-[0-9]{4}$" },
@@ -64,6 +65,7 @@
         { "$ref": "#/$defs/testCaseId" },
         { "$ref": "#/$defs/unitTestId" },
         { "$ref": "#/$defs/integrationTestId" },
+        { "$ref": "#/$defs/e2eTestId" },
         { "$ref": "#/$defs/contractId" },
         { "$ref": "#/$defs/microcksTestId" },
         { "$ref": "#/$defs/evidenceId" },
@@ -79,8 +81,8 @@
         "business-objective", "requirement", "non-functional-requirement", "feature",
         "user-story", "flow", "acceptance-criterion", "scenario", "wbs-node",
         "risk", "architecture-decision", "security-decision", "test-case", "unit-test",
-        "integration-test", "contract", "microcks-test", "evidence", "iteration", "gate",
-        "source-artifact"
+        "integration-test", "e2e-test", "contract", "microcks-test", "evidence", "iteration",
+        "gate", "source-artifact"
       ]
     },
 

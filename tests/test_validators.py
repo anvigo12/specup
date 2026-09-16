@@ -749,6 +749,60 @@ def test_every_relation_has_a_declared_inverse(project):
     )
 
 
+def test_the_id_patterns_and_the_artifact_type_enum_are_the_same_set(project):
+    """The same defect as the relation table above, one column over.
+
+    `E2E` was missing from the grammar for exactly this reason: `artifactType` and the
+    `<name>Id` patterns are two lists in one file that nobody compared, so a type could be
+    nameable but unregistrable, or registrable but unreachable. Grammar builds its pattern
+    table from the `Id` keys, so this asserts the two halves of that file agree.
+    """
+    import json
+    import pathlib
+
+    from openup_model import SCHEMA_DIR, Grammar
+
+    enum = set(json.loads(
+        (pathlib.Path(SCHEMA_DIR) / "artifact.schema.json").read_text()
+    )["$defs"]["artifactType"]["enum"])
+    patterns = set(Grammar().patterns)
+
+    # `source-artifact` is the one type with no id pattern: the path is the identity.
+    assert enum - {"source-artifact"} <= patterns, (
+        f"declared artifact type(s) nothing can name: {sorted(enum - {'source-artifact'} - patterns)}"
+    )
+    # `trace` is the one pattern with no artifact type: TRACE-* names a relation, not a thing
+    # the graph stores. ID-GRAMMAR.md s1.2 lists it as reserved but unmodelled.
+    assert patterns - enum == {"trace"}, (
+        f"id pattern(s) with no artifact type: {sorted(patterns - enum - {'trace'})}"
+    )
+
+
+def test_an_e2e_test_verifies_a_requirement_like_any_other_test(project):
+    """`E2E-*` is a peer of `UNIT-*` and `INTG-*`, not a reserved prefix.
+
+    A grammar entry nothing admits at either end is a name, not a type — the state
+    ID-GRAMMAR.md calls "reserved but unmodelled" and warns against reading as support.
+    """
+    project.artifacts(lambda d: d["artifacts"].append({
+        "id": "E2E-AUTH-0031", "type": "e2e-test", "title": "Enrolment journey, end to end",
+        "status": "IMPLEMENTED", "owner": "qa-team",
+    }))
+    project.add_edge(**{"from": "E2E-AUTH-0031", "relation": "verifies",
+                        "to": "REQ-AUTH-0014", "provenance": "asserted"})
+    verdict = project.run("validate_trace")
+    assert verdict.status == "PASS", f"failing: {sorted(failing(verdict))}"
+
+
+def test_an_e2e_test_connected_to_nothing_is_an_orphan(project):
+    """The other half: being modelled means being subject to the same orphan rule."""
+    project.artifacts(lambda d: d["artifacts"].append({
+        "id": "E2E-AUTH-0099", "type": "e2e-test", "title": "Disconnected journey",
+        "status": "IMPLEMENTED", "owner": "qa-team",
+    }))
+    assert_fails(project.run("validate_trace"), "TRC-008")
+
+
 def test_the_mitigation_band_is_a_real_knob(project):
     """`require_mitigation_at_or_above` was declared in the config and read by nothing, so
     both checks used `high` whatever it said. A setting that cannot move a verdict is worse

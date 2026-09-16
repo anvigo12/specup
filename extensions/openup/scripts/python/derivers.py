@@ -30,7 +30,7 @@ from openup_model import expand_paths
 Triple = tuple[str, str, str]
 
 # Test artifact types that may sit at the `from` end of a `tests` edge.
-TEST_TYPES = {"test-case", "unit-test", "integration-test"}
+TEST_TYPES = {"test-case", "unit-test", "integration-test", "e2e-test"}
 
 
 @dataclass
@@ -176,11 +176,17 @@ def _subject_stem(stem: str, prefixes: list[str], suffixes: list[str]) -> str | 
 
 
 def derive_test_file_naming(graph: Any) -> Derivation:
-    """`UNIT-*`/`TC-*`/`INTG-*` --tests--> the source file its `source` file is named after.
+    """`UNIT-*`/`TC-*`/`INTG-*`/`E2E-*` --tests--> the source file its `source` is named after.
 
     The subject must match on stem *and* extension, and must be unique inside the perimeter.
     An ambiguous name derives nothing: picking one of two candidates would be a guess, and a
     guess recorded as `derived` is worse than no edge at all.
+
+    `E2E-*` is admitted here for symmetry, and usually derives nothing: `testing.stem_suffixes`
+    carries no `.e2e` marker, and an end-to-end test is named after a journey rather than after
+    one source file. That is reported as a note, not a failure — an `E2E-*` artifact's `tests`
+    edge is normally `asserted`, and ID-GRAMMAR.md s2 says so rather than leaving a reader to
+    infer it from a silent gap.
     """
     out = Derivation("test-file-naming-convention")
     config = graph.config.get("testing", {})

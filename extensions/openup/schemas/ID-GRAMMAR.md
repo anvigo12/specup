@@ -50,6 +50,7 @@ and per-feature `specs/*/artifacts.yaml` registries allocate ordinals independen
 | TestCase (acceptance) | `TC` | `TC-<DOMAIN>-<NNNN>` | `TC-AUTH-0031` |
 | UnitTest | `UNIT` | `UNIT-<DOMAIN>-<NNNN>` | `UNIT-AUTH-0031` |
 | IntegrationTest | `INTG` | `INTG-<DOMAIN>-<NNNN>` | `INTG-AUTH-0031` |
+| E2ETest | `E2E` | `E2E-<DOMAIN>-<NNNN>` | `E2E-AUTH-0031` |
 | Contract | `CONTRACT` | `CONTRACT-<DOMAIN>-<NNNN>` | `CONTRACT-AUTH-0001` |
 | MicrocksTest | `MICROCKS-TEST` | `MICROCKS-TEST-<NNNN>` | `MICROCKS-TEST-0091` |
 | Evidence | `EVID` | `EVID-<NNNN>` | `EVID-0233` |
@@ -66,6 +67,14 @@ Notes:
   validator rebuild. Paths are repo-relative, POSIX-separated, never absolute.
 - **Modelled prefixes** — every one above is a node the graph can reach: an edge may start or
   end at it, and a validator resolves it. `SourceArtifact` included.
+- **`E2E` is a peer of `UNIT` and `INTG`, with one asymmetry worth stating.** It carries the
+  same relation signatures (`verifies` → Requirement, `tests` → SourceArtifact) and counts the
+  same way toward verification coverage. But `test-file-naming-convention` will usually derive
+  nothing for it: `testing.stem_suffixes` carries no `.e2e` marker, and an end-to-end test is
+  named after a journey rather than after the one source file it exercises. So an `E2E-*`
+  `tests` edge is normally **`asserted`**, and the audit's provenance mix will show it as such.
+  That is the honest outcome, not a gap to close by adding a marker that would make the deriver
+  guess. Its `verifies` edge to a requirement is the one that carries the weight.
 - **Deliberately absent: `TASK`.** §48 lists it and §21/§26/§44/§67 route through it, but §15
   already defines WBS **L7** as the Executable Task. A parallel `TASK-*` identity would be a
   second name for one thing, which is precisely the drift this model exists to prevent, so the
@@ -97,7 +106,7 @@ hand-maintained dataset.
 | `implements` | `implemented-by` | WBSNode / SourceArtifact → Requirement / ADR / SecurityDecision |
 | `verifies` | `verified-by` | AcceptanceCriterion / TestCase → Requirement |
 | `executes` | `executed-by` | Scenario → AcceptanceCriterion |
-| `tests` | `tested-by` | UnitTest / IntegrationTest → SourceArtifact |
+| `tests` | `tested-by` | UnitTest / IntegrationTest / E2ETest → SourceArtifact |
 | `conforms-to` | `conformed-by` | SourceArtifact → Contract |
 | `validates` | `validated-by` | MicrocksTest → Contract |
 | `mitigates` | `mitigated-by` | WBSNode → Risk |

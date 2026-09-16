@@ -74,7 +74,7 @@ python .specify/extensions/openup/scripts/python/derive_edges.py --write
 | Rule | Produces | |
 |---|---|---|
 | `gherkin-tag-scan` | `SCEN-*` → `executes` → `AC-*`, from `@` tags in `.feature` files | implemented |
-| `test-file-naming-convention` | `UNIT-*`/`TC-*`/`INTG-*` → `tests` → the file its `source` is named after | implemented |
+| `test-file-naming-convention` | `UNIT-*`/`TC-*`/`INTG-*`/`E2E-*` → `tests` → the file its `source` is named after | implemented |
 | `wbs-iteration-field` | WBS node → `belongs-to` → iteration, from the node's `iteration` field | implemented |
 | `openapi-operation-scan` | source file → `conforms-to` → `CONTRACT-*` | **not implemented** |
 | `evidence-manifest-scan` | `EVID-*` → `evidences` → WBS node / risk / gate | **not implemented** |
