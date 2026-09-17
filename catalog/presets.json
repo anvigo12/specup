@@ -4,14 +4,14 @@
   "presets": {
     "openup-governance": {
       "id": "openup-governance",
-      "version": "0.1.1",
+      "version": "0.1.2",
       "name": "OpenUP Governance",
       "description": "Composes OpenUP lifecycle governance into Spec Kit's own constitution, spec, plan and tasks templates, and wraps /tasks and /implement with the governed execution contract.",
       "author": "Aniket Gore",
-      "license": "MIT",
+      "license": "BUSL-1.1",
       "repository": "https://github.com/anvigo12/specup",
-      "download_url": "https://github.com/anvigo12/specup/releases/download/v0.1.1/openup-governance-0.1.1.zip",
-      "sha256": "70df4b2bd3ad387a767eec7db81b6d82005f65713a7eddaa132bd630320e3036",
+      "download_url": "https://github.com/anvigo12/specup/releases/download/v0.1.2/openup-governance-0.1.2.zip",
+      "sha256": "09899322a974bf2f8dd8e0439157aa3b2f3c0f0831df8ad763c9d53f82d257f7",
       "requires": {
         "speckit_version": ">=1.0.0,<2.0.0"
       },
