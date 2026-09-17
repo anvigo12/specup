@@ -495,34 +495,95 @@ artifacts:
     source: docs/research/specup-agent-stack.md
     # Evidence for an iteration that has no requirements yet, which is why this is the only
     # thing registered for it. What a reviewer has to check is whether the claims are true —
-    # that Neo4j CE is GPL-3.0 and is now the only copyleft component left, that NVIDIA
-    # OpenShell is Apache-2.0 and attests its policy by hash, that jina-reranker-v3 and
-    # splade-v3 are non-commercial and EmbeddingGemma is not OSI, that Aegra pulls in none of
-    # the Elastic-licensed packages, that Langfuse is now owned by ClickHouse — and nothing
-    # here can check any of that. The report says so itself and cites each source so the
-    # reading can be repeated, which is the only verification a document of this kind offers.
+    # that NVIDIA OpenShell is Apache-2.0 and attests its policy by hash, that Vouch Protocol
+    # is Apache-2.0 while its own dependency jwcrypto is LGPL-3.0-or-later, that the Neo4j
+    # drivers are Apache-2.0 while the Bolt specification documentation is CC BY-NC-SA 4.0,
+    # that jina-reranker-v3 and splade-v3 are non-commercial and EmbeddingGemma is not OSI,
+    # that Aegra pulls in none of the Elastic-licensed packages, that Langfuse is now owned by
+    # ClickHouse — and nothing here can check any of that. The report says so itself and cites
+    # each source so the reading can be repeated, which is the only verification a document of
+    # this kind offers.
     #
-    # Two claims most deserve a second reading, because the report builds on them.
+    # The report is no longer purely research. It now records TEN DECISIONS taken by the
+    # project owner, marked `Decided` where they land, and they are the part of this artifact
+    # most in need of a second reading. The load-bearing one is decision 1: SpecUP composes
+    # this stack and redistributes none of it. Most of section 7 rests on that single ruling,
+    # so if it is ever quietly broken — an appliance, a bundled image, a vendored component —
+    # the licence analysis in this evidence stops being true and nothing will say so. Decisions
+    # in a research document have no id, no status and no verifier. Each should become an ADR.
+    #
+    # Decision 8 is not like the other seven and should be reviewed differently. It adopts the
+    # twelve-factor methodology as extended to fifteen by Beyond the Twelve-Factor App, which
+    # means it constrains components that do not exist yet rather than settling one that does.
+    # Section 11 scores the stack against all fifteen and does not pass: four factors cannot be
+    # met as written, one — factor II, no reliance on system-wide packages — is violated
+    # permanently by OpenShell's host daemon, and three of section 9's gaps are reclassified as
+    # named factor violations. A reviewer should check that the scoring is honest rather than
+    # flattering, because a methodology adopted and then quietly graded on a curve is worse
+    # than one never adopted. Two findings there are load-bearing elsewhere: factor III's own
+    # definition of config resolves the NON-FR-CORE-0001 conflict in this project's favour, and
+    # factor V's release id is the index provenance section 9 lists as missing.
+    #
+    # Decision 8 is also the only one of the eight that produces mechanically checkable
+    # obligations — three of them, listed in section 11.7 — and none of those checks exists.
+    #
+    # Section 12.3 is the WEAKEST material in this artifact, and DECISION 9 ADOPTED IT. It
+    # answers each of the eighteen questions from outside practice: SLSA's Source Track,
+    # OWASP's Non-Human Identities Top 10, CWE-1188, SPIFFE, Sigstore's keyless model,
+    # CycloneDX ML-BOM, OpenSSF Scorecard and Kubernetes RuntimeClass among them. Six of the
+    # eighteen rest partly on secondary sources, and section 13 marks which. The stated ground
+    # for adopting them is that the components are young and a convention many people follow is
+    # a better guess than one derived here — with each answer reopening when its component
+    # reaches a stable release. THAT REVISIT IS THE WHOLE JUSTIFICATION AND NOTHING SCHEDULES
+    # IT. A reviewer checking this evidence should check the revisit before checking the
+    # answers: "this is how the industry does it" is evidence about what is normal rather than
+    # about what is correct for a governance tool, and it decays.
+    #
+    # Decision 10 adopts three published conventions for the GitHub surface — cbea.ms's seven
+    # rules, Conventional Commits v1.0.0 (CC BY 3.0), and GitHub issue and pull request
+    # templates. It is the only decision here with an enforcement mechanism that exists: a
+    # commit-msg hook in .pre-commit-config.yaml. It is also the first rule this project has
+    # adopted without applying it retroactively to itself — SpecUP's own git history does not
+    # follow Conventional Commits and is not being rewritten.
+    #
+    # That research corrected two claims this evidence previously carried. First, section 9's
+    # statement that the decision-to-approval binding "has no upstream" is wrong: SLSA Source
+    # Track L4 is two-party review and the platform issues a Source VSA, which is the same idea
+    # under another name. The surviving gap is narrower — binding a specific governance decision
+    # to a specific artifact. Second, Amazon Neptune speaks Bolt with the Neo4j drivers, so
+    # decision 6 reaches three servers rather than two, across self-hosted and managed models.
+    #
+    # One licence finding is unresolved and is recorded as unresolved: boltprotocol.org now
+    # redirects to Neo4j's documentation, AWS still describes Bolt as CC BY-SA 3.0, and the
+    # neo4j/docs-bolt repository file says CC BY-NC-SA 4.0 — a NonCommercial term the older
+    # licence did not have. The report does not decide which governs which artifact.
+    #
+    # Two further claims deserve a second reading, because the report builds on them.
     #
     # The OpenShell claim: the sandbox is where SpecUP's containment claim would be made
     # mechanical, and the report argues that OpenShell's hash-attested, fail-closed policy is
     # the same idea as APV-002's content-bound approval, one layer down. If that reading is
     # wrong, section 3.4 and the second row of section 10 are wrong with it.
     #
-    # The model-licence claims in section 7.2: three widely recommended models are recorded as
-    # unusable in a product SpecUP sells. Model cards are edited more often than LICENSE files,
-    # so this is the fastest-decaying evidence in the report, and the most expensive to get
-    # wrong in either direction — a false positive rejects the best reranker available, and a
-    # false negative ships a non-commercial model to a paying customer.
+    # The Vouch claim, which is new and is the one that touches this repository's own model:
+    # `vouch git init` configures SSH commit signing, so an agent's commits would satisfy
+    # APV-002 the moment an agent key entered .specify/governance/allowed-signers. The report
+    # names that as a trap and says the roots must stay separate. If this evidence is ever used
+    # to justify adopting Vouch, that warning travels with it.
     #
-    # The report also recommends two young components, one badged alpha, and says so. And the
-    # `agent-inbox/` and `rag/` directory trees were created as part of writing it, which the
-    # report marks `Specified` rather than `Inferred`. A decision taken in a research document
-    # is not an ADR, and the report says that too.
+    # The model-licence claims in section 7.2 remain the fastest-decaying evidence here. Model
+    # cards are edited more often than LICENSE files, and the claims are expensive to get wrong
+    # in either direction — a false positive rejects the best reranker available, and a false
+    # negative ships a non-commercial model to a paying customer. Vouch's own version numbers
+    # decay nearly as fast: its README and its published package disagreed at the time of
+    # writing, and the report took the package as authoritative.
     #
-    # It also documents `open-swe/`, which is untracked and empty. The evidence therefore
-    # describes something that is not in git and can change without a commit. That is a real
-    # weakness of this artifact and it is recorded rather than hidden.
+    # The report now recommends THREE young components — Aegra unproven, OpenShell alpha, Vouch
+    # beta — and says so in its own closing section rather than in a footnote.
+    #
+    # `open-swe/` is tracked from the 0.1.2 release, so this evidence no longer describes
+    # something that can change without a commit. What is still unchecked is agreement between
+    # the directory tree and section 1's inventory of it: nothing fails if they diverge.
 
   # -- iterations ------------------------------------------------------------------------
   #

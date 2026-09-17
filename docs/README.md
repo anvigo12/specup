@@ -13,7 +13,7 @@
 | ↳ [Community submissions](runbooks/community-submission/README.md) | Prepared bodies for Spec Kit's catalog submission issues — discovery, not installation |
 | **[Dev: Taskfile](dev/taskfile.md)** | The task runner, and the boundary it must not cross |
 | **[Dev: Licensing](dev/licensing.md)** | BUSL-1.1 from 0.1.2 — what the grant covers, and what the change costs |
-| **[Research: agent stack](research/specup-agent-stack.md)** | The eleven components in `open-swe/`, the seven-stage local retrieval pipeline, and where the licence risk sits — one copyleft dependency, and three model weights that forbid commercial use. **Research — nothing decided** |
+| **[Research: agent stack](research/specup-agent-stack.md)** | The twelve components in `open-swe/`, the seven-stage retrieval pipeline, where the licence risk sits now that SpecUP composes this stack rather than shipping it, and the stack scored against the fifteen factors. **Research, plus ten decisions taken — none of them yet an ADR.** The eighteen questions are answered from established practice and reopen as each component matures |
 
 Component-level docs live next to the components:
 
