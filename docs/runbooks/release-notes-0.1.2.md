@@ -183,10 +183,17 @@ appear; both are additive and neither fails a project that has not adopted them:
 | `openup` extension | 0.1.2 | `validate_approvals.py`, `validate_docs.py`, every template rewritten, `__pycache__` excluded from the default perimeter, licence field |
 | `openup-governance` preset | 0.1.2 | `constitution-addendum.md` gains the meta-cognitive frame; licence field |
 | `specup` bundle | 0.1.2 | pins the above and the four workflows; licence field |
-| `openup-inception` | 0.1.1 | licence field |
-| `openup-elaboration` | 0.1.1 | licence field |
-| `openup-construction` | 0.1.1 | licence field |
-| `openup-transition` | 0.1.1 | licence field |
+| `openup-inception` | 0.1.2 | licence field |
+| `openup-elaboration` | 0.1.2 | licence field |
+| `openup-construction` | 0.1.2 | licence field |
+| `openup-transition` | 0.1.2 | licence field |
+
+**Every component ships as 0.1.2, and that is a deliberate change of habit.** 0.1.0 and 0.1.1
+let each component carry its own version, so the 0.1.1 release shipped four workflows still
+numbered 0.1.0 and a catalog in which the release tag and the component version disagreed. From
+this release the whole stack moves together: one number, whether or not a given component's
+bytes changed. It costs a version bump on components that did not need one, and it buys a
+reader being able to tell at a glance that six components came out of the same release.
 
 **The four workflows change digest for the first time since 0.1.0.** 0.1.1 was able to state
 that they rebuilt byte-identically and republish 0.1.0's assets; that is no longer true. Each

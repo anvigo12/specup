@@ -5,12 +5,12 @@ Installs the whole OpenUP governance stack as one unit: the `openup` extension, 
 
 | Component | Version | Kind | Why it is here |
 |---|---|---|---|
-| `openup` | 0.1.1 | extension | The validators, JSON Schemas, config and `/speckit.openup.*` commands |
-| `openup-governance` | 0.1.1 | preset | Composes governance into Spec Kit's own constitution, spec, plan, tasks, `/tasks` and `/implement` |
-| `openup-inception` | 0.1.0 | workflow | Lifecycle Objectives gate |
-| `openup-elaboration` | 0.1.0 | workflow | Lifecycle Architecture gate |
-| `openup-construction` | 0.1.0 | workflow | Initial Operational Capability gate, with a risk-first fan-out over ready work |
-| `openup-transition` | 0.1.0 | workflow | Product Release gate |
+| `openup` | 0.1.2 | extension | The validators, JSON Schemas, config and `/speckit.openup.*` commands |
+| `openup-governance` | 0.1.2 | preset | Composes governance into Spec Kit's own constitution, spec, plan, tasks, `/tasks` and `/implement` |
+| `openup-inception` | 0.1.2 | workflow | Lifecycle Objectives gate |
+| `openup-elaboration` | 0.1.2 | workflow | Lifecycle Architecture gate |
+| `openup-construction` | 0.1.2 | workflow | Initial Operational Capability gate, with a risk-first fan-out over ready work |
+| `openup-transition` | 0.1.2 | workflow | Product Release gate |
 
 ## Why a bundle at all
 
