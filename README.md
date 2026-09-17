@@ -8,11 +8,13 @@ phase workflows that enforce an [Eclipse OpenUP](https://www.eclipse.org/epf/)-s
 lifecycle with a seven-level WBS, an executable risk register, and bi-directional
 traceability.
 
-> **Status:** [0.1.1 released](https://github.com/anvigo12/specup/releases/tag/v0.1.1),
-> verified against spec-kit **1.0.6**, and installed end to end from the published catalog
-> into a clean project — see [Quick start](#quick-start). Spec Kit's `default` catalog carries
-> only components vendored into its wheel, so a self-hosted catalog is the supported route for
-> any third-party project, not a workaround.
+> **Status:** [0.1.2 released](https://github.com/anvigo12/specup/releases/tag/v0.1.2) under
+> **BUSL-1.1** — source-available, not open source; read
+> [Licensing](docs/dev/licensing.md) before you adopt it. Verified against spec-kit **1.0.6**
+> and **1.0.8.dev0**, and installed end to end from the published catalog into a clean project
+> — see [Quick start](#quick-start). Spec Kit's `default` catalog carries only components
+> vendored into its wheel, so a self-hosted catalog is the supported route for any third-party
+> project, not a workaround.
 
 ---
 
@@ -411,20 +413,35 @@ Run against spec-kit 1.0.6 with the real engine, using `tests/fixtures/good`:
 | High-exposure risk stripped of its mitigation | `Status: paused` at `[gate-failed]` — **final step never reached** |
 | `wbs.yaml` corrupted so the graph cannot load | `Status: failed`, `exited with code 2` |
 
-And the bundle, into a clean `specify init` project — both routes:
+And the bundle, into a clean `specify init` project.
+
+**Re-run at 0.1.2** against the published catalog, in a throwaway project, using the
+project-scoped `catalog add` route — and against **spec-kit 1.0.8.dev0**, not the 1.0.6 the
+engine rows above were run on. That is the first evidence behind `bundle.yml`'s
+`speckit_version: ">=1.0.0,<2.0.0"` at anything other than its floor:
 
 | Step | Result |
 |---|---|
-| `catalog/user/*.yml` copied to `~/.specify/`, **no `catalog add` at all** | all four resolve from user scope; `default` and `community` survive — `specify extension search` still finds 173 |
 | `specify bundle install specup` | `✓ Installed 'specup' (6 added, 0 already present)` |
-| `specify bundle list` after that | `specup v0.1.1 (6 components)` — a non-zero count is the proof the install was real |
-| Published archive digests | all **7** assets fetched from the release: HTTP 200, digest equal to `catalog/`, tag matching the version |
+| `specify bundle list` after that | `specup v0.1.2 (6 components)` — a non-zero count is the proof the install was real |
+| Published archive digests | all **7** assets fetched from the v0.1.2 release: HTTP 200, digest equal to `catalog/`, tag matching the version |
+| `specify extension list` | `openup (v0.1.2)`, 9 commands, 4 hooks, priority 10 |
+| `specify preset resolve spec-template` | `[append] openup-governance v0.1.2` composed onto core |
+| `specify workflow list` | four `openup-*` workflows, all `v0.1.2` |
+| 9 `speckit-openup-*` skills | registered under `.claude/skills/`, beside spec-kit's own 10 |
+| `init_openup.py` once | scaffold **and** the generated governance views |
+| `audit.py` on the fresh scaffold | exit **1** — `initial_risks_registered`, `wbs_levels_1_to_3_valid` and `requirements_have_owners` all FAIL, correctly. Exit 1 rather than 2 is also what proves the Python dependencies resolved |
+| `specify bundle build` | `specup-0.1.2.zip`, 3 files, fixed timestamps |
+| Clean rebuild of all 7 archives | byte-identical digests — reproducible |
+
+**Not re-run at 0.1.2**, and recorded as such rather than carried forward silently. These were
+exercised at 0.1.1 against spec-kit 1.0.6 and nothing since is known to have changed them:
+
+| Step | Result at 0.1.1 |
+|---|---|
+| `catalog/user/*.yml` copied to `~/.specify/`, **no `catalog add` at all** | all four resolve from user scope; `default` and `community` survive — `specify extension search` still finds 173 |
 | `install.py --project <clean project>` | 6 components installed in manifest order, pins checked |
-| `specify preset resolve spec-template` | `[append] openup-governance v0.1.1` composed onto core |
-| 9 `speckit.openup.*` skills | registered under `.claude/skills/` |
-| `init_openup.py` once | scaffold **and** the three generated governance documents; re-run reports `0 created, 35 preserved` |
-| `audit.py` on the fresh scaffold | exit **1** — `initial_risks_registered`, `wbs_levels_1_to_3_valid` and `requirements_have_owners` all FAIL, correctly |
-| `specify bundle build` | `specup-0.1.1.zip`, 3 files, fixed timestamps |
+| `init_openup.py` re-run | reports `0 created, 35 preserved` |
 | A pin bumped to `0.2.0` in `bundle.yml` | install refuses before touching the project |
 
 The three single-component routes were exercised separately against the published 0.1.1
