@@ -34,7 +34,7 @@
   Below the threshold because the manual is currently small enough for one person to re-read
   at release time. Raise the probability, not the threshold, when that stops being true.
 - **`RISK-0003`** — an error in SpecUP's own traceability graph would not be detectable by
-  SpecUP, because 83% of it is `asserted` and its own test-naming rule reproduces one edge.
+  SpecUP, because 84% of it is `asserted` and its own test-naming rule reproduces one edge.
   Mitigated by `WBS-1.1.3.1`; verified by `EVID-0006`, the regenerated coverage view, whose
   derived counts cannot be moved by relabelling.
 - **`RISK-0004`** — the scaffold seeds an operating contract into `src/`, which not every

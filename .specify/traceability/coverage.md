@@ -20,10 +20,10 @@
 
 | Provenance | Edges | Share | What it is worth |
 |---|---|---|---|
-| derived, reproduced | 13 | 17% | A rule re-ran and produced it (TRC-010) |
+| derived, reproduced | 13 | 16% | A rule re-ran and produced it (TRC-010) |
 | derived, unreproduced | 0 | 0% | Names a rule that is not implemented — **not evidence** |
 | approved, current | 0 | 0% | Signed off, and still matching what was signed (TRC-013) |
 | approved, stale | 0 | 0% | Approved for content that has since changed — **not evidence** |
-| asserted | 65 | 83% | An agent or author claim only |
+| asserted | 66 | 84% | An agent or author claim only |
 
-**17% of edges are independently verifiable.** That is the figure `traceability_final` scores at the release gate, and it counts only the two rows a third party could check without taking anyone's word for it. A graph can be 100% covered and still prove very little.
+**16% of edges are independently verifiable.** That is the figure `traceability_final` scores at the release gate, and it counts only the two rows a third party could check without taking anyone's word for it. A graph can be 100% covered and still prove very little.

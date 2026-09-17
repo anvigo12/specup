@@ -357,6 +357,13 @@ edges:
     relation: evidences
     to: WBS-1.1.2.7
     provenance: asserted
+  # Attached to the iteration node, not to a leaf, because 0.1.3 has no leaves for this work
+  # and inventing one would put the plan ahead of the decision to do it. EVID-0006 -> RISK-0003
+  # is the precedent for evidence that does not point at a WBS leaf.
+  - from: EVID-0008
+    relation: evidences
+    to: WBS-1.1.3
+    provenance: asserted
 
   # -- the 0.1.2 relicence ---------------------------------------------------------------
   #

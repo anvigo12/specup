@@ -6,7 +6,7 @@
 # so hand-editing this file does not make a claim true — it only makes the graph fail.
 
 schema_version: "1.0"
-generated_at: "2026-09-17T04:50:57Z"
+generated_at: "2026-09-17T10:57:04Z"
 
 edges:
   # test-file-naming-convention

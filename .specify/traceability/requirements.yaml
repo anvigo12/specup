@@ -487,6 +487,43 @@ artifacts:
     # covenant 1, and that the Spec Kit listing is lost. None of those is machine-checkable
     # and all three are load-bearing.
 
+  - id: EVID-0008
+    type: evidence
+    title: "The 0.1.3 agent stack, researched from sources before any of it is built"
+    status: REVIEW
+    owner: "maintainer"
+    source: docs/research/specup-agent-stack.md
+    # Evidence for an iteration that has no requirements yet, which is why this is the only
+    # thing registered for it. What a reviewer has to check is whether the claims are true —
+    # that Neo4j CE is GPL-3.0 and is now the only copyleft component left, that NVIDIA
+    # OpenShell is Apache-2.0 and attests its policy by hash, that jina-reranker-v3 and
+    # splade-v3 are non-commercial and EmbeddingGemma is not OSI, that Aegra pulls in none of
+    # the Elastic-licensed packages, that Langfuse is now owned by ClickHouse — and nothing
+    # here can check any of that. The report says so itself and cites each source so the
+    # reading can be repeated, which is the only verification a document of this kind offers.
+    #
+    # Two claims most deserve a second reading, because the report builds on them.
+    #
+    # The OpenShell claim: the sandbox is where SpecUP's containment claim would be made
+    # mechanical, and the report argues that OpenShell's hash-attested, fail-closed policy is
+    # the same idea as APV-002's content-bound approval, one layer down. If that reading is
+    # wrong, section 3.4 and the second row of section 10 are wrong with it.
+    #
+    # The model-licence claims in section 7.2: three widely recommended models are recorded as
+    # unusable in a product SpecUP sells. Model cards are edited more often than LICENSE files,
+    # so this is the fastest-decaying evidence in the report, and the most expensive to get
+    # wrong in either direction — a false positive rejects the best reranker available, and a
+    # false negative ships a non-commercial model to a paying customer.
+    #
+    # The report also recommends two young components, one badged alpha, and says so. And the
+    # `agent-inbox/` and `rag/` directory trees were created as part of writing it, which the
+    # report marks `Specified` rather than `Inferred`. A decision taken in a research document
+    # is not an ADR, and the report says that too.
+    #
+    # It also documents `open-swe/`, which is untracked and empty. The evidence therefore
+    # describes something that is not in git and can change without a commit. That is a real
+    # weakness of this artifact and it is recorded rather than hidden.
+
   # -- iterations ------------------------------------------------------------------------
   #
   # Registered because `belongs-to` points at them: `wbs-iteration-field` reads each node's

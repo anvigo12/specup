@@ -108,11 +108,11 @@ first execution of that guide rather than a reading of it.
 ```
 Phase CONSTRUCTION  →  GATE-INITIAL_OPERATIONAL_CAPABILITY   FAIL, exit 1
   forward 100%   backward 100%   verification 95%
-  78 edges: 13 derived (17%), 65 asserted (83%), 0 approved
+  79 edges: 13 derived (16%), 66 asserted (84%), 0 approved
 ```
 
 **The number that matters is not the coverage.** Backward coverage is 100% over a 17-file
-perimeter its author chose. Beside it: 83% of the graph is assertion nothing can confirm.
+perimeter its author chose. Beside it: 84% of the graph is assertion nothing can confirm.
 SpecUP's own `test-file-naming-convention` rule reproduces exactly one of its edges, because it
 names test files after the behaviour under test rather than after the module. `RISK-0003`
 records that.

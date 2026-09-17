@@ -32,19 +32,19 @@ python3 extensions/openup/scripts/python/audit.py
 
 | Metric | Value | What it means here |
 |---|---|---|
-| `edges` | 78 | 18 `refines`, 21 `implements`, 18 `verifies`, 1 `mitigates`, 7 `evidences`, 1 `tests`, 12 `belongs-to` |
+| `edges` | 79 | 18 `refines`, 21 `implements`, 18 `verifies`, 1 `mitigates`, 8 `evidences`, 1 `tests`, 12 `belongs-to` |
 | `perimeter_files` | 17 | the Python modules under `extensions/openup/scripts/python/` |
 | `forward_coverage` | 100% | every requirement reaches an implementer |
 | `backward_coverage` | 100% | every in-perimeter file reaches a requirement |
 | `verification_coverage` | **95%** | 18 of 19 — `NON-FR-DOCS-0001` has no verifier |
 | `orphans` | 0 | |
 | `derived_verified` | 13 | reproduced from the filesystem this run |
-| `asserted_share` | **83%** | one person's judgement, unchecked |
+| `asserted_share` | **84%** | one person's judgement, unchecked |
 | `approved_verified` | 0 | nothing is signed; see `RISK-0001` |
 
 ## The number that matters, and it is not the coverage
 
-**83% of this graph is `asserted`, and 17% is machine-reproducible.** Backward coverage of
+**84% of this graph is `asserted`, and 16% is machine-reproducible.** Backward coverage of
 100% over 17 files is a true statement about a perimeter chosen by the same person who wrote
 the edges. `existing-project.md` says an existing project reporting 100% on day one "has not
 been governed; it has been decorated" — the defence against that reading is not a lower
@@ -122,11 +122,17 @@ that followed it, and is listed here because it is the same kind of hole.
 | Nothing read the `license:` field in any of the seven published manifests — `build_catalog.py` republishes it verbatim as display-only, so a stale one would have restated withdrawn terms in a public catalog with every test green | `NON-FR-DIST-0001` and `tests/test_license.py`, which reads `LICENSE` rather than hardcoding a licence name |
 
 The first four were found by running the tool, not by reading the code. That is the argument
-for doing this at all, and it is worth being precise about what it cost: one sitting, and an
-output of 78 edges, 19 requirements, 14 WBS nodes and 6 risks — of which 65 edges are
-assertions no check can confirm. `README.md` quotes that as the one measurement of governance
-overhead SpecUP has, and says plainly that one project measured by its own author is not a
-measurement.
+for doing this at all, and it is worth being precise about what it cost: **one sitting, and an
+output of 74 edges, 18 requirements, 13 WBS nodes and 4 risks** over a 17-file perimeter.
+`README.md` quotes those figures as the one measurement of governance overhead SpecUP has, and
+says plainly that one project measured by its own author is not a measurement.
+
+**The graph is larger than that now, and the difference is not part of the measurement.** It
+stands at 79 edges, 19 requirements, 14 WBS nodes and 6 risks — of which 66 edges are
+assertions no check can confirm. The five extra edges came from the relicence
+(`NON-FR-DIST-0001`, `WBS-1.1.2.7`, `RISK-0005`, `RISK-0006`) and from `EVID-0008`, the 0.1.3
+stack research. Quoting the current total as the cost of the sitting would inflate the one
+number this project has about its own overhead, which is the direction that flatters it.
 
 ## Key identifiers in this scope
 

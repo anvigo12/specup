@@ -24,7 +24,8 @@
         implements `NON-FR-DOCS-0001`
       - **`WBS-1.1.2.7`** Relicense from MIT to BUSL-1.1 — *L4 Capability / Feature* · implementation · maintainer · ITER-C-02 · done<br>
         implements `NON-FR-DIST-0001`; evidenced by `EVID-0007`
-    - **`WBS-1.1.3`** ITER-C-03 — SpecUP 0.1.3 — *L3 Iteration* · structural · maintainer · ITER-C-03 · planned
+    - **`WBS-1.1.3`** ITER-C-03 — SpecUP 0.1.3 — *L3 Iteration* · structural · maintainer · ITER-C-03 · planned<br>
+      evidenced by `EVID-0008`
       - **`WBS-1.1.3.1`** Make SpecUP's own test suite derivable — *L4 Capability / Feature* · risk-mitigation · maintainer · ITER-C-03 · planned<br>
         mitigates `RISK-0003`
 

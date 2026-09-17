@@ -382,3 +382,199 @@ release whose §9 is the honesty section is the wrong trade.
 7. **Release gate:** `task release:check`, then the six steps of
    `docs/runbooks/publishing-to-spec-kit.md`, including the clean-project install in §5 — which
    must report **six** components, not zero.
+
+---
+---
+
+# ADDENDUM — `docs/research/specup-agent-stack.md`
+
+*Added 2026-09-17, after the 0.1.2 doc sweep. This is a separate deliverable from everything
+above: a research report, not an implementation. It feeds §7 and does not change it.*
+
+## Context
+
+`open-swe/` is nine components expressed as **17 filesystem paths containing zero bytes**. Every
+file is empty; the directory layout is the entire specification. Nothing in the repository
+explains it — `grep` finds `valkey`, `plane.so`, `bm25s` and `docker-sandbox` in **no document at
+all**, and the one place the folder is mentioned is this plan's §7 *Loose end*, which is
+**already stale**: it describes `openswe/`, "six empty dirs", and a `bbpe/bbpe-codec.toon` that
+no longer exists.
+
+§7 *Loose end* set the condition: *"Either record their intent or remove them before 0.1.3."*
+This report is the first half of that. It exists so the 0.1.3 stack is argued from sources
+before any of it is built, and so that the two licence problems below are found now rather than
+after the compose file has content.
+
+**The governing constraint is `AGENTS.md` — "Resolve, or stop — never infer".** An empty
+directory named `neo4j` states that Neo4j is wanted. It does not state what for. The report
+therefore marks every claim as **Verified** (read from an upstream source, cited) or
+**Inferred** (read off the folder layout), and never blurs the two. A report that asserted a
+role for each directory would be the invented governing artifact that rule exists to forbid.
+
+## What the research already established
+
+Recorded so it is not re-derived. Every item below was fetched this session.
+
+**The layout, exactly as it stands:**
+
+```
+agent/  db/{clickhouse,neo4j,valkey}/  docker-compose.yml  docker-sandbox/
+langfuse/  langgraph/{aegra/,langgraph.json}  plane.so/  rag/{bbpe/tokenizer.json,bm25s/corpus.jsonl}
+```
+
+**The two findings that make the stack cohere:**
+
+1. **Open SWE's `langgraph.json` declares exactly five graphs** — `agent`, `reviewer`,
+   `analyzer`, `chat`, `scheduler` — and every entrypoint is a `traced_*` wrapper
+   (`agent.graphs.agent:traced_agent`). That is the seam `langfuse/` plugs into, and it makes
+   the `langgraph/langgraph.json` placement correct rather than arbitrary.
+2. **Aegra's config is `aegra.json`, not `langgraph.json`** — same `graphs`/`dependencies`/
+   `http`/`store` shape, different filename. The layout assumes one file; the two projects want
+   two. Small, real, and worth stating.
+
+**Licences, each read from source:**
+
+| Component | Licence | Note |
+|---|---|---|
+| Open SWE | MIT | now *"an open-source software factory built on Deep Agents"* — the README has moved on from §7's reading |
+| Aegra | Apache-2.0 | compose uses `pgvector/pgvector:pg18` + `redis:7-alpine` |
+| LangGraph / deepagents | MIT | |
+| Langfuse | **MIT core**, `/ee` dirs commercial | EE = RBAC, audit logs, SCIM, retention, masking |
+| ClickHouse | Apache-2.0 | |
+| Valkey | BSD-3-Clause | Linux Foundation fork of Redis 7.2.4, wire-compatible |
+| bm25s | MIT *(re-verify)* | Numpy/Scipy only; eager sparse scoring |
+| **Neo4j Community** | **GPL-3.0** | Enterprise is commercial-only |
+| **Plane Community** | **AGPL-3.0** | §13 network clause |
+
+**deepagents still ships no Docker sandbox backend** — providers are LangSmith, Daytona, E2B,
+Modal, Runloop, Vercel, AgentCore, NVIDIA OpenShell. `SandboxBackendProtocol` requires one
+method, `execute()`; `read`/`write`/`edit`/`delete`/`ls`/`glob`/`grep` are all built on it by
+`BaseSandbox`. So `docker-sandbox/` is genuinely additive and plausibly upstreamable, and §7's
+"every file and shell operation funnels through one method" finding survives.
+
+**Three services each require PostgreSQL** (Aegra, Plane, Langfuse) and **three each require
+Redis** (same three). `db/` has `valkey` but **no `postgres`**, and Langfuse v3 additionally
+requires an S3/blob store that the layout has nowhere to put.
+
+## The report
+
+**One new file: `docs/research/specup-agent-stack.md`.** Prose in the house voice — the
+`docs/dev/licensing.md` register: audience line, tables over paragraphs, the cost stated rather
+than omitted, and a closing *"What checks any of this"*. ASD-STE100 per `language-rules.md`.
+
+| § | Content |
+|---|---|
+| 1 | **What `open-swe/` is today** — the inventory table, 17 paths / 0 bytes, and the Verified-vs-Inferred contract stated up front |
+| 2 | **Correcting the record** — §7 *Loose end* describes a folder that no longer exists; name the drift rather than silently supersede it |
+| 3 | **The nine components** — one subsection each: what it is, licence, what it requires, upstream citation, and its role marked Verified or Inferred |
+| 4 | **How they compose** — the request lifecycle, end to end: Plane work item → webhook → Aegra run → Open SWE `agent` graph → retrieval (`bm25s` lexical + Neo4j structural, tokenised by `bbpe`) → `docker-sandbox` `execute()` → PR → `reviewer` graph → `traced_*` spans to Langfuse → ClickHouse → status back to Plane |
+| 5 | **The shared substrate** — one Valkey and one Postgres serving three consumers each; which are genuinely separable and which are not |
+| 6 | **Licences** — the table above, then the two copyleft components in detail |
+| 7 | **Permissive alternatives** — see below |
+| 8 | **What the layout does not have** — no `postgres/`, no blob store, no vector store, no secrets, no ingress; `docker-compose.yml` is empty |
+| 9 | **Where this argues with SpecUP** — `NON-FR-CORE-0001` filesystem authority vs. five stateful services; `requires-python` `>=3.10` → `>=3.12`; no `{{ inputs.* }}` in a `run:` field (`tests/test_workflows.py:84-99`); exit code `2` inverting at the broker; a bundle cannot enforce |
+| 10 | **Open questions** — named as ADR candidates, decided nowhere in this document |
+| 11 | **Sources** — every URL, with what was read from it |
+
+### §6–§7, the licence sections
+
+Neo4j CE is **GPL-3.0** and Plane CE is **AGPL-3.0**, under a product licensed BUSL-1.1 and
+intended for sale. The report separates the two questions that get conflated:
+
+- **Running them** as separate processes over Bolt and REST. On the common reading this is not a
+  derivative work, and `docker-compose.yml` references images rather than redistributing them.
+- **Shipping them** — vendoring, forking, or publishing a derived image — which is where GPL-3.0
+  reciprocity and AGPL §13 actually bite.
+
+Then the substitutes, with what each costs:
+
+- **The graph.** The strongest candidate is not another graph database but **Apache AGE**
+  (Apache-2.0) or recursive CTEs **in the PostgreSQL the stack already mandates** — removing a
+  service and the GPL exposure together. Memgraph (BSL) and ArangoDB (BUSL-1.1) are the same
+  licence class as SpecUP itself, which is worth saying plainly.
+- **The tracker.** Open SWE's native surface is already **GitHub issues and PR comments**, so
+  Plane is an additional surface rather than a required one. Most self-hostable trackers are
+  copyleft, so the honest conclusion is likely *integrate with the tracker the customer already
+  runs* rather than *self-host a different one*.
+
+**Every licence in §7 is re-read from the project's own `LICENSE` at write time.** The candidate
+list above came from a single reading and several of these projects have relicensed before —
+Redis, ArangoDB and Neo4j Enterprise all did. Per `AGENTS.md`, a licence stated from memory is
+exactly the class of value that arrives with false confidence.
+
+## Governance registration — evidence only
+
+Per your decision: an evidence artifact and one edge. **No new requirement and no new WBS node** —
+`wbs.yaml:269-275` refuses to decompose 0.1.3 because its requirements do not exist yet, and
+inventing one to hang research on is the ordering `specup.md` §39 prevents.
+
+- `.specify/traceability/requirements.yaml` — `EVID-0008`, `type: evidence`, `status: REVIEW`,
+  `source: docs/research/specup-agent-stack.md`, with a comment saying why it is a document and
+  not a test: what a reviewer must check is whether the licence and dependency claims are true,
+  and none of that is machine-checkable.
+- `.specify/traceability/traceability.yaml` — `EVID-0008 evidences WBS-1.1.3`, `provenance:
+  asserted`. `EVID-0006 → RISK-0003` is the precedent for evidence attaching to a non-leaf.
+- `.specify/wbs/wbs.yaml` — add `evidence: [EVID-0008]` to `WBS-1.1.3`. The schema permits it on
+  any node (`wbs.schema.json:82-86`) and `WBS-1.1.3` is `planned`, so no `DOD-*` check fires.
+
+### The count ripple — do not hand-compute it
+
+This adds one artifact and one edge: **78 → 79**, and `evidences` 7 → 8. That number is quoted
+in six places, two of them generated:
+
+```
+render_views.py --write   regenerates  coverage.md, traceability.md
+hand-edited                            .specify/traceability/index.md:35,42,47,126
+                                       .specify/risks/index.md:37
+                                       docs/runbooks/release-notes-0.1.2.md:111,115
+```
+
+Run `derive_edges.py --write` then `render_views.py --write`, **read the regenerated
+percentages, and propagate those**. Do not arithmetic them by hand — `asserted_share` crosses a
+rounding boundary, and a reconstructed figure is the defect `AGENTS.md:57-66` is about.
+`derived.yaml` should not change: no WBS node is added, so `wbs-iteration-field` derives nothing
+new and TRC-011 stays green.
+
+The release notes are editable because **0.1.2 is not tagged yet**. Had it shipped, the correct
+move would be to leave them alone as a record.
+
+## Files
+
+| File | Change |
+|---|---|
+| `docs/research/specup-agent-stack.md` | **new** — the report |
+| `docs/README.md` | +1 row, new `**Research**` group after Dev |
+| `.specify/traceability/requirements.yaml` | `EVID-0008` |
+| `.specify/traceability/traceability.yaml` | one `evidences` edge |
+| `.specify/wbs/wbs.yaml` | `evidence:` on `WBS-1.1.3` |
+| `.specify/traceability/{coverage,traceability}.md` | regenerated |
+| `.specify/traceability/index.md`, `.specify/risks/index.md`, `docs/runbooks/release-notes-0.1.2.md` | counts |
+
+`README.md`'s table is left alone — it lists what a user of SpecUP needs, and this is internal
+research. Say so rather than leaving it as an oversight.
+
+## Verification
+
+1. **The inventory is reproducible.** `find open-swe -mindepth 1 | sort` and
+   `find open-swe -type f -size +0c` — the second must stay empty, or the report's premise has
+   changed and §1 is wrong.
+2. **Every licence claim is re-read at write time** from the project's own `LICENSE`, not from
+   this plan. Say which reading was done, per `AGENTS.md:74-75`.
+3. **Every URL in §11 resolves and says what it is cited for.** A citation that does not support
+   its claim is worse than none.
+4. `python3 extensions/openup/scripts/python/audit.py` — the gate must still report exactly
+   `TRC-006` at 95% and `acceptance_scenarios_passing`. **A third failure means this change
+   broke something**; a repaired one means a number was tuned.
+5. `task test` and `task test:engine` — the pair, unchanged. No code is touched, so any movement
+   is a signal.
+6. `git diff --stat` — `.specify/traceability/derived.yaml` must be **absent** from it.
+
+## Not in scope
+
+- Writing anything into `open-swe/`, or committing it. The folder stays untracked and empty;
+  the report records intent, and whether the placeholders are kept or deleted is the second half
+  of §7's *Loose end* and a separate decision.
+- Any ADR. §10 names the candidates and decides none of them.
+- Any dependency, `requires-python` bump, or manifest change.
+- The 0.1.2 release — still `release:catalog`, the tag, and the GitHub release, still yours to
+  trigger.

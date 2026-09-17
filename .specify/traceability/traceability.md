@@ -4,7 +4,7 @@
 
 *Generated from `the configured traceability stores`. Edit the source, not this file.*
 
-Inverses are derived at load time and never stored, so each edge appears once, in active voice. 78 edge(s) across 2 store(s).
+Inverses are derived at load time and never stored, so each edge appears once, in active voice. 79 edge(s) across 2 store(s).
 
 ## belongs-to (12)
 
@@ -23,7 +23,7 @@ Inverses are derived at load time and never stored, so each edge appears once, i
 | `WBS-1.1.3` | `ITER-C-03` | derived (`wbs-iteration-field`) | active | `.specify/traceability/derived.yaml` |
 | `WBS-1.1.3.1` | `ITER-C-03` | derived (`wbs-iteration-field`) | active | `.specify/traceability/derived.yaml` |
 
-## evidences (7)
+## evidences (8)
 
 | From | To | Provenance | Status | Declared in |
 |---|---|---|---|---|
@@ -34,6 +34,7 @@ Inverses are derived at load time and never stored, so each edge appears once, i
 | `EVID-0005` | `WBS-1.1.2.4` | asserted | active | `.specify/traceability/traceability.yaml` |
 | `EVID-0006` | `RISK-0003` | asserted | active | `.specify/traceability/traceability.yaml` |
 | `EVID-0007` | `WBS-1.1.2.7` | asserted | active | `.specify/traceability/traceability.yaml` |
+| `EVID-0008` | `WBS-1.1.3` | asserted | active | `.specify/traceability/traceability.yaml` |
 
 ## implements (21)
 

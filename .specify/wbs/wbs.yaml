@@ -283,6 +283,12 @@ nodes:
     status: planned
     owner: "maintainer"
     kind: structural
+    # The research report, attached to the iteration rather than to a leaf. There is no leaf to
+    # attach it to, and adding one would decompose 0.1.3 ahead of the requirements that justify
+    # it — the thing the note above says this file will not do. `planned` means no DOD-* check
+    # reads this field yet; it is here so `impact.py` can reach the research from the iteration.
+    evidence:
+      - EVID-0008
 
   - id: WBS-1.1.3.1
     name: "Make SpecUP's own test suite derivable"
