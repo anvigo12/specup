@@ -1,0 +1,144 @@
+# Hooks that enforce four claims this project makes about itself.
+#
+# This file is deliberately small. SpecUP's own enforcement lives in
+# `extensions/openup/scripts/python/`, where `specify extension add` owns the
+# directory and tampering is visible; a pre-commit hook lives at a project root,
+# where editing it is an unremarkable act. So nothing governance-bearing is
+# enforced here. What is here is the set of claims that are cheap to check, that
+# would otherwise be checked by nobody, and whose failure is silent:
+#
+#   1. No private key is ever committed.  Twelve-factor's factor III litmus test
+#      is "whether the codebase could be made open source at any moment, without
+#      compromising any credentials", and for a source-available project that is
+#      not a thought experiment.  `docs/research/specup-agent-stack.md` section
+#      3.12 says the agent's signing key must not live in this repository, and a
+#      directory named `open-swe/vouch/` is exactly where somebody will put one.
+#   2. No payload lands in `open-swe/`.  Decision 5 is that SpecUP ships no model
+#      weights and nothing else obtainable online.  Section 1 of that report
+#      publishes `find open-swe -type f -size +0c` as the way to confirm its own
+#      premise, and then observes that nothing runs it.  Now something does.
+#   3. No large file is added.  The same decision, caught one step earlier and
+#      anywhere in the tree rather than only under `open-swe/`.
+#   4. Commit messages follow Conventional Commits.  Decision 10, and the only
+#      one of the ten decisions in that report with an enforcement mechanism
+#      that exists rather than one that is merely possible.
+#
+# Two things are deliberately absent.
+#
+# The test suite is not here. `task test` and `task test:engine` run it, the
+# pair is what proves the skips are honest, and duplicating that invocation into
+# a hook would create the second thing to keep in sync that
+# `tests/test_taskfile_boundary.py` exists to argue against.
+#
+# `audit.py` is not here either, and this is the more important omission: the
+# audit currently exits 1 on two documented failures (TRC-006 at 95%, and no
+# acceptance test evidence). Wiring it into a hook would either block every
+# commit or invite somebody to tune a threshold to make the hook pass, which is
+# the exact defect `docs/guide/using-specup.md` warns about — "lower a threshold
+# only as a decision, never to make a run go green".
+#
+# Install with:  pre-commit install --install-hooks
+# The commit-msg hook needs its own install type; `default_install_hook_types`
+# below makes the single command cover both.
+
+minimum_pre_commit_version: "3.2.0"
+
+default_install_hook_types:
+  - pre-commit
+  - commit-msg
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      # -- the four claims -------------------------------------------------
+      - id: detect-private-key
+
+      - id: check-added-large-files
+        # 512 KB. The largest tracked file today is a 216 KB Spec Kit cache and
+        # the largest hand-written one is this repository's own research report
+        # at ~204 KB, so the limit leaves room for prose and stops a model
+        # checkpoint, which is three orders of magnitude larger.
+        args: [--maxkb=512]
+
+      # -- structural correctness of the governance tree --------------------
+      - id: check-yaml
+
+      - id: check-json
+        # `open-swe/` is excluded because claim 2 above requires it. Two of its
+        # four placeholder files are named `.json` and hold zero bytes, which is
+        # not valid JSON and is the whole point: the layout is the
+        # specification, and a file with content would break the premise the
+        # `open-swe-holds-no-payload` hook enforces. The two hooks would
+        # otherwise contradict each other, and this is which one wins.
+        exclude: '^open-swe/'
+
+      - id: check-merge-conflict
+      - id: check-case-conflict
+
+      # -- whitespace --------------------------------------------------------
+      # Two exclusions, both for a stated reason rather than for convenience.
+      #
+      # `.specify/*/.cache/` holds files Spec Kit generates and does not
+      # newline-terminate. Rewriting them here is churn in a directory this
+      # project does not own.
+      #
+      # `specup.md` ends with a blank line, and `end-of-file-fixer` would trim
+      # it. That is a one-byte change that takes the file from 3,382 lines to
+      # 3,381 — and `docs/research/specup-agent-stack.md` cites "3,382 lines" as
+      # a Verified measurement. Editing the source document so a formatting hook
+      # is satisfied, and then editing the citation to match, is the wrong
+      # direction: the document is the thing being measured. It stays
+      # byte-stable, and it is not packaged into any component, so nothing else
+      # turns on it.
+      - id: end-of-file-fixer
+        exclude: '^(\.specify/[^/]+/\.cache/|specup\.md$)'
+      - id: trailing-whitespace
+        exclude: '^\.specify/[^/]+/\.cache/'
+      - id: mixed-line-ending
+        args: [--fix=lf]
+        exclude: '^\.specify/[^/]+/\.cache/'
+
+  - repo: https://github.com/compilerla/conventional-pre-commit
+    rev: v4.4.0
+    hooks:
+      - id: conventional-pre-commit
+        stages: [commit-msg]
+        # The type list is closed on purpose. Conventional Commits permits any
+        # type beyond `feat` and `fix`; an open list means every author invents
+        # one, and the log stops being parseable, which was the whole point.
+        args:
+          - feat
+          - fix
+          - docs
+          - test
+          - refactor
+          - perf
+          - build
+          - ci
+          - chore
+          - revert
+
+  - repo: local
+    hooks:
+      - id: open-swe-holds-no-payload
+        name: open-swe/ holds no file with content
+        description: >-
+          Decision 5, and the premise section 1 of the agent-stack report
+          publishes about itself. The layout is the specification; the moment a
+          file in it has bytes, that report is describing something that no
+          longer exists.
+        entry: |
+          bash -c '
+          found=$(find open-swe -type f -size +0c)
+          if [ -n "$found" ]; then
+            echo "open-swe/ must contain no file with content."
+            echo "These have bytes:"
+            echo "$found"
+            echo
+            echo "See docs/research/specup-agent-stack.md section 1."
+            exit 1
+          fi'
+        language: system
+        pass_filenames: false
+        always_run: true

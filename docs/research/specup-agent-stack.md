@@ -1852,15 +1852,19 @@ the litmus test.
 remaining eight are rules about what SpecUP ships or how it is built, checkable by nobody. Three of
 the fifteen factors can be checked by a program, and each factor supplies its own test:
 
-| Could be checked | How |
-|---|---|
-| **Factor III's litmus test** | no credential pattern in any tracked file — a grep, and precisely what a pre-commit hook is for |
-| **Factor V's release id** | an index artifact with no recorded commit, model revision and chunker version is rejected at load rather than used |
-| **Factor XII's shipping rule** | the indexing job lives in the same package as the graphs, not in a script somebody runs by hand |
+| Could be checked | How | Status |
+|---|---|---|
+| **Factor III's litmus test** | no credential pattern in any tracked file — a grep, and precisely what a pre-commit hook is for | **Written.** `detect-private-key` in `.pre-commit-config.yaml` |
+| **Factor V's release id** | an index artifact with no recorded commit, model revision and chunker version is rejected at load rather than used | Not written. There is no index yet to reject |
+| **Factor XII's shipping rule** | the indexing job lives in the same package as the graphs, not in a script somebody runs by hand | Not written. There is no indexing job yet |
 
-Nothing enforces any of them today. **The difference from the rest of this report is that these
-three are small enough to be real** — and a check that could exist and does not is a different kind
-of gap from a check that cannot.
+**One of the three now exists**, along with two checks this report did not ask for and should have:
+`check-added-large-files` catches a model checkpoint before
+[decision 5](#121-decisions-taken) is broken, and a local hook fails the commit if any file under
+`open-swe/` acquires bytes — which is [§1](#1-what-open-swe-is-today)'s published premise, enforced
+for the first time. **The difference from the rest of this report is that these were small enough to
+be real**, and a check that could exist and does not is a different kind of gap from a check that
+cannot.
 
 ---
 
@@ -2300,9 +2304,11 @@ this page surviving. Three of the fifteen factors are checkable by a program rat
 — no credential in a tracked file, no index artifact without a release id, no indexing job living
 outside the package it indexes for
 ([§11.7](#117-what-adopting-this-costs-and-the-three-things-it-makes-checkable)) — and decision 10's
-commit format is checkable by a `commit-msg` hook. **Of those four, only the commit hook is written.**
-The other three could be written in an afternoon, which makes not writing them a choice rather than
-a limitation.
+commit format is checkable by a `commit-msg` hook. **Two of those four are now written**, in
+`.pre-commit-config.yaml`: the commit format, and factor III's litmus test as `detect-private-key`.
+The other two wait on artifacts that do not exist yet — there is no index to reject and no indexing
+job to misplace — so not writing them is a schedule rather than a choice, which is the first time
+that has been true of anything in this section.
 
 **And decision 9 is the opposite case — the one that most needs a verifier and can least have one.**
 It adopts eighteen answers on the strength of outside practice and promises to revisit each as its
@@ -2323,9 +2329,12 @@ research report** — which is exactly the shape of claim this section exists to
   change with no commit, no diff and no review — which is what happened to the §7 note this
   document corrects in [§2](#2-correcting-the-record), and it produced no diff because there was
   nothing to diff. The `.gitkeep` files fix that: the layout is now reviewable, and a change to
-  it shows up in a pull request like anything else. **What is still unchecked is agreement between
-  the folder and this page.** Nothing fails if §1's inventory stops matching
-  `find open-swe -mindepth 1 | sort`, and that is a check somebody could actually write.
+  it shows up in a pull request like anything else. **And the premise is now checked rather than
+  merely published:** a pre-commit hook runs `find open-swe -type f -size +0c` and fails the commit
+  if anything under `open-swe/` acquires bytes, so [§1](#1-what-open-swe-is-today)'s central claim
+  can no longer quietly stop being true. **What is still unchecked is the inventory itself** —
+  nothing fails if §1's list of 56 paths stops matching `find open-swe -mindepth 1 | sort`. Half of
+  the check somebody could write now exists, and it is the half that was load-bearing.
 - **Every role in §3 marked *Inferred* is a guess**; *Specified* means this report chose a shape;
   *Decided* means the project owner ruled and no ADR has been written yet. All three are weaker
   than they look, and in different ways. Do not let any of them erode into "the layout says so".
