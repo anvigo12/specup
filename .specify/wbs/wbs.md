@@ -22,6 +22,8 @@
         implements `REQ-AUDIT-0001`
       - **`WBS-1.1.2.6`** Documentation sweep and the 0.1.2 release — *L4 Capability / Feature* · release · maintainer · ITER-C-02 · planned<br>
         implements `NON-FR-DOCS-0001`
+      - **`WBS-1.1.2.7`** Relicense from MIT to BUSL-1.1 — *L4 Capability / Feature* · implementation · maintainer · ITER-C-02 · done<br>
+        implements `NON-FR-DIST-0001`; evidenced by `EVID-0007`
     - **`WBS-1.1.3`** ITER-C-03 — SpecUP 0.1.3 — *L3 Iteration* · structural · maintainer · ITER-C-03 · planned
       - **`WBS-1.1.3.1`** Make SpecUP's own test suite derivable — *L4 Capability / Feature* · risk-mitigation · maintainer · ITER-C-03 · planned<br>
         mitigates `RISK-0003`
@@ -35,4 +37,5 @@
 - `WBS-1.1.2.4` — Two directories authored as one artifact. The example is only coherent as a whole, so decomposing it would produce nodes that cannot be finished independently.
 - `WBS-1.1.2.5` — Following docs/guide/existing-project.md end to end on this repository. The guide is the decomposition, and duplicating its phases here would create two plans.
 - `WBS-1.1.2.6` — The six steps are in docs/runbooks/publishing-to-spec-kit.md, which is executed rather than planned. A node per step would be a copy that goes stale.
+- `WBS-1.1.2.7` — One decision with one owner. Decomposing a licence change into steps would imply the steps could be taken separately, and a half-applied relicense is the failure mode.
 - `WBS-1.1.3.1` — One decision with two candidate implementations, neither chosen. Decomposing before the choice would bake in an answer that has not been argued.

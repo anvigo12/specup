@@ -5,7 +5,7 @@ workflow:
   name: "OpenUP Elaboration"
   version: "0.1.0"
   author: "Aniket Gore"
-  license: "MIT"
+  license: "BUSL-1.1"
   repository: "https://github.com/anvigo12/specup"
   description: "Establish an executable architecture and retire the highest-exposure risks, then hold the Lifecycle Architecture milestone against evidence."
 

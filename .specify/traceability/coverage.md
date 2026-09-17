@@ -9,21 +9,21 @@
 | Metric | Value | Threshold |
 |---|---|---|
 | Requirement → implementation | 100% | 100% |
-| Requirement → verification | 94% | 100% |
+| Requirement → verification | 95% | 100% |
 | Source → requirement (backward) | 100% | 100% |
 | Acceptance criterion → scenario | 100% | 100% |
 | Source → test | 6% | reported, not gated |
-| Open risk → mitigation | 33% | 100% for high exposure |
+| Open risk → mitigation | 20% | 100% for high exposure |
 | Open risk → evidence | 0% | reported, not gated |
 
 ## Evidence quality
 
 | Provenance | Edges | Share | What it is worth |
 |---|---|---|---|
-| derived, reproduced | 12 | 16% | A rule re-ran and produced it (TRC-010) |
+| derived, reproduced | 13 | 17% | A rule re-ran and produced it (TRC-010) |
 | derived, unreproduced | 0 | 0% | Names a rule that is not implemented — **not evidence** |
 | approved, current | 0 | 0% | Signed off, and still matching what was signed (TRC-013) |
 | approved, stale | 0 | 0% | Approved for content that has since changed — **not evidence** |
-| asserted | 62 | 84% | An agent or author claim only |
+| asserted | 65 | 83% | An agent or author claim only |
 
-**16% of edges are independently verifiable.** That is the figure `traceability_final` scores at the release gate, and it counts only the two rows a third party could check without taking anyone's word for it. A graph can be 100% covered and still prove very little.
+**17% of edges are independently verifiable.** That is the figure `traceability_final` scores at the release gate, and it counts only the two rows a third party could check without taking anyone's word for it. A graph can be 100% covered and still prove very little.

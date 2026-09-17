@@ -28,15 +28,26 @@ This has to come first, because it constrains the architecture rather than the s
 | Open SWE itself | open source, on GitHub | usable |
 | **`langgraph-api` — the standalone Agent Server binary** | **Elastic License 2.0** | **production self-hosting needs a commercial key** |
 
-SpecUP is MIT. A release that made SpecUP depend on an ELv2 server would quietly convert a
-permissively licensed governance tool into one that cannot be run in production without a
-LangChain Enterprise agreement — and it would do so without saying so, which is precisely the
-class of defect this project exists to reject.
+> **Superseded in part, 2026-09-17.** SpecUP is no longer MIT — 0.1.2 relicensed it to
+> BUSL-1.1 ([`docs/dev/licensing.md`](../dev/licensing.md)). The conclusion below survives
+> unchanged and the reasoning for it does not, which is worth reading rather than skipping:
+> becoming source-available grants no rights to anyone else's source-available software, so
+> Elastic's licence binds SpecUP exactly as it did before. What changed is who pays. The
+> constraint used to protect SpecUP's *users* from an unannounced commercial dependency; it now
+> also protects SpecUP's *customers* from a second vendor's agreement on top of the one they
+> already have. Read "MIT" below as "the licence SpecUP was under when this was written."
+
+SpecUP was MIT when this was written. A release that made SpecUP depend on an ELv2 server would
+quietly convert a permissively licensed governance tool into one that cannot be run in
+production without a LangChain Enterprise agreement — and it would do so without saying so,
+which is precisely the class of defect this project exists to reject.
 
 **Two decisions follow, and they are not negotiable in this release:**
 
-1. **SpecUP core stays MIT and Open-SWE-free.** The `specup` bundle of 0.1.1 gains nothing and
+1. **SpecUP core stays Open-SWE-free.** The `specup` bundle of 0.1.1 gains nothing and
    loses nothing. A user who wants governance over their own agent keeps exactly what they have.
+   *(As written this said "stays MIT and Open-SWE-free". The MIT half is spent; the
+   Open-SWE-free half is the part that was actually load-bearing, and it holds.)*
 2. **Open SWE adoption ships as a separate, optional bundle: `specup-openswe`.** It declares the
    licence position in its manifest, and the installer surfaces it before writing a file.
 
@@ -388,7 +399,7 @@ Risk-first, as OpenUP requires — the two items that could invalidate the relea
 
 | # | Item | Retires |
 |---|---|---|
-| 1 | **ADR-0001: the licence position.** Prove a graph runs in-process on MIT `langgraph`, with no Agent Server. | The risk that the whole release is unshippable under MIT |
+| 1 | **ADR-0001: the licence position.** Prove a graph runs in-process on MIT `langgraph`, with no Agent Server. | The risk that adopting Open SWE forces every SpecUP operator into a LangChain Enterprise agreement |
 | 2 | **Spike: the capability broker.** `resolve_capabilities.py` + rendered docker/seccomp/proxy config. One end-to-end denial and one grant. | The risk that the central idea does not survive contact with a real sandbox |
 | 3 | `specup-openswe` bundle skeleton; licence surfaced at install | — |
 | 4 | Sandbox image: `cap-drop=ALL`, non-root, read-only root, egress proxy | — |

@@ -345,6 +345,21 @@ the combination `bundle.yml` exists to prevent.
 
 ## 7. Optional — submit for discovery
 
+> **From 0.1.2 this step does not apply. Skip it.**
+>
+> Spec Kit's extension publishing guide requires *"**License**: Open source license file (MIT,
+> Apache 2.0, etc.)"* among its submission prerequisites, and SpecUP is now BUSL-1.1 —
+> source-available, not OSI-approved. A submission would be refused on its prerequisites, and
+> filing one anyway would waste a reviewer's time on a question already answered.
+>
+> The three submissions filed from 0.1.0 are still open and describe an MIT release.
+> [`community-submission/README.md`](community-submission/) has what to do about them; it is a
+> maintainer decision, not a release step.
+>
+> The rest of this section is kept because it is accurate about the mechanism, and because the
+> position is reversible: BUSL converts each version to MIT four years after publication, at
+> which point the eligibility question reopens on its own.
+
 Being listed in Spec Kit's own community catalogs makes SpecUP **findable, not installable**.
 Those catalogs are discovery-only (section 0), so someone who finds SpecUP there still
 registers our catalog to install it. Say that in the submission rather than letting them meet

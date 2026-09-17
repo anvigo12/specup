@@ -14,6 +14,16 @@ Kit ships no workflow submission template and no `add-community-workflow` automa
 four `openup-*` workflows have no route. The bundle submission lists them under *Components
 Provided*; do not hand-edit the workflow catalog to close the gap.
 
+> **Stop before refiling any of these. The 0.1.2 relicense makes SpecUP ineligible.**
+>
+> Spec Kit's [extension publishing guide](https://github.com/github/spec-kit/blob/main/extensions/EXTENSION-PUBLISHING-GUIDE.md)
+> lists among its submission prerequisites: *"**License**: Open source license file (MIT,
+> Apache 2.0, etc.)"*, and under community standards: *"Extensions should be free and
+> open-source. Commercial support/services are allowed, but core functionality must be free."*
+>
+> From 0.1.2 SpecUP is BUSL-1.1, which is source-available and not OSI-approved. It fails that
+> prerequisite plainly. See [Withdrawing the three open submissions](#withdrawing-the-three-open-submissions).
+
 ## How the flow works
 
 **Do not open a pull request.** Spec Kit's `CONTRIBUTING.md` is explicit that a hand-edited
@@ -79,6 +89,32 @@ a catalog entry records beyond the version, URL and digest. The sensible moment 
 when a maintainer picks these up, or at the next release with real content in it — whichever
 comes first. Update the bodies then, from a fresh run of step 5, rather than editing the
 version string on top of the previous release's numbers.
+
+## Withdrawing the three open submissions
+
+The three bodies in this directory say `MIT` under **### License**, and they are not being
+changed. They are the record of what was filed on 2026-09-13 from the `v0.1.0` release, and
+`v0.1.0` was MIT and still is. Editing a filed record to match a later decision would make this
+directory stop being a record.
+
+What has changed is that **issues #4566, #4567 and #4568 are open, unlabelled, and now describe
+a licence SpecUP no longer ships under.** Nobody has been misled yet — they are accurate about
+0.1.0 — but a maintainer triaging them after 0.1.2 would validate a release whose terms differ
+from the body they are reading, and would be entitled to feel that a submission was made under
+one licence and quietly changed to another.
+
+**This is a decision for the maintainer, and it is outward-facing.** Three options, in rough
+order of how well they treat the reviewer:
+
+| | |
+|---|---|
+| **Close all three with a comment** | States the relicense, withdraws the request, costs nothing but the listing. The cleanest, and the one that would not need explaining later. |
+| **Comment without closing** | Leaves the choice with Spec Kit's maintainers. Honest, but parks three issues in a queue that cannot accept them. |
+| **Leave them** | Not defensible. The bodies attest `- [x] LICENSE file included` against a repository whose LICENSE has changed since. |
+
+Nothing here does this automatically. Filing, commenting on or closing an issue on
+`github/spec-kit` is an action on someone else's repository, and it is taken deliberately by a
+person.
 
 ## What a listing does and does not buy
 

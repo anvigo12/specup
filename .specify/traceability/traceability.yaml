@@ -353,3 +353,23 @@ edges:
     relation: evidences
     to: RISK-0003
     provenance: asserted
+  - from: EVID-0007
+    relation: evidences
+    to: WBS-1.1.2.7
+    provenance: asserted
+
+  # -- the 0.1.2 relicence ---------------------------------------------------------------
+  #
+  # Three edges for one decision. The `implements` edge is the one that makes the licence an
+  # obligation rather than a file, and the `verifies` edge is the one that stops it being an
+  # obligation nobody checks — which is the shape NON-FR-DOCS-0001 is still missing, and the
+  # difference between the two is visible in TRC-006 rather than in anyone's assurance.
+
+  - from: WBS-1.1.2.7
+    relation: implements
+    to: NON-FR-DIST-0001
+    provenance: asserted
+  - from: UNIT-LIC-0001
+    relation: verifies
+    to: NON-FR-DIST-0001
+    provenance: asserted

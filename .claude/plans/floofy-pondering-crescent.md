@@ -14,8 +14,14 @@ claims do not meet that bar:
   docstring carries the context an agent needs to act correctly on a unit of code.
 
 v0.1.2 closes both, ships the templates that teach the model, and makes SpecUP govern itself.
-It is **MIT throughout, adds no runtime dependency, and touches no bundle or workflow**, so it
-is releasable independently of the Open SWE work.
+It **adds no runtime dependency**, so it is releasable independently of the Open SWE work.
+
+*Amended 2026-09-17.* This originally read *"MIT throughout, adds no runtime dependency, and
+touches no bundle or workflow"*. Two thirds of that is now wrong: a **workstream 0** was added
+ahead of §6 relicensing SpecUP from MIT to **BUSL-1.1**, which rewrites the `license:` field in
+the bundle manifest and all four workflow manifests. The surviving claim — no new runtime
+dependency — is the one the "releasable independently" conclusion actually rested on, so the
+conclusion holds. See [`docs/dev/licensing.md`](../../docs/dev/licensing.md).
 
 **The Open SWE runtime moves to 0.1.3.** Its research is complete and recorded in §7 below so
 it is not re-derived. Splitting was a deliberate call: the broker and container are the two
@@ -44,6 +50,7 @@ wait behind them.
 | 4 | `examples/` generic program + project, materialised into `workspace/` | new |
 | 5 | SpecUP governs itself | `.specify/` holds only caches today |
 | 6 | Documentation sweep + release mechanics | four live drifts |
+| 0 | **Relicense MIT → BUSL-1.1** *(added 2026-09-17, ahead of 6)* | monetising the `open-swe` agent stack |
 
 ---
 
@@ -238,7 +245,12 @@ currently unmeasured. One project is not a measurement, and the release should s
   tags), `bundles/specup/bundle.yml`, `presets/openup-governance/preset.yml`.
 - `task release:check` → `task release:catalog`. `tests/test_catalog.py:150` rebuilds every
   component and compares digests, so content drift under an unchanged version fails.
-- Workflows are untouched, so they rebuild to identical digests — state that, as 0.1.1 did.
+- ~~Workflows are untouched, so they rebuild to identical digests — state that, as 0.1.1 did.~~
+  **No longer true, and this is the one release-mechanics consequence of the relicence.** All
+  four `workflow.yml` manifests carry a `license:` field, so all four changed and all four now
+  rebuild to different digests. `tests/test_catalog.py` already fails on exactly that. **The
+  four workflows must be version-bumped off `0.1.0` at release**, which 0.1.1 did not have to
+  do, and the release notes state a digest change rather than the "identical" line 0.1.1 used.
 - **Do not route anything through `task`** — `tests/test_taskfile_boundary.py` forbids a
   workflow, command or manifest reaching the task runner.
 
@@ -249,8 +261,13 @@ currently unmeasured. One project is not a measurement, and the release should s
 Recorded so it is not re-derived. Every item verified this session.
 
 **Licensing.** `deepagents` 0.7.14 MIT · `langchain-core` 1.6.3 MIT · `langgraph` 1.2.11 MIT ·
-**`langgraph-api` 0.14.1 Elastic-2.0** · Open SWE itself **MIT**. SpecUP can adopt Open SWE and
-stay MIT, provided graphs run **in-process** and it never depends on `langgraph-api`.
+**`langgraph-api` 0.14.1 Elastic-2.0** · Open SWE itself **MIT**. SpecUP can adopt Open SWE
+provided graphs run **in-process** and it never depends on `langgraph-api`. *(Amended
+2026-09-17: this said "and stay MIT". SpecUP is BUSL-1.1 from 0.1.2, which changes nothing
+here — Open SWE's MIT imposes no obligation on an incorporating work beyond keeping the
+notice, and being source-available yourself grants no rights to Elastic's software. The
+in-process rule stands, now to keep SpecUP's own customers out of a second vendor's
+agreement.)*
 `deepagents` needs Python **≥3.11**; SpecUP declares `>=3.10` at `bundle.yml:26` and
 `extension.yml:23`, so the new bundle declares `>=3.11`.
 

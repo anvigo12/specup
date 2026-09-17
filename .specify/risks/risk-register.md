@@ -8,7 +8,9 @@
 |---|---|---|---|---|---|---|---|
 | `RISK-0001` Every approval SpecUP records is signed by the only person who could have recorded it | 0.54 🟠 high | 0.9 × 0.6 | accepted | maintainer | — | — | — |
 | `RISK-0003` An error in SpecUP's own traceability graph would not be detectable by SpecUP | 0.42 🟠 high | 0.6 × 0.7 | open | maintainer | `WBS-1.1.3.1` | `EVID-0006` | — |
+| `RISK-0005` BUSL-1.1 makes SpecUP ineligible for Spec Kit's community catalogs | 0.32 🟡 moderate | 0.8 × 0.4 | open | maintainer | — | — | — |
 | `RISK-0002` Nothing checks that the operating manual describes the code that shipped | 0.30 🟡 moderate | 0.6 × 0.5 | open | maintainer | — | — | — |
+| `RISK-0006` The engine being monetised is already published under a licence that cannot be withdrawn | 0.10 🟡 moderate | 0.15 × 0.7 | open | maintainer | — | — | — |
 | `RISK-0004` The scaffold seeds an operating contract into `src/`, which not every project has | 0.08 🟡 moderate | 0.4 × 0.2 | open | maintainer | — | — | — |
 
 Thresholds: high ≥ 0.40, critical ≥ 0.65 (`openup-config.yml`, `risk.*_exposure_threshold`). Exposure is probability × impact and is recomputed by `validate_risk.py`; a hand-edited `exposure:` field fails `RISK-001`.

@@ -22,6 +22,8 @@
 | `RISK-0002` | 0.30 | open | nothing; below the threshold, and carrying it untouched is allowed |
 | `RISK-0003` | 0.42 | open | mitigation work **and** a verification reference; both are present |
 | `RISK-0004` | 0.08 | open | nothing |
+| `RISK-0005` | 0.32 | open | nothing; below the threshold, and the entry argues with its own impact estimate |
+| `RISK-0006` | 0.105 | open | nothing, and no mitigation exists — the rights are already granted |
 
 ## What each one is, in a sentence
 
@@ -32,12 +34,19 @@
   Below the threshold because the manual is currently small enough for one person to re-read
   at release time. Raise the probability, not the threshold, when that stops being true.
 - **`RISK-0003`** — an error in SpecUP's own traceability graph would not be detectable by
-  SpecUP, because 84% of it is `asserted` and its own test-naming rule reproduces one edge.
+  SpecUP, because 83% of it is `asserted` and its own test-naming rule reproduces one edge.
   Mitigated by `WBS-1.1.3.1`; verified by `EVID-0006`, the regenerated coverage view, whose
   derived counts cannot be moved by relabelling.
 - **`RISK-0004`** — the scaffold seeds an operating contract into `src/`, which not every
   project has. More a defect than a risk, and it is here because this repository has no issue
   tracker inside the graph.
+- **`RISK-0005`** — BUSL-1.1 makes SpecUP ineligible for Spec Kit's community catalogs, whose
+  publishing guide requires an open source licence file. Impact is held at 0.4 because those
+  catalogs are discovery-only and every install goes through SpecUP's own catalog; the entry
+  states that the arithmetic preceded the threshold, and names the argument for 0.5.
+- **`RISK-0006`** — the engine being monetised is already published under MIT at `v0.1.1`, and
+  that grant cannot be withdrawn. Probability is low only because the project is small, so it
+  rises with every sign of success — a number to re-estimate on good news.
 
 ## The threshold is what makes this consequential
 

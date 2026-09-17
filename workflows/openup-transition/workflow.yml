@@ -5,7 +5,7 @@ workflow:
   name: "OpenUP Transition"
   version: "0.1.0"
   author: "Aniket Gore"
-  license: "MIT"
+  license: "BUSL-1.1"
   repository: "https://github.com/anvigo12/specup"
   description: "Validate deployment, operations, security and acceptance, then hold the Product Release milestone against evidence."
 

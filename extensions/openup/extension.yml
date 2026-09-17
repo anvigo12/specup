@@ -9,7 +9,7 @@ extension:
   effect: "read-write"
   author: "Aniket Gore"
   repository: "https://github.com/anvigo12/specup"
-  license: "MIT"
+  license: "BUSL-1.1"
 
 requires:
   # 1.0.6 is the only Spec Kit this has ever been run against, and the floor states what

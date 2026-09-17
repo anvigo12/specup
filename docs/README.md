@@ -11,6 +11,7 @@
 | ↳ [Release notes 0.1.0](runbooks/release-notes-0.1.0.md) | What ships, what is enforced, what is not |
 | ↳ [Community submissions](runbooks/community-submission/README.md) | Prepared bodies for Spec Kit's catalog submission issues — discovery, not installation |
 | **[Dev: Taskfile](dev/taskfile.md)** | The task runner, and the boundary it must not cross |
+| **[Dev: Licensing](dev/licensing.md)** | BUSL-1.1 from 0.1.2 — what the grant covers, and what the change costs |
 
 Component-level docs live next to the components:
 

@@ -172,6 +172,23 @@ the templates and the workflows are outside it, with the reasons written next to
 Adding a module to that directory means adding an `implements` edge to a registered
 requirement, or backward coverage falls below its threshold on the next run.
 
+## The licence is BUSL-1.1, and it lives in ten places
+
+`LICENSE` is the authority. Seven component manifests repeat it as a `license:` string, and
+`tools/build_catalog.py` republishes that string into the public catalog without reading it.
+`tests/test_license.py` is the only thing holding the ten together, and it reads `LICENSE`
+rather than hardcoding a name — so a future relicense edits `LICENSE`, `LICENSE-MIT` and
+`docs/dev/licensing.md`, and the test follows.
+
+Two consequences worth knowing before writing anything about the project:
+
+- **Do not call SpecUP open source.** It is source-available. BUSL is not OSI-approved, and
+  `test_the_readme_says_plainly_that_this_is_not_open_source` fails if the README stops saying
+  so.
+- **Changing a manifest's `license:` changes its build digest.** All four workflow manifests
+  moved at 0.1.2, so the four workflows no longer rebuild to their 0.1.0 digests and need
+  version bumps at release. `tests/test_catalog.py` is the thing that says so.
+
 ## What this repository cannot do, and should stop rather than fake
 
 - **Witness an approval.** There is one maintainer and `allowed-signers` holds no key.

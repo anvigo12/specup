@@ -15,7 +15,7 @@
 
 ## Purpose
 
-SpecUP's own plan. Thirteen nodes, one phase, three iterations, every leaf terminating at
+SpecUP's own plan. Fourteen nodes, one phase, three iterations, every leaf terminating at
 level 4 with a recorded reason.
 
 ## Shape

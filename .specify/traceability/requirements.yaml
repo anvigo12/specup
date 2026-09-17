@@ -340,6 +340,29 @@ artifacts:
     # The obligation is real whether or not it is registered; registering it is what makes the
     # gap appear in a number instead of in a memory. RISK-0002 is the same fact as a risk.
 
+  - id: NON-FR-DIST-0001
+    type: non-functional-requirement
+    title: "Every distributed manifest must declare the licence the repository actually ships under"
+    status: REVIEW
+    owner: "maintainer"
+    priority: high
+    source: LICENSE
+    cites:
+      - document: "LICENSE"
+        clause: "Parameters — Licensed Work, Change License"
+        value: "SpecUP is under BUSL-1.1 with a Change License of MIT"
+    # Added by the 0.1.2 relicense, and it is the only requirement here whose source is not a
+    # specification. That is deliberate: the obligation is not something specup.md imposes, it
+    # is something distribution imposes. `tools/build_catalog.py` copies each manifest's
+    # `license` field into the published catalog through its PASSTHROUGH tuple, whose own
+    # comment says everything in it is display-only to Spec Kit — nothing downstream checks it
+    # and nothing upstream did either.
+    #
+    # So a manifest left at "MIT" after the relicense would have been republished as a public
+    # statement of terms that are no longer the terms, in a repository whose argument is that
+    # an unchecked claim is the defect. Seven manifests, one licence file, and a human
+    # remembering all eight was the whole control. UNIT-LIC-0001 is now the control.
+
   # -- evidence the risk register points at ---------------------------------------------
 
   - id: EVID-0006
@@ -400,6 +423,17 @@ artifacts:
     owner: "maintainer"
     source: tests/test_init.py
 
+  - id: UNIT-LIC-0001
+    type: unit-test
+    title: "Manifest licence fields against the licence on disk (10 tests)"
+    status: REVIEW
+    owner: "maintainer"
+    source: tests/test_license.py
+    # Reads LICENSE and requires the seven manifests to agree with it, rather than asserting
+    # the string "BUSL-1.1". A test that hardcoded the current licence would have to be edited
+    # by the same person making the next relicense, in the same sitting, which is how a check
+    # becomes a formality.
+
   # -- evidence --------------------------------------------------------------------------
   #
   # What a WBS node marked `done` points at. DOD-001 checks that each reference resolves; it
@@ -440,6 +474,18 @@ artifacts:
     status: REVIEW
     owner: "maintainer"
     source: tests/test_examples.py
+
+  - id: EVID-0007
+    type: evidence
+    title: "The licence position: BUSL-1.1, its Change License, and what it costs"
+    status: REVIEW
+    owner: "maintainer"
+    source: docs/dev/licensing.md
+    # A document rather than a test, because the part a reviewer has to check is not whether
+    # the manifests agree — UNIT-LIC-0001 does that — but whether the claims around the change
+    # are true: that 0.1.0 and 0.1.1 stay MIT, that Apache-2.0 would have breached BUSL
+    # covenant 1, and that the Spec Kit listing is lost. None of those is machine-checkable
+    # and all three are load-bearing.
 
   # -- iterations ------------------------------------------------------------------------
   #

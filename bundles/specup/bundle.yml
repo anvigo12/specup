@@ -7,7 +7,7 @@ bundle:
   role: "governance"
   description: "Installs the full OpenUP governance stack: the openup extension (validators, schemas, commands), the openup-governance preset, and the four phase workflows whose gates halt a run on a failing verdict."
   author: "Aniket Gore"
-  license: "MIT"
+  license: "BUSL-1.1"
   repository: "https://github.com/anvigo12/specup"
 
 requires:

@@ -6,7 +6,7 @@
 # so hand-editing this file does not make a claim true — it only makes the graph fail.
 
 schema_version: "1.0"
-generated_at: "2026-09-16T18:01:54Z"
+generated_at: "2026-09-17T04:50:57Z"
 
 edges:
   # test-file-naming-convention
@@ -57,6 +57,11 @@ edges:
     provenance: derived
     derived_by: wbs-iteration-field
   - from: WBS-1.1.2.6
+    relation: belongs-to
+    to: ITER-C-02
+    provenance: derived
+    derived_by: wbs-iteration-field
+  - from: WBS-1.1.2.7
     relation: belongs-to
     to: ITER-C-02
     provenance: derived

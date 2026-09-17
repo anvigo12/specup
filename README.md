@@ -28,6 +28,7 @@ traceability.
 | [Release notes 0.1.0](docs/runbooks/release-notes-0.1.0.md) | What ships, what is enforced, what is not |
 | [Publishing runbook](docs/runbooks/publishing-to-spec-kit.md) | Cutting a release and keeping the catalog honest |
 | [Taskfile](docs/dev/taskfile.md) | The task runner, and the boundary it must not cross |
+| [Licensing](docs/dev/licensing.md) | BUSL-1.1 from 0.1.2 — what the grant covers, and what the change costs |
 
 ---
 
@@ -469,7 +470,7 @@ bundles/specup/                    bundle.yml + the working-tree installer
 catalog/                           the four published catalog documents (generated)
 tools/                             archive + catalog generators
 examples/                          a worked program + the deliverable it governs
-tests/                             397 tests + fixtures
+tests/                             407 tests + fixtures
 .specify/                          SpecUP's OWN governance tree — it governs itself with
                                    itself, fails its own Construction gate, and says why
 ```
@@ -514,7 +515,7 @@ every audit.
 
 ```bash
 python3 -m pip install pyyaml jsonschema referencing pytest
-python3 -m pytest tests/ -q          # 389 passed, 8 skipped
+python3 -m pytest tests/ -q          # 399 passed, 8 skipped
 ```
 
 The 8 skips are the engine-validation tests. To run them, install spec-kit:
@@ -522,7 +523,7 @@ The 8 skips are the engine-validation tests. To run them, install spec-kit:
 ```bash
 uv venv .venv && uv pip install --python .venv/bin/python specify-cli==1.0.6 pytest
 uv pip install --python .venv/bin/python -r extensions/openup/requirements.txt
-.venv/bin/python -m pytest tests/ -q  # 397 passed
+.venv/bin/python -m pytest tests/ -q  # 407 passed
 ```
 
 Or with [Taskfile](docs/dev/taskfile.md), which wraps both suites and the release pipeline:
@@ -619,4 +620,33 @@ evidence fails two.
 
 ## License
 
-MIT.
+**[Business Source License 1.1](LICENSE)** from 0.1.2, with an Additional Use Grant that
+permits production use and a Change License of MIT that takes effect four years after each
+version is published.
+
+It is **source-available, not open source** — the OSI does not approve BUSL, and this README is
+not going to call it something it is not.
+
+| | |
+|---|---|
+| **Yes** | Govern your own software with it, at any scale, commercial or not |
+| **Yes** | Run agents against repositories you or your organisation control |
+| **Yes** | Read, fork, modify and redistribute under these same terms |
+| **Yes** | Sell consulting, integration or development services around it |
+| **No** | Offer SpecUP's functionality to third parties as a commercial product or service |
+
+Two things a reader deciding whether to depend on this should know, both of which cut against
+the project's own interest:
+
+- **0.1.0 and 0.1.1 remain MIT, permanently.** MIT is irrevocable for copies already
+  distributed, so the `v0.1.1` tag is a permissively licensed governance engine that anyone may
+  fork and continue, forever. This relicense protects work that has not shipped yet — mostly the
+  agent runtime — and nothing before it.
+- **It costs SpecUP its listing in Spec Kit's community catalogs.** Their publishing guide
+  requires an *"Open source license file (MIT, Apache 2.0, etc.)"*, which BUSL is not. Those
+  catalogs are discovery-only — installation goes through SpecUP's own catalog and is
+  unaffected — but the listing is gone, and that is a real cost of this decision rather than a
+  detail.
+
+[`docs/dev/licensing.md`](docs/dev/licensing.md) has the full position: what the grant covers,
+why the Change License is MIT rather than Apache-2.0, and what checks any of it.

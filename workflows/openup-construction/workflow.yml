@@ -5,7 +5,7 @@ workflow:
   name: "OpenUP Construction Iteration"
   version: "0.1.0"
   author: "Aniket Gore"
-  license: "MIT"
+  license: "BUSL-1.1"
   repository: "https://github.com/anvigo12/specup"
   description: "Run one Construction iteration: select ready work risk-first, implement it task by task, verify, re-trace, then hold the iteration gate."
 

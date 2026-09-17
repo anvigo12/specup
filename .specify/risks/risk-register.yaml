@@ -139,3 +139,71 @@ risks:
     # repository has no issue tracker in the graph. The fix is a `--source-dir` argument; it
     # is not scheduled for 0.1.2 because changing the seed map changes what every project
     # gets, and that decision deserves its own iteration rather than an aside in this one.
+
+  - id: RISK-0005
+    title: "BUSL-1.1 makes SpecUP ineligible for Spec Kit's community catalogs"
+    description: >-
+      Spec Kit's extension publishing guide lists among its submission prerequisites
+      "License: Open source license file (MIT, Apache 2.0, etc.)", and under community
+      standards "Extensions should be free and open-source. Commercial support/services are
+      allowed, but core functionality must be free." BUSL-1.1 is source-available and not
+      OSI-approved, so SpecUP fails that prerequisite as written. Three submissions filed on
+      2026-09-13 from the 0.1.0 release are still open and unlabelled, and they describe an
+      MIT release that no longer exists.
+    category: external
+    probability: 0.8
+    impact: 0.4
+    exposure: 0.32
+    phase_identified: CONSTRUCTION
+    iteration_identified: ITER-C-02
+    status: open
+    owner: "maintainer"
+    # ON THE NUMBERS, BECAUSE THIS ONE INVITES THE FAILURE THIS FILE'S HEADER NAMES.
+    #
+    # Probability 0.8, not because the outcome is uncertain — the prerequisite is explicit and
+    # BUSL plainly fails it — but because "refused" depends on a human applying a stated
+    # standard, and stated standards are sometimes read as guidance.
+    #
+    # Impact 0.4 is the number worth arguing with. It is low because those catalogs are
+    # `install_allowed: false`: docs/runbooks/publishing-to-spec-kit.md section 0 establishes
+    # they are discovery-only, section 7 is titled "Optional", and every install goes through
+    # SpecUP's own catalog either way. What is lost is a channel, not the product.
+    #
+    # That lands on 0.32, below the 0.40 threshold, and the arithmetic was done before the
+    # threshold was looked at. Stated because an author who benefits from a risk staying
+    # sub-threshold should say so rather than let the reader assume it was not noticed. If the
+    # impact is really 0.5 this becomes mandatory-mitigation work, and the argument for 0.5
+    # would be that discovery matters more to a product being sold than to one being given
+    # away — which is not obviously wrong.
+    #
+    # Revisit when a maintainer triages one of the three open issues. That is the event that
+    # settles the probability, and nothing before it does.
+
+  - id: RISK-0006
+    title: "The engine being monetised is already published under a licence that cannot be withdrawn"
+    description: >-
+      SpecUP 0.1.0 and 0.1.1 were released under MIT, and MIT is irrevocable for copies
+      already distributed. The `v0.1.1` tag is therefore a permanently permissive governance
+      engine — validators, gates, templates and workflows — that anyone may fork and continue
+      commercially, including against SpecUP. The 0.1.2 relicense protects work not yet
+      shipped, and the agent runtime is nearly all of it. This is not a thing to fix; it is a
+      bound on what the relicense can achieve, and it belongs in the register so that the
+      commercial plan is made against it rather than around it.
+    category: external
+    probability: 0.15
+    impact: 0.7
+    exposure: 0.105
+    phase_identified: CONSTRUCTION
+    iteration_identified: ITER-C-02
+    status: open
+    owner: "maintainer"
+    # The probability is low because forking a project needs someone to want it, and SpecUP
+    # has two releases and no users anybody has counted. That is the uncomfortable part: this
+    # probability rises with every measure of the project succeeding, so the number is low for
+    # a reason nobody should be pleased about, and re-estimating it is a thing to do on good
+    # news rather than bad.
+    #
+    # No mitigation, and a real one does not exist. The rights are granted. What can be done
+    # is what docs/dev/licensing.md already does — say so plainly, so that nobody chooses
+    # SpecUP believing the 0.1.1 escape hatch is closed and nobody plans revenue believing it
+    # is the only door.

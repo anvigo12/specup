@@ -4,9 +4,9 @@
 
 *Generated from `the configured traceability stores`. Edit the source, not this file.*
 
-Inverses are derived at load time and never stored, so each edge appears once, in active voice. 74 edge(s) across 2 store(s).
+Inverses are derived at load time and never stored, so each edge appears once, in active voice. 78 edge(s) across 2 store(s).
 
-## belongs-to (11)
+## belongs-to (12)
 
 | From | To | Provenance | Status | Declared in |
 |---|---|---|---|---|
@@ -19,10 +19,11 @@ Inverses are derived at load time and never stored, so each edge appears once, i
 | `WBS-1.1.2.4` | `ITER-C-02` | derived (`wbs-iteration-field`) | active | `.specify/traceability/derived.yaml` |
 | `WBS-1.1.2.5` | `ITER-C-02` | derived (`wbs-iteration-field`) | active | `.specify/traceability/derived.yaml` |
 | `WBS-1.1.2.6` | `ITER-C-02` | derived (`wbs-iteration-field`) | active | `.specify/traceability/derived.yaml` |
+| `WBS-1.1.2.7` | `ITER-C-02` | derived (`wbs-iteration-field`) | active | `.specify/traceability/derived.yaml` |
 | `WBS-1.1.3` | `ITER-C-03` | derived (`wbs-iteration-field`) | active | `.specify/traceability/derived.yaml` |
 | `WBS-1.1.3.1` | `ITER-C-03` | derived (`wbs-iteration-field`) | active | `.specify/traceability/derived.yaml` |
 
-## evidences (6)
+## evidences (7)
 
 | From | To | Provenance | Status | Declared in |
 |---|---|---|---|---|
@@ -32,12 +33,14 @@ Inverses are derived at load time and never stored, so each edge appears once, i
 | `EVID-0004` | `WBS-1.1.2.3` | asserted | active | `.specify/traceability/traceability.yaml` |
 | `EVID-0005` | `WBS-1.1.2.4` | asserted | active | `.specify/traceability/traceability.yaml` |
 | `EVID-0006` | `RISK-0003` | asserted | active | `.specify/traceability/traceability.yaml` |
+| `EVID-0007` | `WBS-1.1.2.7` | asserted | active | `.specify/traceability/traceability.yaml` |
 
-## implements (20)
+## implements (21)
 
 | From | To | Provenance | Status | Declared in |
 |---|---|---|---|---|
 | `WBS-1.1.2.6` | `NON-FR-DOCS-0001` | asserted | active | `.specify/traceability/traceability.yaml` |
+| `WBS-1.1.2.7` | `NON-FR-DIST-0001` | asserted | active | `.specify/traceability/traceability.yaml` |
 | `extensions/openup/scripts/python/approve_edge.py` | `REQ-APV-0001` | asserted | active | `.specify/traceability/traceability.yaml` |
 | `extensions/openup/scripts/python/audit.py` | `REQ-AUDIT-0001` | asserted | active | `.specify/traceability/traceability.yaml` |
 | `extensions/openup/scripts/python/derive_edges.py` | `REQ-TRACE-0003` | asserted | active | `.specify/traceability/traceability.yaml` |
@@ -93,7 +96,7 @@ Inverses are derived at load time and never stored, so each edge appears once, i
 |---|---|---|---|---|
 | `UNIT-DRV-0001` | `extensions/openup/scripts/python/derivers.py` | derived (`test-file-naming-convention`) | active | `.specify/traceability/derived.yaml` |
 
-## verifies (17)
+## verifies (18)
 
 | From | To | Provenance | Status | Declared in |
 |---|---|---|---|---|
@@ -114,3 +117,4 @@ Inverses are derived at load time and never stored, so each edge appears once, i
 | `UNIT-DOC-0001` | `REQ-DOC-0001` | asserted | active | `.specify/traceability/traceability.yaml` |
 | `UNIT-DRV-0001` | `REQ-TRACE-0003` | asserted | active | `.specify/traceability/traceability.yaml` |
 | `UNIT-INIT-0001` | `REQ-INIT-0001` | asserted | active | `.specify/traceability/traceability.yaml` |
+| `UNIT-LIC-0001` | `NON-FR-DIST-0001` | asserted | active | `.specify/traceability/traceability.yaml` |
