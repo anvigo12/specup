@@ -234,7 +234,7 @@ currently unmeasured. One project is not a measurement, and the release should s
 | Test counts: `README.md:451` "248", `:484` "189 passed, 8 skipped", `:492` "197 passed", `docs/dev/taskfile.md:34-35` | **273 passed / 8 skipped** without spec-kit; **281 passed** with it |
 | `INIT-003` documented at `using-specup.md:293` but absent from the §6 check reference (`:1167-1170` says "2 checks") | three |
 | Check count: `using-specup.md:970` "55 named checks" vs `release-notes-0.1.0.md:60` "62" | reconcile, then extend for `DOC-*`/`APV-*` |
-| `docs/runbooks/release-plan-0.1.2.md` describes the **unsplit** release | revise into 0.1.2 + 0.1.3 |
+| ~~`docs/runbooks/release-plan-0.1.2.md` describes the **unsplit** release~~ | **Closed.** Filename kept so links resolve; a header records the split and the §8 table carries a *Landed* column per item. The §2–§5 design is still the live 0.1.3 plan, so it was annotated rather than duplicated into a new file. |
 
 **Release mechanics** (`docs/runbooks/publishing-to-spec-kit.md`):
 
@@ -269,7 +269,37 @@ notice, and being source-available yourself grants no rights to Elastic's softwa
 in-process rule stands, now to keep SpecUP's own customers out of a second vendor's
 agreement.)*
 `deepagents` needs Python **≥3.11**; SpecUP declares `>=3.10` at `bundle.yml:26` and
-`extension.yml:23`, so the new bundle declares `>=3.11`.
+`extension.yml:23`.
+
+**Amended 2026-09-17 — the ELv2 problem has an Apache-2.0 answer, and 0.1.3 adopts it.**
+[Aegra](https://github.com/aegra/aegra) (`aegra.dev`) is an **Apache-2.0** Agent Protocol
+server on FastAPI + PostgreSQL, calling itself a drop-in replacement for LangSmith Deployments
+— same LangGraph SDK, same APIs, self-hosted. Its `libs/aegra-api/pyproject.toml` was read:
+depends on `langgraph>=1.0.3`, `langgraph-sdk>=0.3.5`, `langgraph-checkpoint-postgres>=2.0.23`,
+and **none of `langgraph-api` / `langgraph-runtime` / `langgraph-cli`**. So the durable
+execution, task queue and resumable runs the Agent Server was wanted for are available without
+the Elastic licence, and the "in-process only" constraint stops being a limitation and becomes
+one deployment mode of two.
+
+Three consequences, none of them licensing:
+
+1. **`requires-python` becomes `>=3.12`, not `>=3.11`.** Aegra's floor is higher than
+   `deepagents`'. The bundle declares the highest floor, so the line above is superseded.
+2. **PostgreSQL and Redis become runtime dependencies.** This is the item that needs an ADR
+   before any code: `NON-FR-CORE-0001` is filesystem authority, and a checkpoint database is a
+   second state store that is not diffable, not reviewable and not in git. The defensible split
+   is agent-execution state in Postgres, governance state on the filesystem, always — but it
+   must be decided rather than absorbed.
+3. **Apache-2.0 under BUSL-1.1 is fine and needs a `NOTICE` file.** Permissive, no copyleft,
+   attribution and patent-grant terms propagate. Note it is *not* eligible as this project's
+   BUSL Change License — covenant 1 requires GPL-2.0 compatibility — which is a different
+   question from depending on it.
+
+**Maturity is the open risk.** Aegra publishes no production-readiness or stability statement,
+and "Agent Protocol v2 streaming" is flagged as new. Adopting it makes SpecUP's agent runtime
+depend on a young project, which is a trade against depending on a licensed one. Record it as
+a risk when 0.1.3 acquires requirements; it has none today, and a risk with no requirement to
+threaten is a note, not an entry.
 
 **Open SWE is Python**, with three documented extension points — `get_agent()` in
 `agent/server.py` is the single assembly point:

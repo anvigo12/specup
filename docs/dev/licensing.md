@@ -112,6 +112,35 @@ library**, never against the Agent Server. Where the Agent Server is genuinely t
 multi-tenant, many concurrent runs — that stays an operator's decision to license, taken
 knowingly.
 
+### There is now a third option, and 0.1.3 takes it
+
+[**Aegra**](https://github.com/aegra/aegra) is an **Apache-2.0** implementation of the Agent
+Protocol on FastAPI and PostgreSQL, and it describes itself as *"a drop-in replacement for
+LangSmith Deployments. Use the same LangGraph SDK, same APIs, but run it on your own
+infrastructure."* Its dependency list was read rather than trusted, and it is the part that
+matters: `langgraph`, `langgraph-sdk` and `langgraph-checkpoint-postgres`, and **no
+`langgraph-api`, `langgraph-runtime` or `langgraph-cli`** — none of the Elastic-licensed
+packages. So it delivers what the Agent Server delivers without the licence that made the Agent
+Server unusable here.
+
+Apache-2.0 is permissive and imposes nothing on a BUSL-1.1 work beyond notice and attribution,
+which means a `NOTICE` file becomes a shipping requirement at the point Aegra is vendored or
+redistributed. It is not a candidate for this project's **Change License** — covenant 1 rules
+Apache-2.0 out, for the reasons above — but that is a separate question from depending on it,
+and the two should not be confused.
+
+**Two constraints come with it, and neither is a licence question:**
+
+- **Python `>=3.12`.** SpecUP declares `>=3.10` in `bundle.yml` and `extension.yml`, and the
+  0.1.3 research had already raised that to `>=3.11` for `deepagents`. Aegra raises it again.
+- **PostgreSQL and Redis become runtime dependencies**, and that is the one to argue about
+  before adopting rather than after. `NON-FR-CORE-0001` is filesystem authority: state lives in
+  files, because a file can be read by a reviewer, diffed, and version-controlled. A checkpoint
+  database is a second state store that none of those things are true of. The defensible line
+  is that *agent execution* state and *governance* state are different objects and only the
+  second is SpecUP's — but that line has to be drawn deliberately, in an ADR, because the
+  undrawn version of it is how a filesystem-first tool acquires a database nobody decided on.
+
 Open SWE itself is MIT, which imposes nothing. MIT permits incorporating a work into a
 source-available or proprietary product provided the notice is kept, so adopting Open SWE as the
 `specup-agent` default stack never required this relicense. Monetising it did. The two are worth

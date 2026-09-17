@@ -20,7 +20,7 @@
         implements `REQ-GATE-0001`; evidenced by `EVID-0005`
       - **`WBS-1.1.2.5`** SpecUP governs itself — *L4 Capability / Feature* · implementation · maintainer · ITER-C-02 · in-progress<br>
         implements `REQ-AUDIT-0001`
-      - **`WBS-1.1.2.6`** Documentation sweep and the 0.1.2 release — *L4 Capability / Feature* · release · maintainer · ITER-C-02 · planned<br>
+      - **`WBS-1.1.2.6`** Documentation sweep and the 0.1.2 release — *L4 Capability / Feature* · release · maintainer · ITER-C-02 · in-progress<br>
         implements `NON-FR-DOCS-0001`
       - **`WBS-1.1.2.7`** Relicense from MIT to BUSL-1.1 — *L4 Capability / Feature* · implementation · maintainer · ITER-C-02 · done<br>
         implements `NON-FR-DIST-0001`; evidenced by `EVID-0007`

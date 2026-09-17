@@ -3,7 +3,7 @@ schema_version: "1.0"
 workflow:
   id: "openup-construction"
   name: "OpenUP Construction Iteration"
-  version: "0.1.0"
+  version: "0.1.1"
   author: "Aniket Gore"
   license: "BUSL-1.1"
   repository: "https://github.com/anvigo12/specup"

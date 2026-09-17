@@ -1,14 +1,28 @@
-# SpecUP 0.1.2 — release plan
+# SpecUP 0.1.2 — release plan *(written before the split; now the 0.1.3 plan)*
 
 **Audience:** whoever implements this release, and whoever reviews whether it was worth doing.
+
+> **This document describes an unsplit release that was then split, and the filename is kept
+> so existing links resolve.** The runtime work below — the capability broker, the container,
+> the Open SWE integration — moved to **0.1.3** and is still the live plan for it. The
+> governance work moved to **0.1.2** and has shipped; what it actually became is
+> [`release-notes-0.1.2.md`](release-notes-0.1.2.md), which is the record, while this is the
+> intent. The §8 table carries the per-item split.
+>
+> Splitting was deliberate: the broker and the container are the two items that could
+> invalidate a release, and nine independently useful workstreams should not wait behind them.
+>
+> Two things below were overtaken by later decisions and are annotated in place rather than
+> deleted — §1's licensing conclusion, and the assumption throughout that SpecUP is MIT.
 
 0.1.1 shipped a governance layer for Spec Kit: an extension, a preset, four workflows, and
 gates that halt a run. It governs an agent it does not own — whichever agent the user happens
 to be running.
 
-0.1.2 closes that gap. SpecUP acquires a runtime: [Open SWE](https://github.com/langchain-ai/open-swe),
-LangChain's asynchronous coding agent, running inside a container that starts with no
-capabilities and acquires them only as the governance graph grants them.
+This release closes that gap. SpecUP acquires a runtime:
+[Open SWE](https://github.com/langchain-ai/open-swe), LangChain's asynchronous coding agent,
+running inside a container that starts with no capabilities and acquires them only as the
+governance graph grants them.
 
 The sentence the release has to make true:
 
@@ -27,6 +41,7 @@ This has to come first, because it constrains the architecture rather than the s
 | `langgraph`, `langchain-core`, model integrations | MIT | usable, no constraint |
 | Open SWE itself | open source, on GitHub | usable |
 | **`langgraph-api` — the standalone Agent Server binary** | **Elastic License 2.0** | **production self-hosting needs a commercial key** |
+| **[Aegra](https://github.com/aegra/aegra) — Agent Protocol server, FastAPI + PostgreSQL** | **Apache-2.0** | **a drop-in replacement for the row above, with no ELv2 in its dependency tree** |
 
 > **Superseded in part, 2026-09-17.** SpecUP is no longer MIT — 0.1.2 relicensed it to
 > BUSL-1.1 ([`docs/dev/licensing.md`](../dev/licensing.md)). The conclusion below survives
@@ -50,6 +65,13 @@ which is precisely the class of defect this project exists to reject.
    Open-SWE-free half is the part that was actually load-bearing, and it holds.)*
 2. **Open SWE adoption ships as a separate, optional bundle: `specup-openswe`.** It declares the
    licence position in its manifest, and the installer surfaces it before writing a file.
+
+> **Amended 2026-09-17.** The table above gained an Aegra row and it dissolves the dilemma this
+> section was written around: durable execution, a task queue and resumable runs are available
+> under Apache-2.0, so "in-process only" becomes one of two supported modes rather than the only
+> licence-clean one. What it buys instead is a PostgreSQL dependency, which is an argument with
+> `NON-FR-CORE-0001` rather than with a licence — see
+> [`docs/dev/licensing.md`](../dev/licensing.md).
 
 Within that bundle, prefer running graphs **in-process against the MIT `langgraph` library**
 over the ELv2 Agent Server. The server buys durable execution, a task queue and a hosted UI;
@@ -397,19 +419,20 @@ the perimeter until it passes.
 
 Risk-first, as OpenUP requires — the two items that could invalidate the release come first.
 
-| # | Item | Retires |
-|---|---|---|
-| 1 | **ADR-0001: the licence position.** Prove a graph runs in-process on MIT `langgraph`, with no Agent Server. | The risk that adopting Open SWE forces every SpecUP operator into a LangChain Enterprise agreement |
-| 2 | **Spike: the capability broker.** `resolve_capabilities.py` + rendered docker/seccomp/proxy config. One end-to-end denial and one grant. | The risk that the central idea does not survive contact with a real sandbox |
-| 3 | `specup-openswe` bundle skeleton; licence surfaced at install | — |
-| 4 | Sandbox image: `cap-drop=ALL`, non-root, read-only root, egress proxy | — |
-| 5 | Open SWE integration: graphs loaded with a profile; every tool call brokered | — |
-| 6 | `validate_docs.py` (`DOC-001`–`005`) and the approval checks (`APV-001`–`003`) | — |
-| 7 | Meta-cognitive templates, with the `cits-crypto` harvest of §5.1 | — |
-| 8 | `workspace/my-program` + `workspace/my-project` generic example | — |
-| 9 | SpecUP governs itself (§7) | — |
-| 10 | `cites:` promoted to first-class in `artifact.schema.json` | — |
-| 11 | Docs: architecture page, capability reference, the licence position | — |
+| # | Item | Retires | Landed |
+|---|---|---|---|
+| 1 | **ADR-0001: the licence position.** Prove a graph runs in-process on MIT `langgraph`, with no Agent Server. | The risk that adopting Open SWE forces every SpecUP operator into a LangChain Enterprise agreement | **0.1.3** — and reshaped: Aegra (Apache-2.0) removes the constraint the ADR was to work around |
+| 2 | **Spike: the capability broker.** `resolve_capabilities.py` + rendered docker/seccomp/proxy config. One end-to-end denial and one grant. | The risk that the central idea does not survive contact with a real sandbox | **0.1.3** |
+| 3 | `specup-openswe` bundle skeleton; licence surfaced at install | — | **0.1.3** |
+| 4 | Sandbox image: `cap-drop=ALL`, non-root, read-only root, egress proxy | — | **0.1.3** |
+| 5 | Open SWE integration: graphs loaded with a profile; every tool call brokered | — | **0.1.3** |
+| 6 | `validate_docs.py` (`DOC-001`–`005`) and the approval checks (`APV-001`–`003`) | — | **0.1.2** — shipped as `DOC-000`–`006` and `APV-000`–`005`, 13 checks rather than 8 |
+| 7 | Meta-cognitive templates, with the `cits-crypto` harvest of §5.1 | — | **0.1.2** |
+| 8 | `workspace/my-program` + `workspace/my-project` generic example | — | **0.1.2** — as `examples/`, because `workspace/` ships as an empty folder |
+| 9 | SpecUP governs itself (§7) | — | **0.1.2** — gate FAIL, recorded rather than repaired |
+| 10 | `cites:` promoted to first-class in `artifact.schema.json` | — | **not done** — kept a convention, since the artifact registry is never schema-validated and a schema edit would buy nothing |
+| 11 | Docs: architecture page, capability reference, the licence position | — | **split** — the licence position shipped as `docs/dev/licensing.md` in 0.1.2; the other two are 0.1.3 |
+| — | **Relicense MIT → BUSL-1.1** | Not planned here at all. Added during 0.1.2 to make the agent stack monetisable. | **0.1.2** |
 
 Items 1 and 2 are gates on the rest. If the broker cannot be made to work without either
 becoming trivially bypassable or making the agent unusable, the release becomes "SpecUP

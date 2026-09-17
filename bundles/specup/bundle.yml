@@ -63,13 +63,13 @@ provides:
     # evaluate_gate.py as a shell step, branch on its exit code, and abort the
     # run on a rejected gate.
     - id: openup-inception
-      version: "0.1.0"
+      version: "0.1.1"
     - id: openup-elaboration
-      version: "0.1.0"
+      version: "0.1.1"
     - id: openup-construction
-      version: "0.1.0"
+      version: "0.1.1"
     - id: openup-transition
-      version: "0.1.0"
+      version: "0.1.1"
 
   # No `steps:`. The workflows use only built-in step types (shell, gate, if,
   # fan-out, command, prompt), so there is no custom step package to install.

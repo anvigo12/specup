@@ -25,6 +25,7 @@ traceability.
 | [New project](docs/guide/new-project.md) | Greenfield adoption |
 | [Existing project](docs/guide/existing-project.md) | Brownfield adoption, where intent has to be recovered |
 | [Worked example](examples/README.md) | A governed program that **passes Inception and fails Elaboration**, and why each failure is correct |
+| [Release notes 0.1.2](docs/runbooks/release-notes-0.1.2.md) | BUSL-1.1, the two new check families, and the numbers from governing itself |
 | [Release notes 0.1.0](docs/runbooks/release-notes-0.1.0.md) | What ships, what is enforced, what is not |
 | [Publishing runbook](docs/runbooks/publishing-to-spec-kit.md) | Cutting a release and keeping the catalog honest |
 | [Taskfile](docs/dev/taskfile.md) | The task runner, and the boundary it must not cross |

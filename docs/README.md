@@ -7,6 +7,7 @@
 | ↳ [New project](guide/new-project.md) | Greenfield adoption, governed from the first commit |
 | ↳ [Existing project](guide/existing-project.md) | Brownfield adoption, where intent has to be recovered |
 | **[Runbook: publishing](runbooks/publishing-to-spec-kit.md)** | Cutting a release and getting `specify bundle install specup` to work |
+| ↳ [Release notes 0.1.2](runbooks/release-notes-0.1.2.md) | **BUSL-1.1**; approval and docstring checks; SpecUP governs itself and its audit fails |
 | ↳ [Release notes 0.1.1](runbooks/release-notes-0.1.1.md) | Catalogs register once per machine; scaffolding is one command |
 | ↳ [Release notes 0.1.0](runbooks/release-notes-0.1.0.md) | What ships, what is enforced, what is not |
 | ↳ [Community submissions](runbooks/community-submission/README.md) | Prepared bodies for Spec Kit's catalog submission issues — discovery, not installation |

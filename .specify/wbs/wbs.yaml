@@ -231,7 +231,12 @@ nodes:
     parent: WBS-1.1.2
     phase: CONSTRUCTION
     iteration: ITER-C-02
-    status: planned
+    # in-progress, not done: the sweep is finished and the release is not. The four documented
+    # drifts are closed, every check id was cross-checked against the manual in both
+    # directions, the release notes exist and the versions are bumped. What remains is
+    # `task release:catalog`, the tag and the GitHub release, and a node that called itself
+    # done before those would be the exact claim `validate_done.py` exists to refuse.
+    status: in-progress
     owner: "maintainer"
     kind: release
     terminal_reason: >-
