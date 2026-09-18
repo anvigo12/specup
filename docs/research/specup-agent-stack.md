@@ -201,9 +201,20 @@ Its `langgraph.json` declares exactly five graphs:
 | `chat` | `agent.graphs.chat:traced_chat_agent` | answers questions, changes no code |
 | `scheduler` | `agent.graphs.scheduler:get_scheduler` | recurring tasks, CI monitoring |
 
-**Every entrypoint is a `traced_*` wrapper.** That is not decoration — it is the seam
+**Four of the five entrypoints are a `traced_*` wrapper.** That is not decoration — it is the seam
 observability attaches to, and it is why [§3.5](#35-langfuse--llm-observability) is a component
 of this stack rather than an optional extra.
+
+> **Corrected 2026-09-18.** This sentence read *"Every entrypoint is a `traced_*` wrapper"*, which
+> the table directly above it contradicts: `scheduler` is `get_scheduler`. The error is worth
+> leaving visible rather than quietly fixing, because it is the failure mode this report's own
+> marker contract exists to catch — a generalisation written one line after the evidence that
+> refutes it. It matters for [§3.5](#35-langfuse--llm-observability): if Langfuse is reached
+> through those wrappers, the scheduler graph is not traced on this reading, and
+> [P7](../implement/test-specup-agent-shape-assumptions.md#p7--do-the-traced_-wrappers-reach-langfuse-over-otlp)
+> has to check it separately instead of generalising from the other four. Found by
+> [P1](../implement/test-specup-agent-shape-assumptions.md#31--what-p1-found-that-it-was-not-looking-for),
+> which was not looking for it.
 
 Open SWE composes Deep Agents, which supplies planning, file operations, shell access, skills,
 state and subagents. LangGraph supplies durable execution and thread state: *"each Open SWE
@@ -251,10 +262,22 @@ at port 2026.
 **The config filename is correct as it stands.** Aegra reads **`aegra.json`**, not
 `langgraph.json`, and `langgraph/aegra.json` is what the folder contains. The schema is the same
 shape as LangGraph's — `dependencies`, `graphs`, `http`, `store`, with each graph a
-`path/to/module.py:variable` reference — so the five Open SWE graphs in §3.1 transfer across
-with no change in content, only in filename. Aegra's own file also carries a `store.scopes`
+`path/to/module.py:variable` reference. Aegra's own file also carries a `store.scopes`
 block, which LangGraph's does not, and which is how it separates one tenant's stored state from
 another's.
+
+> **Corrected 2026-09-18 by [P1](../implement/test-specup-agent-shape-assumptions.md#p1--do-open-swes-five-graphs-run-unchanged-under-aegra).**
+> This paragraph said the five graphs *"transfer across with no change in content, only in
+> filename"*. The content changes. Aegra splits a graph reference on `:` and treats the left side
+> as a **file path** it resolves relative to the config file and then requires to exist;
+> Open SWE's `langgraph.json` writes **module paths** — `agent.graphs.agent:traced_agent`. Under
+> Aegra that resolves to a file named `agent.graphs.agent` and the load fails. Each of the five
+> has to be rewritten as `.../agent/graphs/agent.py:traced_agent`, which is a change to
+> `aegra.json` and so a file this stack owns — which is why P1 was still *answered* rather than
+> falsified. Two further findings sit against this section: Open SWE's floor is Python **`>=3.14`**,
+> above Aegra's `>=3.12`, and `langgraph-api` arrives transitively through Open SWE even though it
+> does not arrive through Aegra. Both are in
+> [§3.1 of the campaign](../implement/test-specup-agent-shape-assumptions.md#31--what-p1-found-that-it-was-not-looking-for).
 
 **It supports human-in-the-loop and it speaks to existing clients.** Aegra lists
 *"Human-in-the-loop — Approval gates and user intervention points"* among its features, ships

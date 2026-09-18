@@ -3,8 +3,10 @@
 **Audience:** whoever runs these probes, and whoever reads the results afterwards to decide
 whether `docs/research/specup-agent-runtime.md` can be written.
 
-**Status: a campaign, not a finding.** Nothing below has been run. Every *Result* block is empty
-by design, and an empty block means *not run* — never *assumed fine*.
+**Status: one of eight probes has been run.** `P1` was answered on 2026-09-18 and it held. The
+other seven *Result* blocks are empty, and an empty block means *not run* — never *assumed fine*.
+Run `python3 docs/implement/probes/record.py --list` rather than trusting this line; it reads the
+blocks below and this sentence does not.
 
 ## Why this exists
 
@@ -153,12 +155,56 @@ stack, it does not redistribute it* — changes reach, because vendoring makes O
 notices a shipping obligation. **Stop the campaign and re-open the shape.**
 
 <!-- RESULT P1 -->
-- **Outcome:** _not run_
-- **Date:**
-- **Ran by:**
-- **Evidence:**
-- **What was found:**
+- **Outcome:** answered
+- **Date:** 2026-09-18
+- **Ran by:** Claude Opus 5, at Aniket Gore's direction
+- **Evidence:** workspace/spike-0.1.3/P1/run/logs/ (untracked); reproduce with docs/implement/probes/p1.sh
+- **What was found:** open-swe 8aac7c5 and aegra c07ad0d resolve into one Python 3.14.4 environment; Aegra lists all five assistants over the Agent Protocol, all five graphs build (agent/reviewer/analyzer/chat 5 nodes 6 edges, scheduler 3 nodes 2 edges), and one chat thread completed with status success against a stub model. open-swe's tree stayed byte-clean — only aegra.json changed, rewriting Open SWE's module refs as file paths because Aegra resolves a graph reference as a path. Three things the probe was not looking for are in section 3.1 below.
 <!-- END RESULT P1 -->
+
+#### 3.1 — What P1 found that it was not looking for
+
+A probe that answers its own question and nothing else has usually been run with the answer
+already in mind. These three were not in the falsifier, none of them falsifies `ASM-03`, and all
+three change a claim that is currently written down somewhere as settled.
+
+**Open SWE requires Python `>=3.14`, not `>=3.12`.** Its `pyproject.toml` says so, and its
+`langgraph.json` declares `"python_version": "3.14"`. The floor the 0.1.3 research carries is
+Aegra's `>=3.12`, taken when Aegra was the highest floor in the stack; it no longer is. This host
+happened to satisfy it — `/usr/bin/python3` is 3.14.4 — and the campaign's own environment note,
+*"Python ≥3.12 (this host has 3.13.14)"*, is a reading of `python3` on a shell where `uv` shims
+3.13 ahead of it. **3.13.14 would not have run this probe.** The bundle declares the highest
+floor, so `requires-python` for 0.1.3 is `>=3.14`.
+
+**`langgraph-api` is Elastic-2.0, it gets installed, and it gets imported — and none of that is
+necessary.** Open SWE declares `langgraph-cli[inmem]` among its *runtime* dependencies, and that
+extra pulls `langgraph-api`. Loading the five graphs then imports nine of its modules, because
+`langgraph_sdk._async.client` does `try: from langgraph_api.server import app` to build an
+in-process loopback transport when one is available. The chain starts in `langgraph-sdk`, which
+is MIT — **no Open SWE module imports it directly.** Uninstalling `langgraph-api`,
+`langgraph-runtime-inmem` and `langgraph-cli` was tried: all five graphs still loaded, nothing
+under `langgraph_api` appeared in `sys.modules`, and a chat run still completed with status
+`success`. So [stack §7](../research/specup-agent-stack.md)'s condition — adopt Open SWE
+*provided it never depends on `langgraph-api`* — is **satisfiable but not satisfied by default**,
+and the thing that satisfies it is a dependency exclusion in the composing project rather than a
+patch to Open SWE. That belongs in an ADR, and it belongs in whatever builds the deployment
+image, because a transitive install nobody excluded is how the Elastic licence arrives silently.
+
+**`scheduler` is not a `traced_*` wrapper.** [Stack §1](../research/specup-agent-stack.md#1-what-open-swe-is-today)
+records that *every* entrypoint in `langgraph.json` is one. Four are;
+`scheduler` is `agent.graphs.scheduler:get_scheduler`. It is a small drift, and it is load-bearing
+for `ASM-05`/P7: if Langfuse is reached through the `traced_*` wrappers, then on this reading the
+scheduler graph is not traced, and P7 must check the scheduler separately rather than assume the
+other four generalise.
+
+**One assumption of the campaign's own is corrected too.** P1 step 5 calls `chat` *"the cheapest
+graph that proves the path"*. `chat` is a read-only PR agent that expects a GitHub App
+installation token, PR context seeded as virtual files, and repo coordinates in `configurable`.
+It is cheap only because it **degrades**: with no `thread_id` in the run config it returns
+`create_deep_agent(system_prompt="", tools=[])`, a bare agent with no tools. The run that
+completed exercised Aegra's dispatch, checkpointing and run lifecycle in full, and exercised
+almost none of Open SWE. **P1 answers that the graphs load and the path runs. It does not
+establish that any graph does its job**, and section 8 already says no probe does.
 
 ---
 
@@ -474,8 +520,8 @@ until then it is an intention.
 
 | Phase | Work | Gate to the next |
 |---|---|---|
-| **0** | This document, `probes/`, the `docs/README.md` row | Reviewed |
-| **1** | **P1 alone.** P2 and P5 may run beside it | **P1 answered.** A falsification stops the campaign |
+| **0** | This document, `probes/`, the `docs/README.md` row | Reviewed — **done** |
+| **1** | **P1 alone.** P2 and P5 may run beside it | **P1 answered — done, 2026-09-18.** A falsification would have stopped the campaign; it did not fire |
 | **2** | P3, P4, P6, P7, P8 | All eight `answered`, `falsified` or `blocked` |
 | **3** | Register `EVID-0010`–`EVID-0016` in one batch | `audit.py` reports exactly two reasons |
 | **4** | The eight ADRs | Each at `REVIEW` or better; audit still two reasons |

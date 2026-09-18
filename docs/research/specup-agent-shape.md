@@ -455,7 +455,7 @@ the runtime coherent, and nothing upstream says it.
 |---|---|---|---|
 | `ASM-01` | `agent/` holds SpecUP middleware and prompts over Open SWE, not a vendored fork | carried | Vendoring makes Open SWE's MIT notices a shipping obligation and changes decision 1's reach |
 | `ASM-02` | `langgraph/aegra/` holds the Aegra deployment; `aegra.json` points at the five Open SWE graphs | carried | The control plane has no manifest and §2's process list loses its first two rows |
-| `ASM-03` | **Open SWE's five graphs run unchanged under Aegra** | carried | The largest single risk in this shape. Aegra's own compatibility list names Agent Chat UI, LangGraph Studio and CopilotKit — **not Open SWE.** If the graphs need changes, `agent/` becomes a fork and `ASM-01` falls with it |
+| `ASM-03` | ~~**Open SWE's five graphs run unchanged under Aegra**~~ **ANSWERED 2026-09-18 — it holds.** See below | carried | The largest single risk in this shape. Aegra's own compatibility list names Agent Chat UI, LangGraph Studio and CopilotKit — **not Open SWE.** If the graphs need changes, `agent/` becomes a fork and `ASM-01` falls with it |
 | `ASM-14` | **The graphs execute in Aegra's worker processes**, not as a separate service | **new** | Shield and `rag/` are libraries in *some* process; if it is not this one, §2's boundary table is wrong throughout |
 | `ASM-15` | One sandbox per run, created at start and destroyed at end | **new** | Per-thread or per-repository sandboxes change the isolation story between concurrent runs entirely |
 | `ASM-16` | The repository is cloned into the sandbox; the working tree lives there | **new** | If the tree is mounted from the host, the filesystem policy is protecting a bind mount and `ASM-28` needs rewriting |
@@ -506,7 +506,7 @@ Everything above is untested. These six need no new code:
 
 | Test | Settles |
 |---|---|
-| Point an `aegra.json` at one Open SWE graph and start a run | **`ASM-03`** — the largest risk in the shape |
+| ~~Point an `aegra.json` at one Open SWE graph and start a run~~ **done** | **`ASM-03`** — the largest risk in the shape, and it holds |
 | Open Agent Inbox against a local Aegra with JWT configured | **`ASM-04`** |
 | `openshell sandbox create` with a policy that excludes `.specify/extensions/**`, then try to write there | **`ASM-28`** |
 | Run `vouch-bridge` on the host and sign from inside a sandbox over the socket | `ASM-17` |
@@ -516,6 +516,31 @@ Everything above is untested. These six need no new code:
 **The three in bold are the ones that change the shape rather than a detail.** If `ASM-03` is false
 this document describes a different system.
 
+> **`ASM-03` was tested on 2026-09-18 and it holds.** Against `open-swe@8aac7c5` and
+> `aegra@c07ad0d` on Python 3.14.4: Aegra listed all five graphs over the Agent Protocol, all five
+> built, one `chat` thread completed with status `success`, and **Open SWE's tree was byte-clean
+> afterwards.** The full record, the falsifier it was measured against and the reproduction script
+> are in
+> [`../implement/test-specup-agent-shape-assumptions.md`](../implement/test-specup-agent-shape-assumptions.md#p1--do-open-swes-five-graphs-run-unchanged-under-aegra).
+>
+> **It cost this document three corrections**, and none of them was what the probe was looking for:
+>
+> 1. **The floor is Python `>=3.14`, not `>=3.12`.** That figure came from Aegra, which is no
+>    longer the highest floor in the stack. Open SWE's `pyproject.toml` and its `langgraph.json`
+>    both say 3.14. Every `requires-python` statement for 0.1.3 inherits the new number.
+> 2. **`aegra.json` cannot copy Open SWE's graph references verbatim.** Aegra resolves the left of
+>    the `:` as a file path; Open SWE writes a module path. The rewrite is configuration, which is
+>    why `ASM-03` survived — but [stack §3.2](specup-agent-stack.md#32-langgraph--aegra-and-the-agent-protocol-server)'s
+>    *"no change in content, only in filename"* was wrong and is corrected there.
+> 3. **`langgraph-api` (Elastic-2.0) arrives transitively through Open SWE**, and is imported when
+>    present. Removing it was tried and cost nothing. The stack's licence condition is therefore
+>    satisfiable, but it is **not the default**, and it becomes a build-time exclusion somebody has
+>    to write down. This is new material for `ASM-01`'s ADR.
+>
+> **What the probe did not establish:** that any graph does its job. The `chat` run went through a
+> stub model and, without PR context, `chat` degrades to a bare agent with no tools. P1 answers
+> that the path runs, and that is all it answers.
+
 ---
 
 ## 10. What this hands to the runtime document
@@ -523,9 +548,12 @@ this document describes a different system.
 `docs/research/specup-agent-runtime.md` has to specify what this page only shapes. In dependency
 order, because several of these determine the others:
 
-1. **Test `ASM-03` before writing anything else.** Whether Open SWE's graphs run unchanged under
-   Aegra decides whether `agent/` is a configuration directory or a fork, and every other section
-   assumes the first.
+1. ~~**Test `ASM-03` before writing anything else.**~~ **Done, 2026-09-18 — the graphs run
+   unchanged, so `agent/` is a configuration directory and every other section's assumption
+   stands.** What replaces this item is narrower and now has evidence behind it: state the
+   Python floor as `>=3.14`, state that `aegra.json` rewrites Open SWE's module references as file
+   paths, and state the `langgraph-api` exclusion as a build-time requirement rather than a
+   property the composition has for free.
 2. **Write the OpenShell policy YAML.** It is the only artifact that makes `ASM-28` real, and it is
    the one file in this stack that is simultaneously a governance artifact and a containment
    mechanism. It must exclude `.specify/extensions/**` and `.specify/governance/**` from write.
@@ -562,9 +590,12 @@ page is a synthesis of those readings**, which is one remove further from eviden
 here is either a restatement of something in the stack report or an inference drawn across two of
 them. The thirty-one assumption ids exist because that second category would otherwise be invisible.
 
-**Six of the thirty-one are testable today** and none has been tested. Until `ASM-03` in particular
-is exercised against a running Aegra, the first two planes of [§1](#1-five-planes-not-twelve-components)
-are a hypothesis with a diagram.
+**Six of the thirty-one are testable today and one has now been tested.** `ASM-03` was exercised
+against a running Aegra on 2026-09-18 and held, so the first two planes of
+[§1](#1-five-planes-not-twelve-components) are no longer a hypothesis with a diagram — the control
+plane loads and runs the graphs the execution plane is built from. **The other thirty are exactly
+as untested as they were**, and one probe answering does not make the rest more likely; it only
+removes the one that would have invalidated the others.
 
 **And the document has a specific failure mode worth naming, because it is the one a synthesis
 invites.** A reader who wants an architecture will find one here: five planes, eleven processes, two

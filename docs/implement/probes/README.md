@@ -19,16 +19,26 @@ hook fails any commit that gives a file there bytes, and that premise is what
 
 ## What is here now, and what is not
 
-**`record.py` is here.** It is the only thing that should edit a `RESULT` block.
+| File | What it is | Has it been run? |
+|---|---|---|
+| `record.py` | the harness. The only thing that should edit a `RESULT` block | yes, including all three refusals |
+| `p1.sh` | P1 end to end: clone, resolve, boot, assert, tear down | **yes — exit 0 answered, and exit 1 on a deliberately dirtied `open-swe`** |
+| `p1_stub_anthropic.py` | a stub Anthropic Messages API, so P1 needs no provider key | yes, both JSON and SSE |
+| `p2.sh` … `p8.sh` | **absent, deliberately** | — |
 
-**The per-probe scripts are not**, and their absence is deliberate rather than unfinished. Writing
-`p1.sh` today would mean inventing Aegra's compose invocation and OpenShell's CLI flags from
-memory — which is the failure `AGENTS.md` names in as many words: *"Resolve, or stop — never
-infer."* Each probe's script is written **when that probe is prepared**, against the upstream
-documentation open beside it, and committed before the probe runs.
+**The remaining seven are missing on purpose.** Writing `p2.sh` today would mean inventing
+OpenShell's CLI flags from memory — the failure `AGENTS.md` names in as many words: *"Resolve, or
+stop — never infer."* Each probe's script is written **when that probe is prepared**, against the
+upstream documentation open beside it.
 
-A directory holding only a harness is honest. A directory holding eight scripts that were never
-executed against the software they name is not.
+A directory holding a harness and the scripts that have actually run is honest. A directory
+holding eight scripts that were never executed against the software they name is not.
+
+**On ordering, precisely.** The rule that binds is that the *falsifier* is committed before the
+run, and P1's was — commit `afb6b75`, before any of this. `p1.sh` was written **during** P1's
+first run rather than before it, and committed with the result. It is a reproduction script, not
+the pre-registration; saying otherwise would be the small lie this whole directory exists to make
+expensive.
 
 ## Using `record.py`
 
