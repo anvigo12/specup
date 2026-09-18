@@ -540,6 +540,15 @@ this document describes a different system.
 > **What the probe did not establish:** that any graph does its job. The `chat` run went through a
 > stub model and, without PR context, `chat` degrades to a bare agent with no tools. P1 answers
 > that the path runs, and that is all it answers.
+>
+> **P1b closes part of that gap without a credential.** Open SWE's own suite was run inside the
+> same environment: **3434 passed, 0 skipped, 0 failed**, and **3433 passed with 1 failed** once
+> `langgraph-api` was uninstalled. The single failure is a test of importing checkpoints from the
+> `langgraph dev` server — a path an Aegra deployment does not use, and one whose *test body*,
+> not its module, is what needs the Elastic-licensed package. **That is the evidence the exclusion
+> in point 3 rests on.** It is recorded as evidence and not as a probe outcome, because it had no
+> pre-registered falsifier. See
+> [campaign §3.2](../implement/test-specup-agent-shape-assumptions.md#32--p1b-what-open-swes-own-test-suite-says).
 
 ---
 

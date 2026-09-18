@@ -206,6 +206,51 @@ completed exercised Aegra's dispatch, checkpointing and run lifecycle in full, a
 almost none of Open SWE. **P1 answers that the graphs load and the path runs. It does not
 establish that any graph does its job**, and section 8 already says no probe does.
 
+#### 3.2 — P1b: what Open SWE's own test suite says
+
+**This is not a probe and it must not be read as one.** It has no pre-registered falsifier, so
+there is no sentence in git that it could have failed against, and [`probes/record.py`](probes/record.py)
+would refuse it. It is **evidence**, gathered after P1 because P1's weakest claim was that one run
+through a stub model tells you almost nothing about Open SWE. Open SWE ships its own suite, and
+running it costs no credential and no model call.
+
+Reproduce with [`probes/p1b_open_swe_suite.sh`](probes/p1b_open_swe_suite.sh), which runs it twice,
+because the pair is what makes either number mean anything — the same reason `task test` and
+`task test:engine` are both in [`docs/dev/taskfile.md`](../dev/taskfile.md).
+
+| Configuration | Result |
+|---|---|
+| As Open SWE declares itself, PostgreSQL regressions enabled | **3434 passed, 0 skipped, 0 failed** |
+| With `langgraph-api`, `langgraph-runtime-inmem` and `langgraph-cli` uninstalled | **3433 passed, 1 failed** |
+
+**The Elastic-2.0 exclusion costs exactly one test, and it is the right one to lose.** The failure
+is `tests/agent/test_local_checkpointer.py::test_pickled_dev_server_checkpoints_are_imported_once`.
+The **module** under test, `agent/local_checkpointer.py`, is *"SQLite checkpointer for the desktop
+app's bundled `langgraph dev` server"* — wired through `langgraph.desktop.json` — and it imports
+`aiosqlite` and `langgraph.checkpoint.sqlite.aio`, neither of them Elastic-licensed. It is the
+**test body** that imports `langgraph_runtime_inmem.checkpoint.InMemorySaver`, and only to
+fabricate the legacy pickles the test then reads back. So what the exclusion breaks is a test of
+importing checkpoints *from the dev server*, in a deployment that does not run the dev server.
+**That is now the strongest evidence the licence position has**, and it is a build-time exclusion
+somebody has to write down rather than a property the composition has for free.
+
+**Two findings about Open SWE itself, neither of which P1 could have produced.**
+
+**All 308 skips were one gate, and it is openable.** Every skip in the default run reports
+`TEST_ANALYTICS_POSTGRES_URI is required for PostgreSQL regressions` — not a model key, a
+database URI. Pointed at a PostgreSQL, all 308 run and all 308 pass. A suite that reports 3126
+passed and 308 skipped is describing its environment, not its health, and the difference here is
+276 tests nobody was running.
+
+**The documented way to open that gate does not work out of the box.**
+`tests/analytics/conftest.py` passes the variable straight to `create_async_engine()`. Given the
+obvious value — `postgresql://user:pass@host/db` — SQLAlchemy selects the **synchronous psycopg2
+dialect**, and `psycopg2` appears in neither Open SWE's `pyproject.toml` nor its `uv.lock`, so all
+308 turn from `skipped` into `ERROR: No module named 'psycopg2'`. Naming the driver —
+`postgresql+asyncpg://` — fixes it with no new package, because `asyncpg` *is* declared. This is
+an upstream bug worth reporting: the skip message names a variable, and the value it invites
+cannot work.
+
 ---
 
 ### P2 — Does an OpenShell filesystem policy block a write to the governance tree?

@@ -24,7 +24,14 @@ hook fails any commit that gives a file there bytes, and that premise is what
 | `record.py` | the harness. The only thing that should edit a `RESULT` block | yes, including all three refusals |
 | `p1.sh` | P1 end to end: clone, resolve, boot, assert, tear down | **yes — exit 0 answered, and exit 1 on a deliberately dirtied `open-swe`** |
 | `p1_stub_anthropic.py` | a stub Anthropic Messages API, so P1 needs no provider key | yes, both JSON and SSE |
+| `p1b_open_swe_suite.sh` | Open SWE's own suite, twice: with and without `langgraph-api` | yes |
 | `p2.sh` … `p8.sh` | **absent, deliberately** | — |
+
+**`p1b` is evidence, not a probe.** It has no pre-registered falsifier, so `record.py` will not
+take its output and no `RESULT` block belongs to it. It exists because P1's one stubbed run said
+almost nothing about Open SWE, and Open SWE ships 3434 tests that say a great deal for free.
+A script whose numbers are checked against constants is not a probe; it is a regression guard, and
+when its numbers move the campaign document changes rather than the constants.
 
 **The remaining seven are missing on purpose.** Writing `p2.sh` today would mean inventing
 OpenShell's CLI flags from memory — the failure `AGENTS.md` names in as many words: *"Resolve, or
