@@ -41,6 +41,14 @@ inside a governance tool. The section takes **no decision** and its central clai
 > question. This page extends it to the runtime; that page is the authority on SpecUP's own
 > terms.
 
+> **If you are here to operate the stack rather than to decide on it, read
+> [`specup-agent-shape.md`](specup-agent-shape.md) instead.** It synthesises this report into one
+> running system — five planes, eleven processes, two lifecycles, the trust boundaries and the
+> failure matrix — and carries **31 numbered assumptions** for the inferences that synthesis has to
+> make. This page stays the authority on *why* each component is here; that page is the authority
+> on *how they run together*, and it corrects one claim in
+> [§13.7](#137-one-rule-and-the-five-places-it-lands) about where the governance tree is protected.
+
 **Four conclusions are worth putting at the top, because the rest of the report is the working.**
 
 1. **SpecUP composes this stack. It does not redistribute it** ([decision 1](#121-decisions-taken)).
@@ -2370,6 +2378,16 @@ the agent may touch, and [§3.4](#34-sandboxopenshell--nvidia-openshell)'s conta
 every file operation through `execute()`. A write to `extensions/openup/` is a tool call like any
 other. **Inferred** that Shield's `deny_default: true` rules are the right expression of it; that is
 a design guess and it belongs in an ADR before anybody writes the rule file.
+
+> **That guess is corrected in [`specup-agent-shape.md`](specup-agent-shape.md), and the correction
+> is kept here rather than folded in silently.** Shield is interception, and its own documentation
+> says path normalisation *"resolves `..` lexically but cannot see symlinks"* while *"servers must
+> independently confine real paths to a configured root."* **OpenShell's filesystem policy is the
+> right layer** — locked at sandbox creation, hash-attested, failing closed on any version
+> disagreement. The shape document records that as `ASM-28`, along with the second half of the
+> problem this section did not see: the governance tree ships *inside* the repository the agent
+> clones, so the validators are in the sandbox with it, and **the evaluation that decides whether
+> the agent's work passed has nowhere trusted to run until there is CI.**
 
 **And the cost of getting this wrong is not linear.** OWASP's AI Vulnerability Scoring System
 treats capacity for **self-modification** as one of its agentic risk amplification factors, under an
