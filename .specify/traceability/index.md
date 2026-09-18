@@ -32,7 +32,7 @@ python3 extensions/openup/scripts/python/audit.py
 
 | Metric | Value | What it means here |
 |---|---|---|
-| `edges` | 79 | 18 `refines`, 21 `implements`, 18 `verifies`, 1 `mitigates`, 8 `evidences`, 1 `tests`, 12 `belongs-to` |
+| `edges` | 80 | 18 `refines`, 21 `implements`, 18 `verifies`, 1 `mitigates`, 9 `evidences`, 1 `tests`, 12 `belongs-to` |
 | `perimeter_files` | 17 | the Python modules under `extensions/openup/scripts/python/` |
 | `forward_coverage` | 100% | every requirement reaches an implementer |
 | `backward_coverage` | 100% | every in-perimeter file reaches a requirement |
@@ -128,11 +128,18 @@ output of 74 edges, 18 requirements, 13 WBS nodes and 4 risks** over a 17-file p
 says plainly that one project measured by its own author is not a measurement.
 
 **The graph is larger than that now, and the difference is not part of the measurement.** It
-stands at 79 edges, 19 requirements, 14 WBS nodes and 6 risks — of which 66 edges are
-assertions no check can confirm. The five extra edges came from the relicence
-(`NON-FR-DIST-0001`, `WBS-1.1.2.7`, `RISK-0005`, `RISK-0006`) and from `EVID-0008`, the 0.1.3
-stack research. Quoting the current total as the cost of the sitting would inflate the one
-number this project has about its own overhead, which is the direction that flatters it.
+stands at 80 edges, 19 requirements, 14 WBS nodes and 6 risks — of which 67 edges are
+assertions no check can confirm. The six extra edges came from the relicence
+(`NON-FR-DIST-0001`, `WBS-1.1.2.7`, `RISK-0005`, `RISK-0006`) and from the two 0.1.3 research
+artifacts, `EVID-0008` and `EVID-0009`. Quoting the current total as the cost of the sitting
+would inflate the one number this project has about its own overhead, which is the direction
+that flatters it.
+
+**And notice which direction the last two went.** Both are documents, both attach to the same
+iteration node, and **neither adds anything a check can confirm** — so the graph grew by two
+edges and its `asserted` share did not move off 84%. That is the honest reading of registering
+research as evidence: it makes the work traversable from the WBS, and it buys no verification
+at all.
 
 ## Key identifiers in this scope
 
@@ -145,7 +152,8 @@ number this project has about its own overhead, which is the direction that flat
   `NON-FR-DIST-0001`
 - Test artifacts: `UNIT-CORE-0001`, `UNIT-DRV-0001`, `UNIT-APV-0001`, `UNIT-DOC-0001`,
   `UNIT-INIT-0001`, `UNIT-LIC-0001`
-- Evidence: `EVID-0001` to `EVID-0007`
+- Evidence: `EVID-0001` to `EVID-0009` — the last two are the 0.1.3 research documents,
+  `EVID-0008` the component reading and `EVID-0009` the runtime shape synthesised from it
 - Iterations: `ITER-C-01`, `ITER-C-02`, `ITER-C-03`
 
 ## Canonical stores

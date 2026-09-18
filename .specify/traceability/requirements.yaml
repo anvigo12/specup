@@ -619,6 +619,64 @@ artifacts:
     # `open-swe/` is tracked from the 0.1.2 release, so this evidence no longer describes
     # something that can change without a commit. What is still unchecked is agreement between
     # the directory tree and section 1's inventory of it: nothing fails if they diverge.
+    #
+    # ONE CLAIM IN THIS ARTIFACT IS CORRECTED BY EVID-0009 rather than by a later reading of a
+    # source. Section 13.7 named Vouch Shield as the layer that protects the governance tree
+    # from the agent; the shape document shows it must be OpenShell's filesystem policy,
+    # because Shield's own documentation says it cannot see symlinks. The correction is written
+    # into section 13.7 in place, so a reader of this artifact meets it where the wrong claim
+    # was. A reviewer should treat that as the pattern to expect: synthesising this report
+    # surfaces errors that reading it section by section does not.
+
+  - id: EVID-0009
+    type: evidence
+    title: "The 0.1.3 runtime shape, synthesised from EVID-0008 with its assumptions numbered"
+    status: REVIEW
+    owner: "maintainer"
+    source: docs/research/specup-agent-shape.md
+    # A synthesis of EVID-0008, not a second reading of its sources. It reorganises the same
+    # twelve components by how they run — five planes, eleven processes, two lifecycles, five
+    # trust boundaries, one failure matrix — and it exists because the next document,
+    # docs/research/specup-agent-runtime.md, has to specify a system rather than survey one.
+    #
+    # WHAT A REVIEWER CHECKS HERE IS NOT WHETHER THE CLAIMS ARE TRUE. EVID-0008 carries that
+    # burden and cites each source so the reading can be repeated. What this artifact must be
+    # checked for is the failure that synthesis specifically invites: a coherent narrative in
+    # which a reading and a guess are indistinguishable. The source report marks every claim
+    # Verified, Inferred, Specified or Decided, and those markers do not survive being drawn as
+    # a deployment diagram — everything in a diagram looks equally solid.
+    #
+    # THE MITIGATION IS THE ASSUMPTION REGISTER, AND IT IS WHAT THIS EVIDENCE ACTUALLY IS.
+    # Section 9 numbers 31 assumptions, ASM-01 to ASM-31, each with where it came from and what
+    # breaks if it is wrong. Thirteen are carried from EVID-0008's own Inferred markers.
+    # EIGHTEEN ARE NEW: this document had to invent them to make the runtime coherent at all,
+    # and nothing upstream states any of them. Those eighteen are the reviewable material. A
+    # reviewer who checks one thing should check that each of the eighteen is an assumption
+    # rather than a conclusion that lost its evidence on the way in.
+    #
+    # ASM-03 is load-bearing for the whole artifact: that Open SWE's five graphs run unchanged
+    # under Aegra. Aegra's own compatibility list names Agent Chat UI, LangGraph Studio and
+    # CopilotKit and does not name Open SWE. If ASM-03 is false, `agent/` is a fork rather than
+    # a configuration directory, EVID-0008's decision 1 changes reach, and this document
+    # describes a different system. It is also testable in an afternoon, which is the point:
+    # six of the thirty-one need no new code, and none of the six has been run.
+    #
+    # Three findings are this artifact's own rather than EVID-0008's, and they are the reason
+    # it is registered separately rather than folded in. First, the sandbox contains code
+    # execution over a working tree and not the agent's reasoning — retrieval, the policy
+    # broker and the trace exporter all run outside it, which makes the containment claim
+    # narrower than "the agent is sandboxed" reads. Second, ASM-28: the governance tree is
+    # protected by OpenShell's hash-attested filesystem policy, not by the Shield rules.
+    # Third, and unsolved here: the governance tree ships inside the repository the agent
+    # clones, so the validators run inside the sandbox with it, and THE EVALUATION THAT GRADES
+    # THE AGENT'S WORK HAS NOWHERE TRUSTED TO RUN UNTIL CI EXISTS. There is no .github/workflows
+    # in this repository.
+    #
+    # This is an INTERMEDIATE artifact and it says so in its own header. It is REVIEW rather
+    # than BASELINED because its whole purpose is to be superseded: once the assumptions are
+    # tested, docs/research/specup-agent-runtime.md replaces the shape with a specification and
+    # this document becomes the record of what was assumed before anybody knew. Do not baseline
+    # it, and do not cite it for a component fact — cite EVID-0008 for those.
 
   # -- iterations ------------------------------------------------------------------------
   #
