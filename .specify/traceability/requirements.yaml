@@ -531,7 +531,7 @@ artifacts:
     # answers each of the eighteen questions from outside practice: SLSA's Source Track,
     # OWASP's Non-Human Identities Top 10, CWE-1188, SPIFFE, Sigstore's keyless model,
     # CycloneDX ML-BOM, OpenSSF Scorecard and Kubernetes RuntimeClass among them. Six of the
-    # eighteen rest partly on secondary sources, and section 13 marks which. The stated ground
+    # eighteen rest partly on secondary sources, and section 14 marks which. The stated ground
     # for adopting them is that the components are young and a convention many people follow is
     # a better guess than one derived here — with each answer reopening when its component
     # reaches a stable release. THAT REVISIT IS THE WHOLE JUSTIFICATION AND NOTHING SCHEDULES
@@ -557,6 +557,41 @@ artifacts:
     # redirects to Neo4j's documentation, AWS still describes Bolt as CC BY-SA 3.0, and the
     # neo4j/docs-bolt repository file says CC BY-NC-SA 4.0 — a NonCommercial term the older
     # licence did not have. The report does not decide which governs which artifact.
+    #
+    # SECTION 13 IS NEW, IT TAKES NO DECISION, AND IT REOPENS THE QUESTIONS SECTION. It
+    # researches how the agent improves itself — exploration policies and self-improving agent
+    # systems — and produces six more questions, numbered 19 to 24, that decision 9 does not
+    # cover because no established practice governs a self-improving agent inside a governance
+    # tool. Everything in it is Specified or Inferred; the only Verified claims are what the
+    # cited papers say, and a result on SWE-bench or WebArena is not evidence about a
+    # governance tool. Read it as the weakest section in the artifact and the one most likely
+    # to be quoted as though it were a plan.
+    #
+    # Three things in it are load-bearing for this repository rather than for the 0.1.3 stack,
+    # and a reviewer should check these rather than the literature survey.
+    #
+    # First, the one rule: an agent may optimise what it does, and never what decides whether
+    # what it did was good. Section 13.7 lands it on five paths that exist today —
+    # extensions/openup/scripts/python/, .specify/governance/allowed-signers, the thresholds in
+    # openup-config.yml, any approval recorded as witnessed, and rag/eval/golden/. NOTHING
+    # PROTECTS ANY OF THEM FROM A PROCESS RUNNING AS THE DEVELOPER. The Darwin Gödel Machine
+    # removed the markers in its own reward function and was caught only by its archive's
+    # lineage; this project's equivalent lineage is git, which is one of the things the agent
+    # is allowed to write to.
+    #
+    # Second, a consequence of decision 7 that appears nowhere else: if the evaluator is an LLM
+    # it must not be the same model as the actor, because LLM judges show measurable
+    # self-preference driven by familiarity rather than authorship. DOC-005 forbids exactly
+    # that shape — a claim of corroboration naming one source twice — and the guide already
+    # admits DOC-005 counts names rather than independence. That admission is now backed by
+    # outside evidence, which makes it a gap rather than a caveat.
+    #
+    # Third, the cheapest item in the whole report: section 13.8 argues this project already
+    # mandates three metacognitive primitives — "resolve, or stop, never infer", the third exit
+    # code, and DOC-005 — and measures none of them. Emitting a telemetry event whenever
+    # "resolve, or stop" fires needs no new capability, only a span, and decision 8's factor 13
+    # plus answer 11 already chose the transport. If any single thing in this artifact is acted
+    # on before 0.1.3 exists, it should be that one.
     #
     # Two further claims deserve a second reading, because the report builds on them.
     #

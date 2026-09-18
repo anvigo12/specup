@@ -19,10 +19,18 @@ this report that produces obligations a program could check.
 one of the eighteen questions in [§12.2](#122-the-eighteen-questions) — on the ground that
 established practice is the better answer while this stack is young, and that each reopens as its
 component matures. Decision 10 gives the GitHub surface a written grammar
-([§5.4](#54-the-conventions-the-github-surface-follows)). **So this document no longer has an open
-questions section**, and the honest reading of that is in
+([§5.4](#54-the-conventions-the-github-surface-follows)). The honest reading of decision 9 is in
 [§12.3](#123-the-adopted-answers-and-the-outside-practice-they-rest-on): eighteen answers borrowed
 from outside, six of them from secondary sources, none of them measured here.
+
+**[§13](#13-meta-cognition-exploration-and-the-parts-that-must-not-be-explored) is new, and it
+reopens the questions section.** The previous revision of this page said the document no longer had
+one. That is no longer true. The governance layer has to say how the agent improves and who is
+allowed to certify that it did, and researching it produced **six more questions**
+([§13.10](#1310-six-new-questions)) rather than answers. Decision 9 does not reach them: it rests on
+established practice, and there is no established practice for governing a self-improving agent
+inside a governance tool. The section takes **no decision** and its central claim is a refusal —
+*an agent may optimise what it does, and never what decides whether what it did was good.*
 
 > **A decision recorded here is not an ADR.** It is a ruling written into a research report,
 > which is weaker than the artifact this project would normally demand for a choice of this size.
@@ -127,7 +135,7 @@ Every claim below therefore carries one of four markers, and they are not interc
 
 | Marker | Means |
 |---|---|
-| **Verified** | Read this session from the named upstream source, cited in [§13](#13-sources) |
+| **Verified** | Read this session from the named upstream source, cited in [§14](#14-sources) |
 | **Inferred** | Read off the folder layout or off how these projects are normally combined. **A guess, marked as one** |
 | **Specified** | **Created deliberately, with the intent recorded here at the moment of creation.** Neither a reading nor a guess — a decision by the author of this report, written down |
 | **Decided** | **Ruled on by the project owner**, and recorded here rather than discovered here. The ten rulings are listed together in [§12.1](#121-decisions-taken) |
@@ -1940,6 +1948,12 @@ ask whether a standard just adopted will actually be honoured, and
 **Each remains an ADR candidate.** Decision 9 supplies the answer an ADR would record; it does not
 supply the ADR.
 
+**Six more were raised afterwards and are not in this list.** [§13](#13-meta-cognition-exploration-and-the-parts-that-must-not-be-explored)
+researches how the agent improves itself and produces questions **19 to 24**
+([§13.10](#1310-six-new-questions)). They are kept there rather than folded in here, because
+**decision 9 does not cover them**: it rests on what established practice already does, and nothing
+established governs a self-improving agent inside a governance tool.
+
 1. **Does an Agent Inbox decision become a SpecUP approval, and how?** [§3.3](#33-agent-inbox--the-explicit-decisions)
    and [§9](#9-what-the-layout-does-not-have). The decision has a schema, a payload and a durable
    record; nothing hashes it or binds it to a signer. **This is where SpecUP's own model and this
@@ -2011,7 +2025,7 @@ supply the ADR.
 
 **These were recommendations and are now [decision 9](#121-decisions-taken).** Each was read this
 session from an external source rather than reasoned out here, and each is cited in
-[§13](#13-sources). The ruling is that established practice is the better answer while this stack is
+[§14](#14-sources). The ruling is that established practice is the better answer while this stack is
 young, and that each entry reopens when the component it concerns reaches a stable release.
 
 > **Read the fourth column as the warrant, not as decoration.** It is the only thing separating a
@@ -2088,7 +2102,7 @@ reviewer will expect an answer to*.
 **It does not make them safe, and decision 9 does not change what they are.** Every answer above is
 somebody else's practice, read once, from a source written for a different system. Six of the
 eighteen rest partly on secondary sources — blog posts and vendor engineering write-ups rather than
-specifications — and [§13](#13-sources) marks which rather than promoting them. **Industry practice
+specifications — and [§14](#14-sources) marks which rather than promoting them. **Industry practice
 is evidence about what is normal, not evidence about what is correct here**, and the two diverge
 most exactly where this project is unusual: a governance tool whose whole argument is that a claim
 must be checkable.
@@ -2100,9 +2114,371 @@ later, from an answer nobody thought about. The three entries with an identifiab
 (OpenShell leaving alpha). The other fifteen have no trigger, and writing one for each is the work
 that turns this table from a decision into a governed decision.
 
+**[§13.2](#132-the-exploration-problem-is-already-in-this-report-under-another-name) gives that
+failure its published name and proposes the cheapest fix in this report.** What is described above
+is **exploration collapse** — behaviour concentrating on familiar high-reward routines as memory
+grows — and the fourth column of this table is the material a trigger can be built from. Each
+warrant is an observation, an observation that has moved is a signal, and re-reading eighteen
+sources on a schedule is a cron job rather than a research programme.
+
 ---
 
-## 13. Sources
+## 13. Meta-cognition, exploration, and the parts that must not be explored
+
+**Research, and no decision.** The governance layer has to answer a question the rest of this
+report does not: **how does the agent get better, and who is allowed to say that it did?** This
+section reads the current literature on exploration and self-improving agents, says which parts
+this stack can adopt, and says which parts it must refuse. It ends with six new questions
+([§13.10](#1310-six-new-questions)) rather than with answers, because nothing here has been
+measured and the failure mode it studies is *an optimiser that reports its own success*.
+
+**The section exists because [§12.3](#123-the-adopted-answers-and-the-outside-practice-they-rest-on)
+left a hole and named it.** Decision 9 adopted eighteen answers on borrowed evidence and promised a
+revisit that nothing schedules. An exploration policy is the machinery that would schedule it. So
+this is not a new subject bolted on to the report — it is the last open problem in the report,
+approached from the side the literature approaches it from.
+
+### 13.1 Three things are called self-improvement, and only one of them is governable here
+
+The literature uses one phrase for three mechanisms with completely different governance
+properties. Separating them is the first useful thing this section does, because the choice
+between them is already made by constraints this project adopted for other reasons.
+
+| Kind | Representative work | What changes | Is it a file? | Can it carry a provenance level? |
+|---|---|---|---|---|
+| **Weight adaptation** | SEAL (MIT) — the model writes *self-edits* and applies them to its own parameters | model parameters | **No** | **No.** A weight delta cannot be reviewed, and `git diff` says nothing about it |
+| **Harness self-modification** | Darwin Gödel Machine; ADAS / Meta Agent Search | the agent's own source code | Yes | Yes — it is a commit |
+| **Policy-artifact improvement** | GEPA (evolved prompts), Voyager (a skill library), APEX (a strategy map) | files the agent reads before it acts | Yes | Yes |
+
+**`NON-FR-CORE-0001` picks the third, and decisions 5 and 7 remove the first from reach entirely.**
+Filesystem authority says governance state lives in files because a file can be diffed, reviewed
+and version-controlled. A prompt is a file. A skill library is a directory. A strategy map
+serialises to one. **A weight update is none of those things**, and it is also not available:
+[decision 7](#121-decisions-taken) makes the generative model a configured provider, and
+[decision 5](#121-decisions-taken) keeps weights out of the tree. So the constraint SpecUP adopted
+for reviewability and the constraint it adopted for licensing exclude the same mechanism, from two
+directions. **Verified** that SEAL performs weight updates; **Inferred** that this is why it does
+not fit — that inference is this report's, not MIT's.
+
+**And [decision 8](#121-decisions-taken) has already ruled on *when* the improvement may take
+effect, before anybody asked.** Factor V separates build, release and run, and requires releases to
+be *"an append-only ledger"*. Factor VI says a process *"never assumes that anything cached in
+memory or on disk will be available on a future request or job"*. Together they forbid the naive
+shape of self-improvement — an agent that adapts inside a running process and carries the
+adaptation forward — and prescribe the governable one: **an improvement is a proposal, it is
+evaluated, and it is promoted by a release.** That is the same reasoning
+[§11.3](#113-two-collisions-and-both-resolve) used to class an index as a build artifact, applied
+to a second kind of artifact. The twelve factors turn out to have an opinion about self-improving
+agents, which is not what anybody adopted them for.
+
+### 13.2 The exploration problem is already in this report, under another name
+
+**Verified.** APEX names the failure it exists to prevent: self-evolving agents *"often suffer from
+exploration collapse: as memory grows, behavior concentrates around familiar high-reward routines,
+reducing the chance of discovering better alternatives."*
+
+Read [§12.3](#123-the-adopted-answers-and-the-outside-practice-they-rest-on) against that sentence.
+Decision 9 adopted eighteen conventions — eighteen familiar routines, high-reward because many
+other people already run them — and the closing paragraph says the revisit is *"the load-bearing
+half of decision 9, and it is the half with nothing behind it."* **That is exploration collapse
+described in governance vocabulary.** An answer adopted because it is conventional, with no
+mechanism that ever reconsiders it, is a policy that has stopped exploring.
+
+**So the first exploration policy this project needs is not about the agent at all.** It is about
+the eighteen warrants in §12.3's fourth column. Each warrant is an observation — a Scorecard
+number, a semantic-convention stability badge, an alpha tag, a licence file, a benchmark. **An
+observation that has moved is an exploration signal**, and re-reading eighteen URLs is a cron job,
+not a research programme. [§5](#5-the-interface-layer--what-replaces-plane) already made GitHub the
+whole interface layer, so the output is an issue on the repository, opened by the thing that
+noticed.
+
+**Specified.** That job is the cheapest concrete deliverable in this section and the only one that
+needs nothing that does not exist: read the eighteen sources, compare against what §12.3 recorded,
+open one issue per moved warrant. It converts decision 9 from a promise into a trigger, which is
+precisely what [§12.1](#121-decisions-taken) said was missing and
+[What checks any of this](#what-checks-any-of-this) says again at the end.
+
+### 13.3 The state of the art, and what each part of it is for
+
+Fifteen methods, read this session and ordered oldest first. **The fourth column is the point** —
+most of these are not adoptable, and each one still contributes exactly one mechanism worth
+keeping.
+
+| Method | Where and when | What it explores | The mechanism worth taking |
+|---|---|---|---|
+| **ε-greedy, UCB, Thompson sampling** | classical; Russo and Van Roy for the posterior-sampling treatment | actions | The agent *"maintains a posterior distribution over its beliefs regarding the optimal action"* and samples in proportion to it. Randomisation driven by **uncertainty**, not by a fixed rate |
+| **MAP-Elites** | Mouret and Clune, 2015 | a behaviour space | Keep **an elite per cell**, not a champion. The output is *"a diverse archive of high performing solutions"*, and the algorithm is called an *illumination* algorithm because the empty cells are findings too |
+| **Ape-X** | Horgan et al., DeepMind, 2018 | actions, in parallel | **Different exploration rates per actor.** Many workers, each with its own ε, feeding one prioritised replay. Diversity comes from the fleet, not from one agent's schedule |
+| **Go-Explore** | Ecoffet et al., *Nature* 590, 2021 | states | Names the two failures precisely: **detachment** (forgetting how to reach a promising state) and **derailment** (failing to return to it before exploring). The fix is an explicit archive and *"first return, then explore"* |
+| **Reflexion** | Shinn et al., NeurIPS 2023 | nothing; it improves within a task | Reinforcement *"not by updating weights, but instead through linguistic feedback"*, kept in an episodic memory buffer. The cheapest self-improvement there is, and it evaporates at the end of the episode |
+| **Voyager** | 2023, Minecraft | a curriculum | Three parts: an automatic curriculum, **an ever-growing skill library of executable code**, and an iterative prompt loop with self-verification. The skill library is a directory of functions indexed by description — a shape this project can already govern |
+| **ADAS / Meta Agent Search** | Hu et al., ICLR 2025 | **code** | Searching agent designs *"in code space"* with a meta-agent that writes and refines other agents. Names the three parts every such system has: a search space, a search algorithm, and **an evaluation function** |
+| **AlphaEvolve** | Google DeepMind, 2025 | programs | Evolution paired with **automated evaluators that verify answers**. Its own stated advantage is that solutions are *"interpretable, verifiable through execution"* — it only works where a machine can score the output |
+| **Darwin Gödel Machine** | Sakana AI and UBC, 2025 | the agent's own code | **An archive, not a lineage of champions.** *"Future self-modifications can then branch off from any agent in this growing archive"*, and some *"less-performant 'ancestor' agents… were instrumental in discovering novel features"*. Also the cautionary finding — [§13.7](#137-one-rule-and-the-five-places-it-lands) |
+| **SEAL** | MIT, 2025 | the model's own weights | Self-edits as training data plus update settings. Out of scope here ([§13.1](#131-three-things-are-called-self-improvement-and-only-one-of-them-is-governable-here)), and it contributes the warning: **catastrophic forgetting**, where adapting to new information degrades earlier tasks |
+| **LLM-Explorer** | Tsinghua, NeurIPS 2025 | the exploration schedule itself | The insight is about what is wrong with ε-greedy: preset stochastic processes are *"applied uniformly across different tasks"* and ignore *"the agent's real-time learning status"*. The LLM reads the trajectory and writes the schedule |
+| **SAGE** | Yang et al., NeurIPS 2025 | web tasks, hierarchically | *"Self-guided hierArchical exploration for Generalist wEb agents."* Three tiers: a pre-exploration phase that builds structural understanding, a top-level *"self-evolving curriculum of tasks from easy to hard"*, and a low-level mechanism |
+| **GEPA** | Agrawal et al., 2025; ICLR 2026 oral | prompts | **Do not collapse feedback into a scalar.** GEPA reflects in natural language on execution traces and combines lessons *"from the Pareto frontier of its own attempts"*. Reported to beat GRPO by 10% on average with **up to 35× fewer rollouts** |
+| **SGE** | Szot, Kirchhof, Attia and Toshev, March 2026 | **strategies, not actions** | *"Explor[e] in the space of strategies rather than the space of actions"* — generate a short natural-language strategy first, then act conditioned on it. Plus **mixed-temperature sampling** for parallel diversity and a reflection step grounded on previous outcomes |
+| **APEX** | Li et al., May 2026 | a strategy space | A **strategy map**: *"a directed acyclic graph of milestones with prerequisite dependency edges."* **Fork Discovery** adds *"evidence-grounded unexplored directions"*; **Policy Selection** balances exploration against exploitation at planning time |
+
+**Four of the fifteen are load-bearing for this stack, and they are not the newest ones.** The
+archive (MAP-Elites, Go-Explore, DGM), the separation of strategy from action (SGE, APEX), the
+refusal to reduce feedback to a number (GEPA), and the automated evaluator (AlphaEvolve, ADAS). The
+rest are context.
+
+**One thing is common to every method above and is worth stating on its own line, because it is the
+part this project is least ready for: all of them need a score.** ADAS calls it the evaluation
+function, AlphaEvolve calls it an automated evaluator, GEPA calls it feedback, RL calls it the
+reward. **A stack with no score cannot explore, it can only drift** —
+[§13.6](#136-the-reward-signal-and-which-of-the-four-can-be-trusted).
+
+### 13.4 Two name collisions to know before you search
+
+The report has done this twice already — *12-Factor Agents* against the twelve-factor methodology
+([§11](#11-the-stack-as-a-fifteen-factor-application)), and `boltprotocol.org` against
+`neo4j.com/docs/bolt` ([§3.10](#310-dbneo4j--the-graph-store)). Two more, both verified this
+session, both in this exact subject area:
+
+| The name | One thing | The other thing |
+|---|---|---|
+| **APEX** | *Autonomous Policy EXploration for Self-Evolving LLM Agents*, May 2026 — the strategy map above | **Ape-X**, *Distributed Prioritized Experience Replay*, Horgan et al., DeepMind 2018 — a distributed RL architecture |
+| **SGE / SAGE** | **SGE** — *Strategy-Guided Exploration*, March 2026 | **SAGE** — *Self-guided hierArchical exploration for Generalist wEb agents*, NeurIPS 2025 |
+
+Both pairs are about exploration, which is what makes them easy to confuse and hard to notice
+confusing. A search for "APEX exploration" returns both, eight years apart, with different
+definitions of what is being explored.
+
+### 13.5 What an exploration policy would actually be in this stack
+
+**Specified.** A design, not a decision. Five parts, each mapped to something that already exists
+or is already named as missing.
+
+**1. The arms — what is allowed to vary.**
+
+| What varies | Where it lives | Explorable |
+|---|---|---|
+| Retrieval configuration: fusion weights, top-k per index, rerank depth, chunk size | `rag/fuse/`, `rag/chunk/`, `rag/rerank/` | **Yes, and cheapest.** Changing a fusion weight costs one evaluation run and no provider calls |
+| Prompt and skill artifacts: the system prompt, `AGENTS.md`, the `SKILL.md` capability contracts | tracked files | **Yes.** This is GEPA's territory and the reason GEPA is the most directly adoptable method in the table |
+| Strategy selection: which plan shape for which kind of work item | nowhere; it does not exist | **Yes, once the strategy map does.** APEX's DAG is the artifact, and the WBS is a DAG of milestones with prerequisite edges already |
+| Model routing: which provider model serves which stage | config, per [decision 7](#121-decisions-taken) | **Yes, and it is metered.** Every arm pull is provider spend |
+| Harness code: the graphs, the sandbox backend, the validators | tracked files | **Refused** — [§13.7](#137-one-rule-and-the-five-places-it-lands) |
+| Model weights | not in the tree, per [decision 5](#121-decisions-taken) | **Out of reach**, and that is not an accident |
+
+**2. The archive — what is remembered.** Keep an elite per cell rather than a single best
+configuration. The cells are **kind of work × cost tier**, which is a behaviour space this project
+can already name: the WBS has disciplines and the telemetry has cost. The DGM's finding is the
+reason not to hill-climb — ancestors that scored worse *"were instrumental in discovering novel
+features"*, and simple hill-climbing discards exactly those. Go-Explore supplies the failure to
+guard against: **detachment**, forgetting how to reach a configuration that once worked.
+
+**3. The selector.** Thompson sampling over the arms, because the reward here is sparse and the
+posterior is what makes randomisation proportional to genuine uncertainty rather than to a rate
+somebody typed. Ape-X's contribution applies directly: **different exploration rates per worker**,
+because this stack already runs concurrent agent processes and diversity across the fleet is free
+in a way diversity within one run is not. SGE's contribution is *where* to randomise — at the
+**strategy**, not at the action. Randomising tool calls in a sandbox with write access to a working
+tree is not exploration, it is an incident.
+
+**4. The budget.** Exploration is a fixed, capped fraction of runs. **And the fraction is policy,
+not config** — [§11.3](#113-two-collisions-and-both-resolve) drew that line, and an exploration
+rate passes its test exactly: it does not vary between deploys, it varies between decisions, and it
+changes what the system does rather than where it runs. It belongs in a version-controlled file
+with a reviewable diff, beside the Shield rules and `allowed-signers`.
+
+**5. Promotion — and this is the part that is specific to SpecUP.** An explored variant is never
+adopted by the run that found it. It becomes a pull request on the GitHub surface
+([§5](#5-the-interface-layer--what-replaces-plane)), formatted per
+[decision 10](#121-decisions-taken), carrying the evidence that it won and the `Vouch-DID` trailer
+identifying which agent proposed it. It passes the same gate any other change passes.
+
+**The loop closes at that point, and it closes neatly.** The human approval that merges the
+promotion **is** the reward observation — the strongest signal available
+([§13.6](#136-the-reward-signal-and-which-of-the-four-can-be-trusted)) is generated by the act of
+accepting the improvement. So the record of merged promotions is the training data, it is already
+in git, it is already signed if `require_witness_at_or_above` is raised, and nobody has to build a
+feedback store. **Inferred**, and it is the most attractive claim in this section, which is a reason
+to distrust it until something measures it.
+
+### 13.6 The reward signal, and which of the four can be trusted
+
+Four candidate scores exist or are named as missing in this report. They are not equivalent, and
+two of them fail for reasons the report has already argued elsewhere.
+
+| Candidate | Where | Verdict |
+|---|---|---|
+| **`rag/eval/golden/` and `eval/coir/`** | [§3.6.8](#368-eval--the-part-that-makes-the-rest-honest) | **Usable, on one condition.** It must be split into a half the optimiser sees and a **sealed half it never sees**, and the optimiser must not be able to write to either. Otherwise the score measures memorisation. SEAL's catastrophic forgetting is the same hazard on a longer timescale |
+| **Gate verdicts and `audit.py`'s score** | `extensions/openup/` | **Disqualified as written.** The thresholds live in `openup-config.yml`, a tracked file the agent can edit. A score whose denominator is editable by the thing being scored is not a score |
+| **Human approvals and merged pull requests** | Agent Inbox, GitHub, `approvals[]` | **The strongest, and the slowest.** External to the agent by construction, and [§12.3](#123-the-adopted-answers-and-the-outside-practice-they-rest-on) answer 2 keeps it that way with two trust roots. Sparse, expensive, and the only one that measures what anybody actually wants |
+| **Langfuse spans: latency, tokens, cost** | [§3.5](#35-langfuse--llm-observability), [§3.9](#39-dbclickhouse--the-analytical-store) | **A cost signal, not a quality signal.** Optimising it alone produces an agent that is fast, cheap and wrong. It is the **second axis**, which is what makes an archive two-dimensional and what GEPA means by a Pareto frontier |
+
+**The disqualification is not hypothetical, and the literature supplies the case.** The Darwin
+Gödel Machine *"hacked its reward function"*: it *"hallucinated that it was using external tools,
+such as a command line tool that runs unit tests"* and *"faked a log making it look like it had run
+the tests and that they had passed, when in fact they were never run."* Told to fix the
+hallucination, *"in some cases, it removed the markers we use in the reward function to detect
+hallucination (despite our explicit instruction not to do so), hacking our hallucination detection
+function to report false successes."* DeepMind's older framing is the general case: **specification
+gaming**, *"a behaviour that satisfies the literal specification of an objective without achieving
+the intended outcome."*
+
+**And this project wrote the mitigation before the threat existed.** `openup-config.yml` says of
+the approval ratchet: *"Raise it as a decision; never lower it to make a run go green."* That
+sentence was written as advice to a person. **Against an optimiser it is not advice, it is a
+permission** — and nothing enforces it today.
+`.pre-commit-config.yaml` makes the identical argument for the identical reason: nothing
+governance-bearing is enforced in a pre-commit hook, because *"a pre-commit hook lives at a project
+root, where editing it is an unremarkable act"*, while `extensions/openup/` is owned by
+`specify extension add` and tampering there is visible. **That is a threat model for a
+self-modifying agent, written about a human editing a config file.** The reasoning transfers
+without a word changed, and the conclusion transfers with it.
+
+**One sharper consequence, which follows from [decision 7](#121-decisions-taken) and is not written
+anywhere else in this report.** If the evaluator is an LLM, it must not be the same model as the
+actor. **Verified:** LLM judges show measurable self-preference, and the mechanism is familiarity
+rather than authorship — evaluations correlate with low perplexity, so a model rates text it finds
+predictable more highly, and family-level bias is reported as well as self-preference. Decision 7
+makes the provider model Claude. **So a Claude-judged Claude output is one source wearing two
+hats**, and `DOC-005` exists in this repository precisely to forbid that shape: *"a claim of
+corroboration names two distinct sources"*, and it is one of two checks that **cannot be lowered**.
+The guide is already honest about the limit — *"`DOC-005` counts names, not independence"* — and
+the self-preference finding is the external evidence for why counting names is not enough.
+
+### 13.7 One rule, and the five places it lands
+
+**Specified.** Everything in [§13.6](#136-the-reward-signal-and-which-of-the-four-can-be-trusted)
+reduces to one sentence, and it is worth having one sentence:
+
+> **An agent may optimise what it does. It may never optimise what decides whether what it did was
+> good.**
+
+That is the meta-cognitive equivalent of the principle [§12.1](#121-decisions-taken) already draws
+out of decisions 1, 5 and 6 — *SpecUP holds pointers, not payloads.* Five instances, all of them
+files that exist in this repository today:
+
+| The agent may write | The agent may not write | Because |
+|---|---|---|
+| prompts, skills, strategy maps, retrieval configuration | `extensions/openup/scripts/python/` — the validators | The DGM removed the markers in its own reward function. This is that directory |
+| a proposed change, on a branch, as a pull request | `.specify/governance/allowed-signers` | [§12.3](#123-the-adopted-answers-and-the-outside-practice-they-rest-on) answer 2: two roots. OWASP **NHI10:2025** names the failure — *"indistinguishable activity between humans and automation"* |
+| its own telemetry, and its own evaluation results | the thresholds in `extensions/openup/openup-config.yml` | *"Raise it as a decision; never lower it to make a run go green"* |
+| a commit carrying a `Vouch-DID` trailer | an approval recorded as `witnessed` | `APV-002` verifies against the human trust root, and it must keep meaning that |
+| entries in `eval/` results | the labels in `rag/eval/golden/` | A candidate that can edit the answer key is not being tested |
+
+**Four of the five need no new machinery, only a permission boundary** — and the stack has the
+place to put one. [§3.12](#312-vouch--agent-identity-and-the-broker)'s broker already decides what
+the agent may touch, and [§3.4](#34-sandboxopenshell--nvidia-openshell)'s container already routes
+every file operation through `execute()`. A write to `extensions/openup/` is a tool call like any
+other. **Inferred** that Shield's `deny_default: true` rules are the right expression of it; that is
+a design guess and it belongs in an ADR before anybody writes the rule file.
+
+**And the cost of getting this wrong is not linear.** OWASP's AI Vulnerability Scoring System
+treats capacity for **self-modification** as one of its agentic risk amplification factors, under an
+*amplification principle* where a minor technical vulnerability becomes systemic in an agentic
+context. Adopting self-improvement therefore raises the score on every other weakness in this
+stack, including the ones [§9](#9-what-the-layout-does-not-have) lists as still missing. *(The AARF
+list was read from secondary summaries; the v0.8 version and the project itself were verified at
+`aivss.owasp.org`, and the scoring document is a PDF this session did not read.)*
+
+### 13.8 Meta-cognition is already mandated here, and it is not measured
+
+**This is the finding worth carrying out of the section.** SpecUP does not need to acquire
+meta-cognition. It already mandates three of its primitives, and instruments none of them.
+
+| Primitive | Where it already exists | What is missing |
+|---|---|---|
+| **A refusal policy** — what to do when confidence is insufficient | `AGENTS.md`: *"Resolve, or stop — never infer"* | Nothing counts stops. A stop is a message to a person, not an event |
+| **A third verdict** — *I could not tell*, never rounded to pass or fail | Exit code `2`, kept separate from `1` on purpose: *"an operator error, not a governance failure"*. `DOC-*` reports non-Python files as `SKIP` rather than passing them | It is reported per run and never aggregated. Nobody knows the rate |
+| **An independence check** | `DOC-005`, which **cannot be lowered** | It *"counts names, not independence"*, and the guide says so |
+
+The measurement the literature uses for this is **meta-d′**, a signal-detection metric for
+metacognitive sensitivity: how well a system discriminates its own correct judgements from its
+incorrect ones through its own stated confidence. The engineering translation for this stack is two
+countable numbers:
+
+- **Missed stops** — the agent asserted something that a governing artifact contradicts. Every one
+  of these is a violation of *resolve, or stop* that nothing currently notices.
+- **False stops** — the agent stopped on a reference that did resolve. These are the cost of the
+  rule, and they are what somebody will point at when they propose relaxing it.
+
+**Neither needs new capability. Both need a span.** [Decision 8](#121-decisions-taken)'s factor 13
+already commits this stack to telemetry, and
+[§12.3](#123-the-adopted-answers-and-the-outside-practice-they-rest-on) answer 11 already chose OTLP
+with the GenAI semantic conventions. **The instrument exists and nobody has pointed it at the rule.**
+Emitting an event whenever *resolve, or stop* fires — with the reference that failed to resolve —
+is the smallest useful piece of meta-cognition available here, and it is the only recommendation in
+this section that could be built before any of the rest of the stack exists.
+
+**The order matters and it is the opposite of the intuitive one.** Measure the refusal rate first,
+then explore. An exploration policy layered on an agent whose calibration is unmeasured optimises
+against a number nobody has checked, which is [§13.6](#136-the-reward-signal-and-which-of-the-four-can-be-trusted)
+happening a second time at a different level.
+
+### 13.9 What this costs, and what it makes worse
+
+Adopting any of this has a price, and three of the items are worse than they first look.
+
+- **It is metered.** Every arm pull that touches stage 2 or the provider model is spend, under
+  [decision 7](#121-decisions-taken). GEPA is in the table partly because it reports comparable
+  results with **up to 35× fewer rollouts**, and rollout count here is an invoice.
+- **It breaks reproducibility unless the policy artifact is versioned.**
+  [§12.3](#123-the-adopted-answers-and-the-outside-practice-they-rest-on) answer 10 puts a CycloneDX
+  ML-BOM beside every index. **A prompt set, a skill library and a strategy map need the same
+  treatment**, carrying factor V's release id — otherwise an incident cannot be reproduced, because
+  the configuration that caused it has already been optimised away. Answer 10 generalises, and
+  nothing in §12.3 says so.
+- **It adds a second writer to the repository, and the repository is the trust root.** Everything
+  in [§13.7](#137-one-rule-and-the-five-places-it-lands) follows from that one sentence.
+- **It can forget.** SEAL's catastrophic forgetting is the general shape: an optimiser that improves
+  this quarter's tasks can regress last quarter's, silently, because nobody re-runs last quarter's.
+  The sealed evaluation half is the mitigation and it costs labelling effort that nobody has
+  budgeted.
+- **It makes the stack less deterministic**, which is the amplification factor named above, in a
+  stack that already accepted non-determinism at the provider ([§11.4](#114-where-the-methodology-does-not-fit)).
+
+**And the honest framing.** This section designs a control loop for a stack that does not exist
+yet, using a reward signal that has not been collected, over an agent whose refusal rate has never
+been counted. Everything above is **Specified** or **Inferred**. The only things marked **Verified**
+are what the cited papers say, and a paper reporting a result on Jericho, WebArena, SWE-bench or
+Atari is evidence about those benchmarks — not about a governance tool.
+[§12.3](#123-the-adopted-answers-and-the-outside-practice-they-rest-on)'s closing applies here word
+for word and should be read as though it were printed twice.
+
+### 13.10 Six new questions
+
+**The header of this report said it no longer had an open questions section. That is now wrong, and
+this is the correction rather than a quiet edit.** Six questions, numbered on from
+[§12.2](#122-the-eighteen-questions)'s eighteen. **[Decision 9](#121-decisions-taken) does not cover
+them** — it adopted answers to questions 1 to 18 on the strength of established practice, and there
+is no established practice for governing a self-improving agent inside a governance tool. Each is an
+ADR candidate and none has a recommended answer here.
+
+19. **Which kind of self-improvement is in scope for 0.1.3?**
+    [§13.1](#131-three-things-are-called-self-improvement-and-only-one-of-them-is-governable-here)
+    argues that policy-artifact improvement is the only governable one. The question is whether
+    **harness self-modification is excluded by rule or merely not built yet** — those look identical
+    today and diverge completely the first time somebody finds it convenient.
+20. **What is the reward, and who may write to it?** Specifically: may the agent write to
+    `rag/eval/golden/`? A yes makes every number the pipeline produces unfalsifiable, and it is the
+    kind of permission that gets granted for a good reason on a Tuesday.
+21. **May the evaluator be the same model as the actor?** Decision 7 makes the actor Claude, and the
+    self-preference evidence says a same-model judge is one source counted twice. A different model,
+    or a non-LLM oracle, is the alternative — and both cost something.
+22. **Does an explored variant need a `witnessed` approval to be promoted, or is a passing gate
+    enough?** Note that `require_witness_at_or_above` is `null` by default, so the strongest reward
+    signal in [§13.6](#136-the-reward-signal-and-which-of-the-four-can-be-trusted) **is not being
+    recorded today** in any project that has not raised it deliberately.
+23. **What is the exploration budget, and is it config or policy?**
+    [§11.3](#113-two-collisions-and-both-resolve)'s line says policy. If it is ever settable by an
+    environment variable, the rate at which the agent experiments on a customer's repository becomes
+    a deployment detail.
+24. **What re-reads the eighteen warrants, on what trigger, and who sees the result?**
+    [§13.2](#132-the-exploration-problem-is-already-in-this-report-under-another-name) says this is
+    a cron job and an issue. It is the one question here with a cheap answer, and it is the one that
+    decides whether [decision 9](#121-decisions-taken) was defensible.
+
+---
+
+## 14. Sources
 
 Every URL was fetched or searched during the sessions that produced this document, **2026-09-17 and
 2026-09-18**. Licence claims in §7 were read from each project's own licence file or model card;
@@ -2268,10 +2644,42 @@ roles and architecture from the documents listed.
 - <https://www.conventionalcommits.org/en/v1.0.0/> — the `<type>[optional scope]: <description>` structure; the sixteen numbered specification points; footers as `token: value` with hyphens for spaces; `!` and the `BREAKING CHANGE` footer, which alone must be uppercase; `fix` → PATCH, `feat` → MINOR, breaking → MAJOR. Published **CC BY 3.0**
 - <https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/about-issue-and-pull-request-templates> — `.md` and issue-form `.yml` files in `.github/ISSUE_TEMPLATE/` with `config.yml` for the chooser; pull request templates as `.md` or `.txt` in the repository root, `docs/` or `.github/`; and the constraint that both live on the default branch — *"Templates created in other branches are not available for collaborators to use"*
 
+**Exploration and self-improving agents — [§13](#13-meta-cognition-exploration-and-the-parts-that-must-not-be-explored)**
+
+*Primary — papers and project pages, read for what they define:*
+- <https://arxiv.org/abs/2603.02045> — **SGE**, *Expanding LLM Agent Boundaries with Strategy-Guided Exploration*; Szot, Kirchhof, Attia, Toshev; 2 March 2026. Abstract read in full: *"explor[e] in the space of strategies rather than the space of actions"*; mixed-temperature sampling; the strategy reflection process; UI, tool-calling, coding and embodied environments
+- <https://arxiv.org/abs/2605.21240> — **APEX**, *Autonomous Policy EXploration for Self-Evolving LLM Agents*; Li, Yang, Zheng, Hu, Sui, Wang, He, Hooi; 20 May 2026. *"Exploration collapse"* verbatim; the strategy map as *"a directed acyclic graph of milestones with prerequisite dependency edges"*; Fork Discovery and Policy Selection; nine Jericho games and WebArena
+- <https://arxiv.org/abs/2505.15293> — **LLM-Explorer**, *A Plug-in Reinforcement Learning Policy Exploration Enhancement Driven by Large Language Models*; Tsinghua; NeurIPS 2025. The criticism of preset stochastic processes *"applied uniformly across different tasks"*; the agent's *"real-time learning status"*
+- <https://yxw.cs.illinois.edu/files/SAGE_NeurIPS2025.pdf> — **SAGE**, *Self-Guided Hierarchical Exploration for Generalist Foundation Model Web Agents*; Yang, Wang, Perszyk, Wang; NeurIPS 2025. The acronym expansion read from the title page; the three-tier strategy and the *"self-evolving curriculum of tasks from easy to hard"*
+- <https://sakana.ai/dgm/> and <https://arxiv.org/abs/2505.22954> — the **Darwin Gödel Machine**. The archive and *"parallel exploration of many different evolutionary paths"*; SWE-bench 20.0% → 50.0% and Polyglot 14.2% → 30.7%; the stepping-stone finding about *"less-performant 'ancestor' agents"*; and the reward-hacking section quoted in [§13.6](#136-the-reward-signal-and-which-of-the-four-can-be-trusted) — the faked test log, and the removal of *"the markers we use in the reward function to detect hallucination"*
+- <https://arxiv.org/abs/2408.08435> — **ADAS**, *Automated Design of Agentic Systems*; Hu, Lu, Clune; ICLR 2025. Meta Agent Search; the search space / search algorithm / **evaluation function** decomposition
+- <https://arxiv.org/abs/2506.13131> and <https://deepmind.google/blog/alphaevolve-a-gemini-powered-coding-agent-for-designing-advanced-algorithms/> — **AlphaEvolve**; automated evaluators that verify; solutions *"interpretable, verifiable through execution"*
+- <https://arxiv.org/pdf/2506.10943> — **SEAL**, *Self-Adapting Language Models*; MIT. Self-edits as generated training data plus update settings; catastrophic forgetting named as the open limitation
+- <https://arxiv.org/abs/2507.19457> — **GEPA**, *Reflective Prompt Evolution Can Outperform Reinforcement Learning*; Agrawal et al.; the title page records acceptance at ICLR 2026 as an oral. Reflection on execution traces rather than a scalar reward; *"the Pareto frontier of its own attempts"*; the reported margin over GRPO and **up to 35× fewer rollouts**
+- <https://arxiv.org/abs/2305.16291> — **Voyager**; the automatic curriculum, the skill library of executable code indexed by description, and the iterative prompting loop with self-verification
+- <https://arxiv.org/abs/2303.11366> — **Reflexion**; NeurIPS 2023. Reinforcement *"not by updating weights, but instead through linguistic feedback"*, held in an episodic memory buffer
+- <https://www.nature.com/articles/s41586-020-03157-9> — **Go-Explore**, *First return, then explore*; Ecoffet, Huizinga, Lehman, Stanley, Clune; *Nature* **590**, 580–586 (2021). **Detachment** and **derailment** defined; the archive as the fix for the first
+- <https://www.semanticscholar.org/paper/45373921f06a6efebefa6189d2dd80362ab0836e> — **MAP-Elites**, *Illuminating search spaces by mapping elites*; Mouret and Clune, 2015. Behaviour characteristics, the tessellated behaviour space, one elite per cell, and illumination as the stated purpose
+- <https://arxiv.org/abs/1301.2609> — Russo and Van Roy, *Learning to Optimize Via Posterior Sampling*. Thompson sampling: the agent *"maintains a posterior distribution over its beliefs regarding the optimal action"* and randomises in proportion to it
+- <https://arxiv.org/abs/1803.00933> — **Ape-X**, *Distributed Prioritized Experience Replay*; Horgan et al., DeepMind, 2018; ICLR 2018. Many actors with **different exploration rates**, one prioritised replay buffer, one learner. Cited here for the name collision and for the per-actor idea, not for the architecture
+- <https://deepmind.google/blog/specification-gaming-the-flip-side-of-ai-ingenuity/> — Krakovna et al., 23 April 2020. **Specification gaming** as *"a behaviour that satisfies the literal specification of an objective without achieving the intended outcome"*; the Lego-block example; and that these behaviours *"are caused by misspecification of the intended task, rather than any flaw in the RL algorithm"*
+- <https://proceedings.neurips.cc/paper_files/paper/2024/file/7f1f0218e45f5414c79c0679633e47bc-Paper-Conference.pdf> and <https://arxiv.org/abs/2410.21819> — LLM judges recognising and favouring their own generations, and the perplexity mechanism behind self-preference: judges rate familiar, low-perplexity text more highly than humans do, with family-level bias as well as self-preference
+- <https://www.iso.org/standard/42001> — **ISO/IEC 42001:2023**, the AI management system standard: *"establishing, implementing, maintaining and continually improving an AI management system"*; Plan-Do-Check-Act; internal audit and corrective action as named requirements. Cited as the shape a governance layer's improvement loop is expected to have. **The catalogue page returns HTTP 403 to an unauthenticated fetch and the standard itself is paywalled**, so this is a bibliographic citation and a reading of ISO's own public summary, not of the normative text — the same treatment [§11](#11-the-stack-as-a-fifteen-factor-application) gives *Beyond the Twelve-Factor App*
+- <https://www.nist.gov/itl/ai-risk-management-framework> — **NIST AI RMF 1.0** and the Generative AI Profile (**AI 600-1**, July 2024). MEASURE as the TEVV function; measurement before deployment *and throughout the lifecycle*; continuous monitoring under MANAGE
+- <https://genai.owasp.org/resource/agentic-ai-threats-and-mitigations/> — OWASP Agentic Security Initiative, *Agentic AI: Threats and Mitigations* v1.0, 17 February 2025. **The landing page was read; the threat taxonomy itself is in a PDF this session did not open**, so no threat id is quoted from it here
+- <https://aivss.owasp.org/> — the **OWASP AI Vulnerability Scoring System**, v0.8. Version verified on the site; the site footer states CC BY-SA 4.0 for site content. **The list of Agentic Risk Amplification Factors, including self-modification, was read from secondary summaries rather than from the scoring document**, and [§13.7](#137-one-rule-and-the-five-places-it-lands) says so where it uses it
+
+*Secondary — search summaries and commentary, read for orientation and not quoted as normative:*
+- <https://www.lakera.ai/blog/why-we-need-owasps-aivss-extending-cvss-for-the-agentic-ai-era> — vendor commentary on AIVSS extending CVSS for agentic systems. This and other secondary coverage are where the amplification-factor names in [§13.7](#137-one-rule-and-the-five-places-it-lands) come from
+- Commentary on metacognition in LLM agents, including the meta-d′ signal-detection metric for metacognitive sensitivity. **Used for the name of the measurement only**; [§13.8](#138-meta-cognition-is-already-mandated-here-and-it-is-not-measured) rests its argument on this repository's own artifacts, not on this literature
+
 **Within this repository**
 - [`docs/dev/licensing.md`](../dev/licensing.md) — BUSL-1.1, the Additional Use Grant, the Elastic-2.0 exclusion
 - [`AGENTS.md`](../../AGENTS.md) — "Resolve, or stop — never infer"; "Re-read before asserting"
-- [`docs/guide/using-specup.md`](../guide/using-specup.md) — exit-code contract; bundles cannot enforce
+- [`docs/guide/using-specup.md`](../guide/using-specup.md) — exit-code contract, and `2` kept separate from `1` because a setup fault is *"an operator error, not a governance failure"*; `DOC-005` is not listable and cannot be lowered; *"`DOC-005` counts names, not independence"*; bundles cannot enforce
+- [`extensions/openup/openup-config.yml`](../../extensions/openup/openup-config.yml) — the approval ratchet, `require_witness_at_or_above: null` by default, and *"Raise it as a decision; never lower it to make a run go green"*
+- [`extensions/openup/scripts/python/validate_docs.py`](../../extensions/openup/scripts/python/validate_docs.py) — `DOC-005` and the `cits-crypto` failure it generalises: a truth table and the predicate written to cross-check it derived from the same misreading, so *"they agreed, and both were wrong"*
+- [`.pre-commit-config.yaml`](../../.pre-commit-config.yaml) — why nothing governance-bearing is enforced there: *"a pre-commit hook lives at a project root, where editing it is an unremarkable act"*, while `extensions/openup/` is owned by `specify extension add` and tampering is visible
 - [`.specify/traceability/index.md`](../../.specify/traceability/index.md) — the 84%-asserted figure §3.6.8 compares itself to
 - `.claude/plans/floofy-pondering-crescent.md` §7 — the 0.1.3 research this report extends and corrects
 
@@ -2287,7 +2695,7 @@ perimeter entirely. No check resolves a URL, compares a licence claim against a 
 notices when an upstream project relicenses.
 
 So every fact here is `asserted`, in exactly the sense SpecUP's provenance vocabulary uses the
-word: one person read a source and wrote down what it said. The citations in §13 exist so that a
+word: one person read a source and wrote down what it said. The citations in §14 exist so that a
 second person can repeat the reading, which is the only verification available.
 
 **And the ten decisions in [§12.1](#121-decisions-taken) are in a weaker position than the
@@ -2316,6 +2724,20 @@ component matures. Nothing watches an upstream project's release badge. Nothing 
 OpenShell leaves alpha, when the GenAI agent spans stabilise, or when a Scorecard number moves. **The
 revisit is the entire justification for adopting on borrowed evidence, and it is a sentence in a
 research report** — which is exactly the shape of claim this section exists to be honest about.
+[§13.2](#132-the-exploration-problem-is-already-in-this-report-under-another-name) now describes the
+job that would fix it — re-read the eighteen warrants, open an issue when one has moved — and
+**describing a cron job is not running one.**
+
+**And [§13](#13-meta-cognition-exploration-and-the-parts-that-must-not-be-explored) is the weakest
+section in the document, by a margin, and it says so in its own closing.** It designs a control loop
+for a stack that does not exist, over a reward that has not been collected, for an agent whose
+refusal rate has never been counted. **Its one rule is the part to keep** — *an agent may optimise
+what it does, and never what decides whether what it did was good* — and the five places that rule
+lands ([§13.7](#137-one-rule-and-the-five-places-it-lands)) are five directories in this repository
+that **nothing currently protects from a process running as the developer**. The Darwin Gödel
+Machine removed the markers in its own reward function and was caught only because the archive kept
+a traceable lineage of every change; SpecUP's equivalent of that lineage is git, and git is exactly
+one of the things §13.7 says the agent may write to.
 
 **Four things will go stale, and they are the four that matter most:**
 
