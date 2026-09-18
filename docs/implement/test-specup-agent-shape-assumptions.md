@@ -3,10 +3,13 @@
 **Audience:** whoever runs these probes, and whoever reads the results afterwards to decide
 whether `docs/research/specup-agent-runtime.md` can be written.
 
-**Status: one of eight probes has been run.** `P1` was answered on 2026-09-18 and it held. The
-other seven *Result* blocks are empty, and an empty block means *not run* — never *assumed fine*.
-Run `python3 docs/implement/probes/record.py --list` rather than trusting this line; it reads the
-blocks below and this sentence does not.
+**Status: two of eight probes have been run, and they did not agree.** `P1` was answered on
+2026-09-18 and it held. `P2` was **falsified** the same day — the governance exclusion is
+expressible, and on the only stable release of OpenShell a sandboxed process can still empty
+`.specify/governance/allowed-signers` with `truncate(2)`. The other six *Result* blocks are empty,
+and an empty block means *not run* — never *assumed fine*. Run
+`python3 docs/implement/probes/record.py --list` rather than trusting this line; it reads the blocks
+below and this sentence does not.
 
 ## Why this exists
 
@@ -307,12 +310,77 @@ present. Independent of P1.
 enforcement point anywhere in the stack, and the five rows of that section's table become advice.
 
 <!-- RESULT P2 -->
-- **Outcome:** _not run_
-- **Date:**
-- **Ran by:**
-- **Evidence:**
-- **What was found:**
+- **Outcome:** falsified
+- **Date:** 2026-09-18
+- **Ran by:** Claude Opus 5, at Aniket Gore's direction
+- **Evidence:** workspace/spike-0.1.3/P2/evidence-p2.txt (untracked); policy-v3/v4/v5.yaml alongside it
+- **What was found:** OpenShell 0.0.116 installs and enforces (host Landlock ABI v8), so this is not blocked. The exclusion CAN be expressed, but only as an allowlist: a read_only path nested inside a read_write parent adds no restriction at all, because rights are the union of every matching hierarchy. Stated that way all three protected writes are denied, including through a symlink from a permitted directory - the case Vouch Shield cannot catch. But the falsifier fired anyway: v0.0.116 applies Landlock ABI::V2, which predates LANDLOCK_ACCESS_FS_TRUNCATE, so append to .specify/governance/allowed-signers is denied while truncate(2) on it SUCCEEDS. The trust root APV-002 depends on went from 2732 bytes to 0. Fixed upstream - main and v0.1.0-pre.2+ use ABI::V3, commented 'Read-only policy must also deny pathname truncation' - but not in any stable release. Re-probe against v0.1.0-pre.3 and supersede. Two further findings in 3.3.
 <!-- END RESULT P2 -->
+
+#### 3.3 — What P2 found, and why `falsified` is the honest word for it
+
+**The falsifier was written as *"the write succeeds"*, and a write succeeded.** That sentence is in git
+from `afb6b75`, before any of this ran, which is the only reason it can settle the question now. The
+temptation to record `answered` with a caveat is exactly what the three-outcome rule exists to refuse:
+a caveat large enough to swallow the result is a second outcome wearing the first one's name.
+
+**The protection is real, and it is expressed backwards from how anyone would write it.**
+A `read_only` entry nested inside a `read_write` parent adds **no restriction whatsoever**. Landlock
+grants an access if *any* enclosing hierarchy rule grants it, so a narrower rule can only ever add
+rights, never subtract them. Written the obvious way — the whole tree writable, the governance
+subtrees carved out — every protected write succeeded while a control path in no list was correctly
+denied, proving enforcement was live the whole time. Written as an **allowlist** — enumerate what may
+be written, never what may not — the same three writes are denied, **including through a symlink from
+a permitted directory**. That symlink case is the one
+[stack §13.7](../research/specup-agent-stack.md#137-one-rule-and-the-five-places-it-lands) says Vouch
+Shield cannot catch, because Shield normalises `..` lexically and cannot see symlinks. Landlock binds
+inodes rather than path strings, so it catches it. **The enforcement point SpecUP wanted does exist.**
+
+**And then the trust root was destroyed anyway.** Appending to
+`.specify/governance/allowed-signers` is denied. Calling `truncate(2)` on it **succeeds**, and the
+file went from 2732 bytes to 0 — the file `APV-002` verifies signatures against, emptied by the
+sandboxed process the policy was written to contain. The cause is exact: `0.0.116` applies Landlock
+**`ABI::V2`**, which predates `LANDLOCK_ACCESS_FS_TRUNCATE` (ABI 3), so truncation is not an access
+right the ruleset can withhold. The sandbox's own attestation says so in one line —
+`CONFIG:PROBED abi:v8` then `CONFIG:APPLYING abi:V2` — the host offered ABI 8 and the policy was built
+at 2.
+
+> **This is fixed upstream, and that does not make it answered.** `main` and `v0.1.0-pre.2`
+> onward carry `let abi = ABI::V3;` with the comment *"Read-only policy must also deny pathname
+> truncation."* The latest **stable release is `v0.0.116`**, which `install.sh` gives you by default,
+> and it carries `ABI::V2`. So the fix exists, in no stable release. Recording `answered` on the
+> strength of having *read* the fix would be the precise failure the Verified/Inferred contract in
+> [`EVID-0008`](../research/specup-agent-stack.md) exists to prevent: the exclusion holding against
+> truncation is **Inferred from source**, never observed here. **Re-run P2 against `v0.1.0-pre.3` and
+> `--supersede` this block.** That is one `OPENSHELL_VERSION=v0.1.0-pre.3` away.
+
+**Two further findings, neither of which the probe was looking for.**
+
+**The attested hash describes the submitted document, not the enforced ruleset.** Removing a
+`read_only` path from a live sandbox is refused outright — *"filesystem read_only path
+'/sandbox/tree' cannot be removed on a live sandbox"*. But **adding** a `read_write` path that
+overlaps a `read_only` subtree is **accepted**: version 2, new hash, `policy get` reporting
+`status: effective`, `policy list` marking version 1 `Superseded` with no error. Enforcement did not
+change — the write stayed denied and `CONFIG:APPLYING` still reported `ro:6 rw:2` rather than the
+submitted `rw:3`. So the system reports a policy as effective that the kernel is not enforcing.
+Read that against the stack report's quotation of OpenShell's own guarantee — *"current, active,
+revision, and effective-config versions must all be positive and agree with the exact submitted
+policy/hash; ... any version disagreement fails closed."* Here every version **agrees**, at 2, and the
+ruleset is still 1's. There is no disagreement to detect, so nothing fails closed. `policy get`
+returns a hash and a status and no filesystem lists at all, so the hash can be compared but never
+inspected — which is the difference between a record and an assertion that this project's whole
+provenance vocabulary rests on.
+
+**Both defaults are the unsafe ones.** `include_workdir` defaults to **`true`**, which appends the
+working directory to `read_write` and silently grants exactly what a governance exclusion withholds.
+`landlock.compatibility` defaults to **`best_effort`**, and NVIDIA's own behaviour table gives it two
+routes to no enforcement at all: kernel ABI unavailable → *"Warns and continues without Landlock"*,
+and all paths inaccessible → the same. A boundary that downgrades to a warning is not a boundary.
+Both must be set explicitly, and `hard_requirement` is what makes step 6 meaningful at all.
+
+**One operational note that cost an hour.** `--upload` runs **after** the policy binds, so a
+`hard_requirement` policy naming paths inside an uploaded tree aborts startup before the upload
+happens. The governed tree has to be in the image.
 
 ---
 
@@ -584,7 +652,7 @@ until then it is an intention.
 |---|---|---|
 | **0** | This document, `probes/`, the `docs/README.md` row | Reviewed — **done** |
 | **1** | **P1 alone.** P2 and P5 may run beside it | **P1 answered — done, 2026-09-18.** A falsification would have stopped the campaign; it did not fire |
-| **2** | P3, P4, P6, P7, P8 | All eight `answered`, `falsified` or `blocked` |
+| **2** | P3, P4, P6, P7, P8 — and **P2, run 2026-09-18 and falsified**; re-run it against `v0.1.0-pre.3` and `--supersede` before this phase closes | All eight `answered`, `falsified` or `blocked` |
 | **3** | Register `EVID-0010`–`EVID-0016` in one batch | `audit.py` reports exactly two reasons |
 | **4** | The eight ADRs | Each at `REVIEW` or better; audit still two reasons |
 | **5** | `docs/research/specup-agent-runtime.md` | — |

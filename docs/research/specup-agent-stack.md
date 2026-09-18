@@ -425,6 +425,30 @@ before. The run also emits structured `sandbox.attestation` and `sandbox.cleanup
 makes the binding a record rather than an assertion — the distinction the whole provenance
 vocabulary rests on.
 
+> **Corrected 2026-09-18 by `P2`, which measured this paragraph instead of believing it.**
+> Two of the claims above do not survive contact with `0.0.116`.
+>
+> **The hash binds the submitted document, not the enforced ruleset.** Submitting a widened
+> filesystem policy to a *live* sandbox is accepted — new version, new hash, `policy get` reporting
+> `status: effective`, `policy list` marking the previous version `Superseded` with no error — while
+> the kernel goes on enforcing the old one. The quoted guarantee says *"any version disagreement
+> fails closed"*, and nothing fails closed here because **every version agrees**; they simply agree
+> on a document the ruleset does not match. `policy get` returns a hash, a status and no filesystem
+> lists at all, so the attestation can be compared and never inspected. It is still a record — of
+> what was submitted.
+>
+> **And the attested policy did not stop the write it existed to stop.** Appending to
+> `.specify/governance/allowed-signers` is denied; `truncate(2)` on it succeeds, and the file went
+> from 2732 bytes to 0. The sandbox's own attestation names the cause in two adjacent lines —
+> `CONFIG:PROBED abi:v8` then `CONFIG:APPLYING abi:V2` — the host offered Landlock ABI 8 and the
+> ruleset was built at 2, which predates `LANDLOCK_ACCESS_FS_TRUNCATE`. Upstream `main` and
+> `v0.1.0-pre.2+` build at `ABI::V3`; no stable release does.
+>
+> The comparison with `APV-002` is still the right one, and it now cuts the other way too: a hash
+> over bytes nobody re-reads, and a policy over an access right the kernel was never asked to
+> withhold, fail in the same shape. See
+> [campaign §3.3](../implement/test-specup-agent-shape-assumptions.md#33--what-p2-found-and-why-falsified-is-the-honest-word-for-it).
+
 **The Deep Agents provider already exists**, which is the practical difference from the previous
 plan. Deep Agents documents eight backends, and NVIDIA OpenShell is one of them:
 
