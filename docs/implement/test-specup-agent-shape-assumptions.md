@@ -240,16 +240,33 @@ somebody has to write down rather than a property the composition has for free.
 `TEST_ANALYTICS_POSTGRES_URI is required for PostgreSQL regressions` — not a model key, a
 database URI. Pointed at a PostgreSQL, all 308 run and all 308 pass. A suite that reports 3126
 passed and 308 skipped is describing its environment, not its health, and the difference here is
-276 tests nobody was running.
+308 tests nobody was running.
 
-**The documented way to open that gate does not work out of the box.**
-`tests/analytics/conftest.py` passes the variable straight to `create_async_engine()`. Given the
-obvious value — `postgresql://user:pass@host/db` — SQLAlchemy selects the **synchronous psycopg2
-dialect**, and `psycopg2` appears in neither Open SWE's `pyproject.toml` nor its `uv.lock`, so all
-308 turn from `skipped` into `ERROR: No module named 'psycopg2'`. Naming the driver —
-`postgresql+asyncpg://` — fixes it with no new package, because `asyncpg` *is* declared. This is
-an upstream bug worth reporting: the skip message names a variable, and the value it invites
-cannot work.
+**One fixture accepts a single PostgreSQL spelling, and the developer documentation hands you a
+different one.** Open SWE's `docs/DEVELOPMENT.md` gives `POSTGRES_URI` as
+`postgresql://postgres:postgres@127.0.0.1:5433/postgres` and, in the paragraph immediately after,
+`TEST_ANALYTICS_POSTGRES_URI` as `postgresql+asyncpg://<user>@localhost:5432/open_swe_test`.
+Carrying the first spelling across to the second variable is the obvious move, and
+`tests/analytics/conftest.py:26` hands it unmodified to `create_async_engine()`, which selects the
+synchronous **psycopg2** dialect — a package in neither Open SWE's `pyproject.toml` nor its
+`uv.lock`. **32 of the 169 tests in `tests/analytics` then error with `ModuleNotFoundError: No
+module named 'psycopg2'`, and 137 still pass**, because every other fixture routes the same value
+through `postgres.uri()`, which rewrites all three spellings by design. `deployment_db` is the
+only one that does not.
+
+Fixed upstream in [langchain-ai/open-swe#2969](https://github.com/langchain-ai/open-swe/pull/2969),
+which extracts the rewriting into `postgres.normalize_uri()`, calls it from `deployment_db`, and
+sets CI to export the bare `postgresql://` scheme so the path stays tested. Measured against
+`postgres:16`: **137 passed / 32 errors before, 173 passed / 0 errors after.**
+
+> **Corrected 2026-09-18, and the correction is the point.** This paragraph first said the
+> *documented* value could not work, and that all 308 tests turned into errors. Both were wrong.
+> `docs/DEVELOPMENT.md:93` and `.github/workflows/ci.yml:68` both name `postgresql+asyncpg://`,
+> which works, and the measured split is 137 passed / 32 errors rather than 308 errors. The first
+> version was written from the shape of the failure rather than from a re-reading of the source —
+> the habit [`AGENTS.md`](../../AGENTS.md) forbids in the words *"re-read before asserting"* — and
+> nothing caught it until the fix was written against the file. The defect is narrower than it was
+> claimed to be, and it is still a defect.
 
 ---
 
