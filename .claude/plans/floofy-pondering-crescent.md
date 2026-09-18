@@ -578,3 +578,171 @@ research. Say so rather than leaving it as an oversight.
 - Any dependency, `requires-python` bump, or manifest change.
 - The 0.1.2 release — still `release:catalog`, the tag, and the GitHub release, still yours to
   trigger.
+
+---
+---
+
+# ADDENDUM 2 — `docs/implement/test-specup-agent-shape-assumptions.md`
+
+*Added 2026-09-18, after `EVID-0009` was registered. A campaign to answer the shape document's
+assumptions. It builds nothing in `open-swe/` and ships nothing.*
+
+## Context
+
+[`docs/research/specup-agent-shape.md`](../../docs/research/specup-agent-shape.md) (`EVID-0009`)
+describes the 0.1.3 runtime as one system: five planes, eleven processes, two lifecycles, five
+trust boundaries, a failure matrix. **None of it has been built, and it rests on 31 numbered
+assumptions of which none has been tested.** Thirteen are carried from `EVID-0008`'s *Inferred*
+markers; eighteen were invented by the synthesis to make the runtime cohere at all.
+
+`docs/research/specup-agent-runtime.md` is meant to specify this precisely enough to build from.
+Writing it on 31 untested assumptions would produce the defect this project exists to prevent: a
+specification that looks like governance and checks nothing. **This campaign is what earns the
+right to write it.**
+
+**The correction that shapes the whole plan: "test all 31 assumptions" is not a coherent goal.**
+They are three different kinds of claim, and only one kind can be tested:
+
+| Track | Kind | Count | How it is settled |
+|---|---|---|---|
+| **A — Probe** | empirical. A question with a yes/no answer | **9** | Stand something up, observe, record what was found |
+| **B — Build** | design intentions. True because you build it that way | **6** | Nothing to test. They stay **Specified** and the runtime doc says so |
+| **C — Decide** | scope declarations and statements of intent | **16** | An ADR. Running an experiment on these is a category error |
+
+**The gate for the runtime document is Track A complete and Track C ruled.** Track B is confirmed
+during implementation, which is exactly how this project already treats *Specified* against
+*Verified*.
+
+## The classification
+
+| Track | Assumptions |
+|---|---|
+| **A — Probe** | `ASM-03` `ASM-04` `ASM-05` `ASM-08` `ASM-09` `ASM-11` `ASM-14` `ASM-17` `ASM-28` |
+| **B — Build** | `ASM-02` `ASM-06` `ASM-12` `ASM-19` `ASM-22` `ASM-23` |
+| **C — Decide** | `ASM-01` `ASM-07` `ASM-10` `ASM-13` `ASM-15` `ASM-16` `ASM-18` `ASM-20` `ASM-21` `ASM-24` `ASM-25` `ASM-26` `ASM-27` `ASM-29` `ASM-30` `ASM-31` |
+
+## The eight probes
+
+Each probe pre-registers **what would falsify it, before it is run.** That rule is the point:
+`existing-project.md` says to record the real figure, and a probe whose success criterion is
+written afterwards can always be read as a pass.
+
+| # | Assumption | The question | Falsified when | Needs |
+|---|---|---|---|---|
+| **P1** | `ASM-03` | Do Open SWE's five graphs run unchanged under Aegra? | Any graph needs a source change to load or to complete one run | Aegra, Postgres, Valkey, Open SWE checkout |
+| **P2** | `ASM-28` | Does an OpenShell filesystem policy block a write to `.specify/extensions/**`? | The write succeeds, or the policy cannot express the exclusion | OpenShell (host install) |
+| **P3** | `ASM-04` | Does Agent Inbox authenticate against Aegra? | It only accepts a LangSmith key, or the interrupt list does not render | P1's stack |
+| **P4** | `ASM-17` | Can a sandboxed process get a commit signed by a sidecar it cannot read the key from? | The key must enter the sandbox, or the socket cannot be reached under policy | P2's sandbox, `vouch-bridge` |
+| **P5** | `ASM-11` | Does one server serve both the embedder and the reranker? | Two processes are required | TEI or Infinity, two small models |
+| **P6** | `ASM-08`, `ASM-09` | Two databases on one Postgres, one Valkey for both consumers? | Langfuse's migrations collide with Aegra's, or the key spaces collide | P1's stack + Langfuse |
+| **P7** | `ASM-05` | Do the `traced_*` wrappers reach Langfuse over OTLP? | Only the native SDK works | P1's stack + Langfuse |
+| **P8** | `ASM-14`, `ASM-30` | Where does graph code execute, and does an interrupt expire? | Graphs run out-of-process, or a TTL exists | rides on P1 |
+
+**P1 runs alone and first.** If it fails, `agent/` is a fork rather than a configuration
+directory, `EVID-0008`'s decision 1 changes reach, and the shape document describes a different
+system. **Stop and re-plan rather than continuing down the list.**
+
+**P2 and P5 need nothing from P1** and can run in parallel with it.
+
+**P2 is the one worth keeping.** It is the only probe that is a *governance* check rather than a
+compatibility check, and the only one that could become a permanent re-runnable assertion.
+
+## What this costs
+
+Everything needed is already on this machine — Python 3.13.14 (Aegra needs ≥3.12), `uv` 0.11.31,
+Docker 29.8.0, `gh` 2.46.0, 214 GB free. **No probe needs a provider API key or a GPU**, because
+stage 2 contextualisation is not exercised by any of them. The campaign costs time, not money.
+
+**The one real risk is P2's prerequisite.** OpenShell is badged alpha and is a *host* installation,
+not a container. If it will not install, P2 is blocked by a packaging problem rather than answered
+— and that outcome must be recorded as **blocked**, never as a pass.
+
+## Files
+
+| File | Change |
+|---|---|
+| `docs/implement/test-specup-agent-shape-assumptions.md` | **new** — the campaign: classification, the eight probes with pre-registered falsifiers, the decisions track, and an empty result field per probe |
+| `docs/implement/probes/` | **new** — the tracked probe scripts. Outside the traceability perimeter (`include` is `src/**`, `services/**`, `apps/**`), and nothing under `docs/` is packaged |
+| `docs/README.md` | +1 row, new **Implement** group |
+| `workspace/spike-0.1.3/` | **untracked by design** — `workspace/.gitignore` is `*` except itself. Compose files, clones and caches live here and never enter the repository |
+
+**Nothing is written into `open-swe/`.** The pre-commit hook fails any commit that gives a file
+there bytes, and that premise is load-bearing for `EVID-0008` §1.
+
+## Governance registration
+
+**Seven evidence artifacts, one per probed assumption**, registered in **one batch** after a probe
+wave rather than one at a time — the count ripples into six places and doing it seven times is six
+unnecessary regenerations.
+
+`EVID-0010`→`ASM-03` · `EVID-0011`→`ASM-28` · `EVID-0012`→`ASM-04` · `EVID-0013`→`ASM-17` ·
+`EVID-0014`→`ASM-11` · `EVID-0015`→`ASM-08`/`ASM-09` · `EVID-0016`→`ASM-05`. P8's observations are
+recorded into `EVID-0010`, whose stack produced them.
+
+Each `evidences` → `WBS-1.1.3`, `provenance: asserted`, precedent `EVID-0008`/`EVID-0009`.
+
+**A trap worth naming before anybody is clever about it.** These must **not** be registered as
+`derived` edges. `derived` in this project means a rule in `derivers.py` re-ran and reproduced the
+edge, and a deriver that cannot reach a running Aegra returns `derived, unreproduced` — which
+`coverage.md` calls **"not evidence"** in those words. A probe result is a genuine `asserted` edge
+and a fake `derived` one. Revisit only if CI can stand the stack up.
+
+## The decisions track — eight ADRs for sixteen assumptions
+
+MADR, at `.specify/architecture/decisions/adr-nnnn-<slug>.md`, registered in
+`requirements.yaml` because the gate counts registered ADRs and not files on disk.
+
+| ADR | Settles | Consumes |
+|---|---|---|
+| 1 | `agent/` is configuration, not a fork — `ASM-01` | **P1** |
+| 2 | The unit of sandboxed work — `ASM-15` `ASM-16` `ASM-29` | — |
+| 3 | What runs inside the boundary and what runs outside — `ASM-18` `ASM-20` `ASM-21` | — |
+| 4 | The 0.1.3 deployment envelope — `ASM-10` `ASM-24` `ASM-25` `ASM-26` `ASM-27` | — |
+| 5 | What the graph is for — `ASM-07`, the weakest inference in `EVID-0008` | — |
+| 6 | Key custody — `ASM-13` | **P4** |
+| 7 | Index build, provenance and publication — `ASM-31` | — |
+| 8 | Interrupt lifetime — `ASM-30` | **P8** |
+
+**These are the first ADRs this project has written**, and `.specify/architecture/` currently holds
+two templates and an index. Two constraints apply and both are cheap to get wrong:
+
+- The ADR template's *Revisit when* is not optional. `EVID-0008` decision 9's whole defect is a
+  revisit nothing schedules; repeating it in eight new ADRs would be the same mistake with an id.
+- **Registering an ADR must not turn the audit's two failures into three.** `TRC-008` counts
+  orphan requirements, WBS leaves, high-exposure risks, scenarios, tests and contracts; an ADR
+  should fall outside all six, but that is an inference about `validate_trace.py` and it is
+  verified by running the audit, not by reading this line.
+
+## Sequencing
+
+| Phase | Work | Gate to the next |
+|---|---|---|
+| **0** | The campaign document, `docs/implement/probes/`, the `docs/README.md` row, the spike root in `workspace/` | Document reviewed |
+| **1** | **P1 alone.** P2 and P5 may run beside it | **P1 answered.** A failure stops the campaign and re-opens the shape |
+| **2** | P3, P4, P6, P7, P8 | All eight answered or explicitly blocked |
+| **3** | Register `EVID-0010`–`EVID-0016` in one batch; regenerate; propagate counts once | Audit reports exactly two reasons |
+| **4** | The eight ADRs | Each at `REVIEW` or better, and the audit still reports two reasons |
+| **5** | `docs/research/specup-agent-runtime.md` | — |
+
+## Verification
+
+1. **Per probe:** the pre-registered falsifier was written before the probe ran, and the recorded
+   outcome is one of **answered / falsified / blocked**. Never "mostly works".
+2. **After phase 3:** `audit.py` exits 1 with exactly `TRC-006` and `acceptance_scenarios_passing`.
+   A third reason means the registration broke something; a repaired one means a number was tuned.
+3. **Counts are regenerated, never computed** — `derive_edges.py --write` then
+   `render_views.py --write`, then propagate what the views say. `derived.yaml` should show only a
+   new `generated_at`.
+4. `task test` and `task test:engine` — 407 both ways. No code in the perimeter is touched, so any
+   movement is a signal.
+5. `find open-swe -type f -size +0c` returns nothing, and the pre-commit hook proves it.
+6. **The shape document's register is updated in place** with each result, so `EVID-0009` stops
+   describing a set of open questions and starts describing what was found.
+
+## Not in scope
+
+- Building any part of the runtime. A probe answers a question and is then torn down.
+- `docs/research/specup-agent-runtime.md` itself — it is what this campaign unlocks.
+- Any change to `open-swe/`, any dependency, any `requires-python` bump, any manifest change.
+- Track B's six assumptions. They stay **Specified** and the runtime document must say so rather
+  than letting them read as findings.
