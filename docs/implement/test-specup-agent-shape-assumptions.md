@@ -3,7 +3,7 @@
 **Audience:** whoever runs these probes, and whoever reads the results afterwards to decide
 whether `docs/research/specup-agent-runtime.md` can be written.
 
-**Status: three of eight probes have been run, and all three are answered — two of them only
+**Status: four of eight probes have been run, and all four are answered — three of them only
 under a condition the assumption did not state.** `P1` was answered on 2026-09-18 and it held.
 
 `P2` was **falsified** the same day, then **re-run on 2026-09-19 against OpenShell's rolling
@@ -20,9 +20,17 @@ the one this project decided on — `Qwen3-Reranker-0.6B` declares a causal-LM a
 the serving runtime cannot type as a reranker, so it either stops the server from starting or
 gets loaded as an embedder.
 
-**Two probes have now returned a condition rather than a plain yes**, which is the pattern worth
-noticing: the assumptions were not wrong, they were underspecified. The other five *Result*
-blocks are empty, and an empty block means *not run* — never *assumed fine*. Run
+`P4` was answered on 2026-09-19, and it is the sharpest case of the pattern so far: the
+**topology** held completely — a key that never left the host signed a commit made inside a
+sandbox that could not read a copy of that key sitting in its own filesystem — while the
+**component the assumption names does not do the job**. `vouch-bridge` exists, and it is a C2PA
+image and audio signing service. There is also no local socket to reach it on, because an
+OpenShell sandbox is a container with no mount flag. Nothing shipped fills this role today.
+
+**Three probes have now returned a condition rather than a plain yes**, which is the pattern
+worth noticing: the assumptions were not wrong, they were underspecified — and twice the
+specific *component* named turned out to be the wrong one while the *shape* survived. The other
+four *Result* blocks are empty, and an empty block means *not run* — never *assumed fine*. Run
 `python3 docs/implement/probes/record.py --list` rather than trusting this line; it reads the blocks
 below and this sentence does not.
 
@@ -502,7 +510,12 @@ premise, and the `agent-inbox/` directory has no intent behind it.
 **Falsified when:** the private key has to enter the sandbox, **or** the sidecar's socket cannot
 be reached from inside under a policy that denies reading the key.
 
-**Environment:** P2's sandbox plus `vouch-bridge` on the host. Needs P2 `answered`.
+**Environment:** P2's sandbox plus a signing sidecar on the host. Needs P2 `answered`.
+
+*Corrected 2026-09-19, after the run.* This said *"plus `vouch-bridge` on the host"*. That
+component does not sign git objects — see [3.5](#35--what-p4-found-and-the-sidecar-that-does-not-exist) —
+so the probe supplies its own sidecar and the assumption's component name is part of what P4
+settles rather than part of its setup.
 
 **Steps:**
 
@@ -520,12 +533,106 @@ documentation exists to prevent: *"if you give an LLM your private key, it might
 it in a prompt injection attack."*
 
 <!-- RESULT P4 -->
-- **Outcome:** _not run_
-- **Date:**
-- **Ran by:**
-- **Evidence:**
-- **What was found:**
+- **Outcome:** answered
+- **Date:** 2026-09-19
+- **Ran by:** Aniket Gore
+- **Evidence:** workspace/spike-0.1.3/P4/evidence-p4.txt
+- **What was found:** The topology holds, and the component the assumption names does not. A key on the host signed a commit made inside an OpenShell sandbox: the sandbox could not read a copy of that same key sitting in its own filesystem (DENIED under the probe policy, READ under a control policy that lists the parent, so Landlock refused it rather than Unix permissions), it reached the sidecar over the one endpoint the network policy names and got policy_denied on the adjacent port, and the commit verifies outside with ssh-keygen against the public key. But ASM-17 is wrong twice. vouch-bridge is a C2PA image and audio signing service that mints an ephemeral certificate chain per request; it signs no git object and holds no long-lived key. And there is no local socket: an OpenShell sandbox is a container, sandbox create has no mount flag, so a host unix socket is not in its filesystem at all and egress is a transparent L7 proxy. The sidecar and the git shim in this probe are 120 lines written to make the question answerable. No shipped component fills this role today.
 <!-- END RESULT P4 -->
+
+#### 3.5 — What P4 found, and the sidecar that does not exist
+
+*The number is the order a finding was written, not its place on the page — so 3.5 sits above
+3.4. Renaming a heading here once broke two links in another document, and keeping the numbers
+stable is worth more than keeping them sorted.*
+
+**`ASM-17` holds as a topology and fails as a description of a component.** A key that never
+left the host signed a commit that was made inside the sandbox:
+
+| Step | Result |
+|---|---|
+| Private key readable inside, under the probe policy | **DENIED** |
+| The same key, under a policy that lists the parent `/sandbox` | **READ** — so Landlock refused it, not Unix permissions |
+| Control file in the same sandbox | READ |
+| Host unix socket (`/run/user/1000/gcr/ssh`) visible inside | **NO** — `/run/user/1000/` does not exist there |
+| Commit produced inside, signed through the sidecar | `fc9524a7…` |
+| Endpoint the network policy does not name | `policy_denied` |
+| Signature checked outside with `ssh-keygen -Y verify` | **`Good "git" signature for agent@p4.invalid`** |
+| `Vouch-DID` trailer vs. the key that signed | identical `did:key:z6Mkosh…` |
+| Signatures the sidecar issued | **1** |
+
+**`vouch-bridge` is not the component this assumption thinks it is.** It is real — it installs
+from `vouch-protocol` as a console script pointing at `vouch.bridge.server:main` — but its own
+FastAPI application describes itself as a *"C2PA image signing, QR badge overlay, and audio
+watermarking service"*. Its two endpoints are `sign_image` and `verify_image`, it has a
+companion `audio_routes.py`, and it generates an **ephemeral three-level certificate chain per
+request**. It signs no git object, and it holds no long-lived key to withhold. So the sentence
+in [stack §3.12](../research/specup-agent-stack.md#312-vouch--agent-identity-and-the-broker) —
+*"`vouch-bridge` is the local signing daemon that implements it"* — names a real binary for a
+job it does not do.
+
+**Worth recording how that was nearly missed in the other direction.** `vouch-bridge` appears in
+neither the project README nor the PyPI description, so the first two readings concluded it did
+not exist at all and P4 was about to be recorded `blocked` on a missing prerequisite. Installing
+the package is what showed the console script. **A component's absence from its own
+documentation is not evidence of its absence**, and the reverse error — declaring something
+missing because the docs are quiet — would have been just as wrong as the claim it was
+correcting.
+
+**There is also no local socket, and there cannot be one.** An OpenShell sandbox is a container,
+`openshell sandbox create` has **no mount or volume flag**, and the host's `/run/user/1000/` is
+simply not in the sandbox's filesystem. Egress is a transparent L7 proxy: every sandbox gets
+`http_proxy=http://10.200.0.1:3128` and an injected CA at `/etc/openshell-tls/`. So a sidecar in
+this topology has to be an **HTTP endpoint the proxy can route to**, named in the policy:
+
+```yaml
+network_policies:
+  sidecar:
+    endpoints:
+      - { host: 192.168.48.231, port: 21777, protocol: rest, enforcement: enforce, access: full }
+    binaries:
+      - { path: "/usr/local/bin/p4-bridge-client" }
+```
+
+**The containment is real rather than advisory, and that was worth checking.** Unsetting
+`http_proxy` and connecting straight to the host does not escape it — the connection fails. The
+only host port a sandbox can open is the proxy itself. A policy enforced only by an environment
+variable would be no policy at all, because the first thing a misbehaving agent does is ignore
+it.
+
+**`binaries` is the control that has no analogue in the shape document.** Egress is attributed
+to the executable that requests it, so the signing endpoint can be reachable by the bridge
+client and by nothing else in the sandbox. That is a stronger statement than *"the sandbox may
+reach the sidecar"*, and the runtime specification should use it.
+
+**What the sandbox does hold is a bearer token, and that is the honest reduction rather than a
+loophole.** It is permission to *ask for* a signature while the sandbox runs, not possession of
+a key afterwards. Revoking it is restarting the sidecar; a leaked key file is still a key file
+tomorrow. The property `ASM-13` actually wants is this one, and it should be written that way.
+
+**One probe-design error, kept because it is the interesting half.** The first run reported the
+key `DENIED` and it meant nothing: the decoy was owned by root at mode `0600`, so ordinary Unix
+permissions were refusing the read and Landlock was never consulted. The control that caught it
+is now step 5b — boot the same image, list the parent `/sandbox`, and the same read must
+**succeed**. It does. This is the same failure as the `read: DENIED` that turned out to be a
+redirect to an unlisted `/dev/null`, in [3.3](#33--what-p2-found-and-what-the-answer-is-conditional-on),
+and it is the reason a denial without a matching permit is not evidence.
+
+**Two things about Vouch that a deployment has to know, neither of them about P4.** The bridge
+binds **`0.0.0.0` by default** and `auth_enabled` is `bool(VOUCH_BRIDGE_SECRET)` — so with no
+secret set, a signing service listens on every interface with authentication switched off; the
+`--help` that discovered this started a live server, because `main()` parses no arguments. And
+**`vouch git init` writes `--global` git config** — `user.signingkey`, `gpg.format=ssh`,
+`commit.gpgsign=true` — plus a key pair into `~/.ssh/`. On a machine that deliberately has no
+global git config, that is not a setup step, it is a change to every repository the operator
+owns. This probe configured the equivalent per-repository instead.
+
+**So what has to be built is now specific.** Not *"deploy `vouch-bridge`"*, but: a signing
+service that holds one long-lived key, exposes one HTTP endpoint, fixes the signature namespace
+rather than taking it from the caller, logs every signature durably, and applies a policy over
+*what* it will sign rather than signing whichever bytes arrive. The probe's sidecar does the
+first three in 120 lines and deliberately does neither of the last two. **ADR 6 is where that
+gets decided**, and it now has a measured topology to decide against rather than an assumption.
 
 ---
 
@@ -813,7 +920,7 @@ until then it is an intention.
 |---|---|---|
 | **0** | This document, `probes/`, the `docs/README.md` row | Reviewed — **done** |
 | **1** | **P1 alone.** P2 and P5 may run beside it | **P1 answered — done, 2026-09-18.** A falsification would have stopped the campaign; it did not fire |
-| **2** | P3, P4, P6, P7, P8. **P2 and P5 are closed** — P2 falsified 2026-09-18 on `v0.0.116`, re-run 2026-09-19 on the `dev` build and answered, superseded in place; P5 answered 2026-09-19. **P4 was waiting on P2 and is now unblocked** | All eight `answered`, `falsified` or `blocked` |
+| **2** | P3, P6, P7, P8. **P2, P4 and P5 are closed** — P2 falsified 2026-09-18 on `v0.0.116`, re-run 2026-09-19 on the `dev` build and answered, superseded in place; P5 answered 2026-09-19; P4 answered 2026-09-19, the last one that needed nothing from P1. **The four that remain all need P1's stack standing up again**, and P6 and P7 additionally need Langfuse | All eight `answered`, `falsified` or `blocked` |
 | **3** | Register `EVID-0010`–`EVID-0016` in one batch | `audit.py` reports exactly two reasons |
 | **4** | The eight ADRs | Each at `REVIEW` or better; audit still two reasons |
 | **5** | `docs/research/specup-agent-runtime.md` | — |

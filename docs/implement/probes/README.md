@@ -26,9 +26,12 @@ hook fails any commit that gives a file there bytes, and that premise is what
 | `p1_stub_anthropic.py` | a stub Anthropic Messages API, so P1 needs no provider key | yes, both JSON and SSE |
 | `p1b_open_swe_suite.sh` | Open SWE's own suite, twice: with and without `langgraph-api` | yes |
 | `p2.sh` | P2: builds the governed tree into an image, boots it under two policies, and tries `truncate(2)` | **yes, against two builds — exit 1 on `v0.0.116`, exit 0 on `0.0.117-dev.204`. Both are correct runs** |
+| `p4.sh` | P4: runs a signing sidecar on the host, denies its key inside the sandbox, and signs a commit through it | **yes — exit 0 answered** |
+| `p4_sidecar.py` | the host half of P4: holds the key, returns signatures, never returns the key | yes |
+| `p4_bridge_client.py` | the sandbox half: enough of `ssh-keygen -Y sign` to satisfy git, forwarding to the sidecar | yes |
 | `p5.sh` | P5: starts **one** Infinity process with both models and measures it | **yes — exit 0 answered, and exit 1 on the reranker the stack had decided** |
 | `p5_measure.py` | the judgement half of P5: process count from `/proc`, resident memory, and whether the two models actually retrieve and rank | yes, including both failures |
-| `p3.sh`, `p4.sh`, `p6.sh` … `p8.sh` | **absent, deliberately** | — |
+| `p3.sh`, `p6.sh` … `p8.sh` | **absent, deliberately** | — |
 
 **`p1b` is evidence, not a probe.** It has no pre-registered falsifier, so `record.py` will not
 take its output and no `RESULT` block belongs to it. It exists because P1's one stubbed run said
@@ -36,7 +39,7 @@ almost nothing about Open SWE, and Open SWE ships 3434 tests that say a great de
 A script whose numbers are checked against constants is not a probe; it is a regression guard, and
 when its numbers move the campaign document changes rather than the constants.
 
-**The remaining five are missing on purpose.** Writing `p3.sh` today would mean inventing Agent
+**The remaining four are missing on purpose.** Writing `p3.sh` today would mean inventing Agent
 Inbox's connection flags from memory — the failure `AGENTS.md` names in as many words: *"Resolve, or
 stop — never infer."* Each probe's script is written **when that probe is prepared**, against the
 upstream documentation open beside it. `p2.sh` is what that looks like in practice: every flag in it
@@ -85,6 +88,28 @@ own: `perl` could be missing, the file could be absent, the exec wrapper could b
 second truncation, on a path the same policy permits in the same sandbox, is what makes the first
 one evidence. An earlier run of this probe reported a `read: DENIED` that turned out to be a
 redirect to an unlisted `/dev/null`, and this is the shape of the fix.
+
+**`p4.sh` has a control for the same reason, and it caught a real mistake.** Its first run
+reported the private key `DENIED` inside the sandbox, which is the answer the probe wanted — and
+it was worthless. The decoy key was owned by root at mode `0600`, so ordinary Unix permissions
+refused the read and the policy under test was never consulted. Step 5b now boots the same image
+under a policy that lists the parent directory and requires the same read to **succeed**. A
+denial is only evidence when the matching permit is shown beside it, and a probe that reports the
+expected answer for the wrong reason is worse than one that fails.
+
+**A probe may have to supply the component the assumption names, and it must say so loudly.**
+`ASM-17` names `vouch-bridge` as the commit-signing sidecar. `vouch-bridge` exists and signs
+C2PA images and audio, so `p4_sidecar.py` and `p4_bridge_client.py` stand in for software that
+has not been written. They are about 120 lines each, they deliberately omit the durable audit
+log and the signing policy a real sidecar needs, and both carry a header saying **do not deploy
+this**. What P4 answers is whether the topology works, which is a genuine question. It does not
+answer whether anything shipped implements it, and the campaign document has to keep those two
+apart or the probe has quietly become a product decision.
+
+**Install the thing before concluding it is missing.** `vouch-bridge` is in neither its
+project's README nor its PyPI description, and two readings of those concluded there was no such
+component and P4 was `blocked`. It is a console script in the installed package. An absence in
+documentation is not an absence in software, and `blocked` is as strong a claim as `answered`.
 
 A directory holding a harness and the scripts that have actually run is honest. A directory
 holding eight scripts that were never executed against the software they name is not.

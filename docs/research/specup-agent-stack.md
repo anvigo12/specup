@@ -461,6 +461,26 @@ vocabulary rests on.
 > withhold, fail in the same shape. See
 > [campaign §3.3](../implement/test-specup-agent-shape-assumptions.md#33--what-p2-found-and-what-the-answer-is-conditional-on).
 
+> **Measured 2026-09-19 by `P4` — the egress half, which this section had not examined.** The
+> filesystem policy is only one of two. Every sandbox is a container on a private veth whose only
+> reachable host port is a **transparent L7 proxy** (`http_proxy=http://10.200.0.1:3128`, with an
+> OpenShell CA injected at `/etc/openshell-tls/`), and `network_policies` names the endpoints that
+> proxy will serve — host, port, protocol, and for `protocol: rest` the permitted methods.
+>
+> **It is enforced at the network layer, not by the environment variable.** Unsetting
+> `http_proxy` and connecting straight to the host fails rather than escaping; an unlisted port on
+> a listed host returns `{"error":"policy_denied"}`. That is the property the filesystem half was
+> found lacking above, present here.
+>
+> **And `binaries` attributes egress to the executable that asks for it**, so an endpoint can be
+> reachable by one program in the sandbox and by nothing else. Neither this report nor the shape
+> document had that control, and it is the right primitive for a signing endpoint.
+>
+> One caution that follows from the design rather than a defect: the proxy terminates TLS with its
+> own CA, so **OpenShell sees the plaintext of every request a sandbox makes**, credentials
+> included. That is how L7 rules are possible at all, and it means the proxy is in the trust
+> boundary for everything the agent sends.
+
 **The Deep Agents provider already exists**, which is the practical difference from the previous
 plan. Deep Agents documents eight backends, and NVIDIA OpenShell is one of them:
 
@@ -1100,6 +1120,27 @@ key, it might accidentally leak it in a prompt injection attack"*, and `vouch-br
 signing daemon that implements it. **That pattern is not optional in this stack** — the agent runs
 inside a sandbox whose whole purpose is to contain it, and the signing key is the one secret that
 must be outside the boundary it is signing about.
+
+> **Corrected 2026-09-19, by running it — `vouch-bridge` is not a commit-signing daemon.** It is
+> real and it installs as a console script (`vouch.bridge.server:main`), but its own FastAPI
+> application calls itself a *"C2PA image signing, QR badge overlay, and audio watermarking
+> service"*. Its endpoints are `sign_image` and `verify_image`, it has a companion
+> `audio_routes.py`, and `_generate_cert_chain` mints an **ephemeral** three-level chain per
+> request — so it holds no long-lived key to keep away from the model. The Identity Sidecar
+> **pattern** is exactly as load-bearing as this paragraph says. The **component named here does
+> not implement it for git**, and nothing else shipped does either, so this is work SpecUP has to
+> do rather than software it can adopt.
+>
+> Two further findings a deployment needs. `vouch-bridge` binds **`0.0.0.0`** by default and
+> enables authentication only when `VOUCH_BRIDGE_SECRET` is set, so the out-of-the-box posture is
+> a signing service on every interface with no auth; `main()` parses no arguments, so
+> `vouch-bridge --help` starts that server rather than printing help. And **`vouch git init`
+> writes `--global` git config** — `user.signingkey`, `gpg.format=ssh`, `commit.gpgsign=true` —
+> and a key pair into `~/.ssh/`, which on a machine that deliberately keeps per-repository
+> configuration is a change to every repository its owner has.
+>
+> [Campaign 3.5](../implement/test-specup-agent-shape-assumptions.md#35--what-p4-found-and-the-sidecar-that-does-not-exist)
+> has the measured topology that does work.
 
 **3. A binding to git, which is where SpecUP's own model already lives.** `vouch git init`
 configures SSH commit signing, installs commit hooks and adds a **`Vouch-DID` commit trailer**;

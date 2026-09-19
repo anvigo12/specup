@@ -78,7 +78,7 @@ is *Verified* from the stack report unless it carries an `ASM-` id.
 | 7 | **Langfuse** | trace store UI and API; OTLP endpoint | HTTP | none in-process | The evidence plane goes blind |
 | 8 | **Model server** | one process serving the embedder **and** the reranker (`ASM-11`, **measured 2026-09-19**) | HTTP | none | Dense retrieval and reranking stop; BM25 survives. **Corrected: they stop together and they also stop if either model fails to load** — a reranker Infinity could not type aborted startup and took the healthy embedder with it. One process is one blast radius |
 | 9 | **OpenShell daemon** | creates and supervises sandboxes | host socket | sandbox lifecycle | Every tool call fails |
-| 10 | **`vouch-bridge`** | the signing sidecar; holds the agent's private key | local socket (`ASM-17`) | **the key** | No commit can be signed; no PR can be opened |
+| 10 | **The signing sidecar** | holds the agent's private key. **Not `vouch-bridge`, which signs C2PA images and audio — measured 2026-09-19. Nothing shipped does this job** | ~~local socket~~ **an allowlisted HTTP endpoint** (`ASM-17`); a container has no mount flag, so a host socket is not reachable | **the key** | No commit can be signed; no PR can be opened |
 | 11 | **OTel Collector** | receives `stdout` logs and OTLP spans, routes both | OTLP | buffer | Logs and traces are dropped at the edge |
 | — | **The graph server** | reached over Bolt; **SpecUP does not run it** | `7687` | the customer's | Structural retrieval stops |
 | — | **The OpenShell runtime** | a **host installation**, not a container | — | — | Nothing starts |
@@ -227,10 +227,20 @@ policy hash is attested before the backend is exposed and any version disagreeme
 *means* and cannot see a symlink; OpenShell knows what a process can *reach* and cannot tell a pull
 request from a force-push.
 
-**7. Signing.** The commit is signed by `vouch-bridge`, which holds the key and runs outside the
+**7. Signing.** The commit is signed by a sidecar which holds the key and runs outside the
 sandbox. **The key is never inside the boundary it is signing about**, which is the entire point of
 the Identity Sidecar pattern and is not optional in a stack whose premise is that the agent is
 contained.
+
+> **Measured 2026-09-19 — the step works, and it is reached differently than this said.** This
+> named `vouch-bridge` and a local socket. `vouch-bridge` is a **C2PA image and audio signing
+> service**; it signs no git object. A host unix socket is not reachable from an OpenShell
+> sandbox at all, because the sandbox is a container and `sandbox create` has no mount flag.
+> What works is an **HTTP endpoint named in the sandbox's network policy**, with egress
+> attributed to the one binary permitted to call it — and what the sandbox then holds is a
+> bearer token, which is permission to ask for a signature rather than possession of a key.
+> **No shipped component does this**, so step 7 is now something SpecUP has to build.
+> [Campaign 3.5](../implement/test-specup-agent-shape-assumptions.md#35--what-p4-found-and-the-sidecar-that-does-not-exist).
 
 **8. Telemetry.** The `traced_*` entrypoints emit OTLP spans. Langfuse writes them to ClickHouse and
 the raw events to SeaweedFS first, which is what makes its ingest recoverable. **Application logs do
@@ -495,7 +505,7 @@ the runtime coherent, and nothing upstream says it.
 |---|---|---|---|
 | `ASM-06` | `sandbox/openshell/` holds the policy YAML and the sandbox image definition | carried | The most governance-relevant directory in the layout has no stated contents |
 | `ASM-13` | `vouch/` holds the Shield rules and the `did:web` document, **and never the private key** | carried | A repository is the worst possible place for a signing key, and a directory named for identity is where somebody will put one |
-| `ASM-17` | `vouch-bridge` runs as a **per-host sidecar**, reached over a local socket the sandbox cannot see | **new** | Per-run means a key in each sandbox, which inverts the Identity Sidecar pattern |
+| `ASM-17` | ~~`vouch-bridge` runs as a **per-host sidecar**, reached over a local socket the sandbox cannot see~~ **ANSWERED 2026-09-19 as a topology, and the component and the transport are both wrong.** A host-held key signed a commit made inside the sandbox; the sandbox was denied a copy of that key in its own filesystem by Landlock, with a permit shown beside the denial. But `vouch-bridge` is a **C2PA image and audio signing service** that mints an ephemeral certificate chain per request and signs no git object, and there is **no local socket** — an OpenShell sandbox is a container with no mount flag, and egress is a transparent L7 proxy. The sidecar has to be an allowlisted HTTP endpoint, and **nothing shipped implements it** | **new** | Per-run means a key in each sandbox, which inverts the Identity Sidecar pattern |
 | `ASM-26` | All stateful services are single-instance. **No HA, no replication, no failover** | **new** | §7's failure table is a list of outages rather than degradations |
 | `ASM-28` | **The governance tree is protected by the OpenShell filesystem policy, not by Shield rules** — **ANSWERED 2026-09-19, and only above a version floor.** Written as an allowlist the policy blocks writes, symlinks included. `truncate(2)` is blocked at Landlock `ABI::V3` (the `dev` build) and **not blocked on any stable release**, where the trust root went from 2732 bytes to 0. Falsified 2026-09-18 on `v0.0.116`; that reading stands | **new — and it corrects [stack §13.7](specup-agent-stack.md#137-one-rule-and-the-five-places-it-lands)** | Shield cannot see symlinks and says so; a path rule there is advisory. If the policy cannot express the exclusion, the protection does not exist at any layer |
 | `ASM-04` | Agent Inbox authenticates cleanly against Aegra's JWT or OAuth | carried, and flagged untested upstream | Its connection form asks for a LangSmith API key. If this fails, the decision surface is the dashboard alone and [stack §3.3](specup-agent-stack.md#33-agent-inbox--the-explicit-decisions) loses its premise |
@@ -509,7 +519,7 @@ Everything above is untested. These six need no new code:
 | ~~Point an `aegra.json` at one Open SWE graph and start a run~~ **done** | **`ASM-03`** — the largest risk in the shape, and it holds |
 | Open Agent Inbox against a local Aegra with JWT configured | **`ASM-04`** |
 | ~~`openshell sandbox create` with a policy that excludes `.specify/extensions/**`, then try to write there~~ **done — and the write was the wrong test** | **`ASM-28`** — appending is blocked on every build; truncating is blocked only at Landlock ABI 3, which no stable release uses |
-| Run `vouch-bridge` on the host and sign from inside a sandbox over the socket | `ASM-17` |
+| ~~Run `vouch-bridge` on the host and sign from inside a sandbox over the socket~~ **done — and neither `vouch-bridge` nor a socket was usable** | **`ASM-17`** — the topology holds over an allowlisted HTTP endpoint; the named component signs images, not commits |
 | Write one byte to an index file from the agent process and see whether anything objects | `ASM-19` |
 | Start the agent with no index present | the cold-start behaviour nothing specifies |
 
@@ -636,8 +646,8 @@ page is a synthesis of those readings**, which is one remove further from eviden
 here is either a restatement of something in the stack report or an inference drawn across two of
 them. The thirty-one assumption ids exist because that second category would otherwise be invisible.
 
-**Six of the thirty-one are testable today and three have now been tested; all three hold, and
-two of them hold only under a condition they did not state.** `ASM-03` was exercised against a
+**Six of the thirty-one are testable today and four have now been tested; all four hold, and
+three of them hold only under a condition they did not state.** `ASM-03` was exercised against a
 running Aegra on 2026-09-18 and held, so the first two planes of
 [§1](#1-five-planes-not-twelve-components) are no longer a hypothesis with a diagram — the
 control plane loads and runs the graphs the execution plane is built from. `ASM-28` was
@@ -646,9 +656,19 @@ exercised against a running OpenShell the same day and was **falsified**, then r
 governance tree, symlinks included, and blocks `truncate(2)` only above a Landlock ABI no stable
 release uses. `ASM-11` was answered on 2026-09-19 — one process did serve both models — on
 condition that the runtime is Infinity rather than TEI, and that the reranker is not the one
-this project had decided on. **The other twenty-eight are exactly as untested as they were**,
-and one probe answering does not make the rest more likely; it only removes the one that would
-have invalidated the others.
+this project had decided on. `ASM-17` was answered on 2026-09-19: a host-held key signed a commit
+made inside a sandbox that could not read a copy of that key in its own filesystem — on condition
+that the sidecar is an **allowlisted HTTP endpoint** rather than a local socket, and that it is
+**not `vouch-bridge`**, which signs C2PA images and audio. **The other twenty-seven are exactly as
+untested as they were**, and one probe answering does not make the rest more likely; it only
+removes the one that would have invalidated the others.
+
+**Three of the four conditions are the same shape, and that is now a pattern rather than a
+coincidence.** In each case the *arrangement* this document describes survived contact and the
+*named component* did not: TEI cannot serve two models, `Qwen3-Reranker` cannot be typed as a
+reranker, `vouch-bridge` does not sign commits. A synthesis is good at shapes and bad at parts,
+because a part is a fact about somebody else's software and a shape is an argument. The runtime
+specification should treat every component name in here as unverified until a probe has run it.
 
 **That `ASM-28` first came back falsified is the most useful thing on this page.** Had it been
 run a day later it would have come back clean, and the version floor it now carries — the whole
