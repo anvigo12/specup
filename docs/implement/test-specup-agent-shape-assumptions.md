@@ -724,6 +724,11 @@ fired against the **model pairing**, which is a different claim living in a diff
 > documented window against Qwen3-Reranker's 32K, *"and for code that difference is not
 > academic."* That cost now has to be paid, or the serving runtime has to change. It is a
 > decision, so it belongs in an ADR rather than here.
+>
+> *Superseded the same day by running it.* **There is no 512-token cost** — that window is a
+> parameter in the model card's example, not a property of the weights, and the measured window
+> is **8192**. The cost that is real is **latency**: 6.79s to rerank four documents. Both numbers
+> are below, under *Confirmed at production scale*.
 
 **One further finding the probe was not looking for: the failure is not isolated.** When the
 reranker could not load, the **whole server aborted** — `Creating 2 engines: ['embed', 'rerank']`
@@ -753,7 +758,49 @@ AVX-512 BF16** on this CPU, so `bfloat16` is emulated and slower than `float32`,
 still 15 GiB at half precision. **A machine with AMX or a GPU should re-measure rather than
 inherit these numbers** — they are a floor for the architecture, not a limit of it.
 
----
+##### Confirmed at production scale, and one number in the stack report is wrong
+
+The recorded outcome does not change — `ASM-11` was already `answered`. This is the run with the
+**replacement reranker the finding above calls for**, `BAAI/bge-reranker-v2-m3`
+(`XLMRobertaForSequenceClassification`, so Infinity types it correctly), paired with the decided
+embedder. Evidence: `workspace/spike-0.1.3/P5/evidence-p5-bge-m3.txt`.
+
+| | Answering run | With `bge-reranker-v2-m3` |
+|---|---|---|
+| Processes | 1 | **1** |
+| Resident, whole tree | 3337 MiB | **4186 MiB** |
+| `rerank` capabilities | `['rerank']` | **`['rerank']`** |
+| Retrieval / ranking correct | 2/2 and 2/2 | **2/2 and 2/2** |
+| Embed 8 texts | 1.70s | 6.38s |
+| Rerank 4 documents | 0.08s | **6.79s, then 3.06s** |
+| Cold start to ready | 95s | **207s** |
+
+**The real cost of this model is latency, not context.** Reranking four documents took **6.79s**
+on first call and 3.06s warm, against 0.08s for the small cross-encoder in the answering run —
+it is a 568M-parameter XLM-R large at `float32` on four AVX2 cores. A seven-stage pipeline that
+reranks on every query cannot pay that per request on this class of host.
+
+**And the context cost this campaign told you to pay does not exist.**
+[Stack §3.6.7](../research/specup-agent-stack.md#367-rerankqwen3-reranker--the-last-18-points)
+says *"its documented usage truncates at 512 tokens… 512 tokens is a medium-sized function"*,
+and the amendment concluded *"the 512-token cost named above now has to be paid"*. **That is
+wrong, and it came from reading a snippet as a specification.** The model card passes
+`max_length=512` in its example; the model declares `max_position_embeddings: 8194` and
+`model_max_length: 8192`, because it is built on `bge-m3`, which is the long-context model.
+
+Measured rather than read — the same query and document scored twice, with the answer placed
+deliberately beyond token 512:
+
+| `max_length` | tokens seen | score, answer late | score, no answer | verdict |
+|---|---|---|---|---|
+| 512 | 512 | −10.6261 | −10.6261 | **identical — the answer is invisible** |
+| 8192 | 1212 | **+5.0365** | −3.3194 | **+8.36 apart — it reads the late answer** |
+
+So the window is **8192 against Qwen3-Reranker's 32K**, a factor of four, not the factor of
+sixty-four the report priced. The 512 is a parameter a caller passes, and Infinity's own default
+sequence length — not a property of the weights. **The ADR this decision needs is now about
+reranking latency and batch size**, which is a real constraint, rather than about a context
+window that was never lost.
 
 ### P6 — Two databases on one Postgres, one Valkey for two consumers?
 

@@ -853,9 +853,10 @@ cached outside the repository, never committed and never shipped. The full state
 [§3.6.4](#364-embedqwen3-embedding--the-model-that-was-missing).
 
 **The permissive alternative is `bge-reranker-v2-m3`** — **Apache-2.0**, 0.6B, built on bge-m3,
-multilingual, and the usual lightweight default. Its documented usage truncates at **512 tokens**,
-against Qwen3-Reranker's 32K, and for code that difference is not academic: 512 tokens is a
-medium-sized function.
+multilingual, and the usual lightweight default. ~~Its documented usage truncates at **512
+tokens**, against Qwen3-Reranker's 32K, and for code that difference is not academic: 512 tokens
+is a medium-sized function.~~ **Corrected 2026-09-19 — see the amendment below. The window is
+8192, and 512 was a number in a code snippet.**
 
 > **Amended 2026-09-19, and this is no longer the alternative — it is the candidate.** P5 tried
 > to serve `Qwen3-Reranker-0.6B` from the model server this stack specifies and **could not**.
@@ -871,12 +872,27 @@ medium-sized function.
 > permissive serving runtime uses expect a classification head. `bge-reranker-v2-m3` is
 > `XLMRobertaForSequenceClassification` and matches.
 >
-> **So the 512-token cost named above now has to be paid, or the serving runtime has to
-> change** — and the second option is not free either, because
+> ~~**So the 512-token cost named above now has to be paid, or the serving runtime has to
+> change**~~ — the second option is still real, because
 > [§12.1 decision 7](#121-decisions-taken)'s "one process serves both" is the thing that made
 > TEI unusable in the first place. That is a decision with a measured cost on both sides, which
 > means an ADR. The full record is in
 > [campaign §3.4](../implement/test-specup-agent-shape-assumptions.md#34--what-p5-found-and-the-reranker-that-has-to-be-replaced).
+>
+> **Corrected 2026-09-19 by running the replacement — there is no 512-token cost, and this
+> report invented it by reading a snippet as a specification.** `bge-reranker-v2-m3` declares
+> `max_position_embeddings: 8194` and `model_max_length: 8192`; it is built on `bge-m3`, which is
+> the *long-context* model. The model card's example passes `max_length=512`, which is a caller's
+> parameter. Tested with the answer placed beyond token 512: at `max_length=512` the
+> answer-bearing and answer-free documents score **identically** (−10.6261, the answer is
+> invisible); at 8192 they score **+5.0365 against −3.3194**. The window is **8192 against
+> Qwen3-Reranker's 32K** — a factor of four, not sixty-four.
+>
+> **The cost that is real is latency.** Served from the same single Infinity process as the
+> decided embedder, the pair occupies **4186 MiB** and reranks four documents in **6.79s cold and
+> 3.06s warm** on four AVX2 cores at `float32`, against 0.08s for the small cross-encoder. Cold
+> start to ready was 207s. A pipeline that reranks on every query has to answer for that, and
+> that — not the context window — is what the ADR decides.
 
 **And the one to avoid is the one most likely to be recommended.** `jina-reranker-v3` is a 0.6B
 model with a 131K window reporting **61.94 nDCG@10 on BEIR**, state of the art among open-weight
@@ -2698,7 +2714,7 @@ roles and architecture from the documents listed.
 **Retrieval — the models, and their licences**
 - <https://huggingface.co/Qwen/Qwen3-Embedding-0.6B> — **`apache-2.0`**; 32K context; user-defined dimensions 32–1024; instruction-aware; *"over 100 languages"* including programming languages
 - <https://huggingface.co/Qwen/Qwen3-Reranker-0.6B> — **`apache-2.0`**; 0.6B, 28 layers, 32K context; cross-encoder, instruction-aware
-- <https://huggingface.co/BAAI/bge-reranker-v2-m3> — `apache-2.0`; 0.6B on bge-m3; documented usage truncates at 512 tokens
+- <https://huggingface.co/BAAI/bge-reranker-v2-m3> — `apache-2.0`; 0.6B on bge-m3. **The card's example passes `max_length=512`; the model declares `max_position_embeddings: 8194` and `model_max_length: 8192`.** An earlier revision of this report cited the first as if it were the second
 - <https://huggingface.co/nomic-ai/nomic-embed-code> — `apache-2.0`; 7B; *"Outperforms Voyage Code 3 and OpenAI Embed 3 Large on CodeSearchNet"*
 - <https://huggingface.co/jinaai/jina-reranker-v3> — **`cc-by-nc-4.0`, non-commercial**; 0.6B, 131K window, 61.94 nDCG@10 on BEIR
 - <https://huggingface.co/naver/splade-v3> — **`cc-by-nc-sa-4.0`, non-commercial**; learned sparse retrieval

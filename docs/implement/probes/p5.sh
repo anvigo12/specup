@@ -50,6 +50,13 @@ fail()  { printf '\nFALSIFIED: %s\n' "$*" >&2; exit 1; }
   HF_HOME=$SPIKE/hf $SPIKE/.venv/bin/hf download $RERANK_ID --revision $RERANK_REV"
 
 for m in "$EMBED_ID" "$RERANK_ID"; do
+  # A model may be a hub id or a local directory. The second form is how a model whose weights
+  # will not come down the hub client cleanly gets tested at all -- see the bge-reranker-v2-m3
+  # confirmation run in the campaign document.
+  if [[ "$m" == /* ]]; then
+    [[ -f "$m/config.json" ]] || fault "$m is a path with no config.json in it"
+    continue
+  fi
   d="$HF_HOME/hub/models--${m//\//--}"
   [[ -d "$d" ]] || fault "$m is not in $HF_HOME - see the download commands above"
 done
