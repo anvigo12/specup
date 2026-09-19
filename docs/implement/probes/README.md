@@ -25,7 +25,7 @@ hook fails any commit that gives a file there bytes, and that premise is what
 | `p1.sh` | P1 end to end: clone, resolve, boot, assert, tear down | **yes — exit 0 answered, and exit 1 on a deliberately dirtied `open-swe`** |
 | `p1_stub_anthropic.py` | a stub Anthropic Messages API, so P1 needs no provider key | yes, both JSON and SSE |
 | `p1b_open_swe_suite.sh` | Open SWE's own suite, twice: with and without `langgraph-api` | yes |
-| `p2.sh` | P2: builds the governed tree into an image, boots it under two policies, and tries `truncate(2)` | **yes — exit 1 `FALSIFIED`, which is the correct exit for what it measures** |
+| `p2.sh` | P2: builds the governed tree into an image, boots it under two policies, and tries `truncate(2)` | **yes, against two builds — exit 1 on `v0.0.116`, exit 0 on `0.0.117-dev.204`. Both are correct runs** |
 | `p3.sh` … `p8.sh` | **absent, deliberately** | — |
 
 **`p1b` is evidence, not a probe.** It has no pre-registered falsifier, so `record.py` will not
@@ -47,10 +47,26 @@ script that silently acquires root to answer a question about containment would 
 than the unanswered question. The script checks for `openshell` on `PATH`, exits `2` if it is
 missing, and prints the command for a human to run.
 
-**`p2.sh` exits 1 on a correct run today.** It measures a falsified assumption, so `FALSIFIED` is
-the true result and not a broken script. When OpenShell ships the ABI v3 fix in a stable release it
-should exit 0 — and the response to that is `record.py --supersede`, never an edit to the script's
+**It also turned out not to need root at all.** OpenShell's gateway is a systemd **user** service,
+so the published tarballs can be `sha256`-verified, extracted into the spike directory and run
+unprivileged against a `--db-url` inside `workspace/`. That is how P2 was re-run against a build
+that has no release artifacts. `OPENSHELL=/path/to/openshell` points the script at it; the header
+comment carries the five commands. The general rule holds — **when a probe seems to need root,
+check whether the software actually does before asking anyone to grant it.**
+
+**`p2.sh` has exited both 1 and 0, on the same day, from the same code.** `v0.0.116` builds the
+Landlock ruleset at `ABI::V2` and `truncate(2)` empties the trust root: exit 1, `FALSIFIED`, and
+that is the true result rather than a broken script. `0.0.117-dev.204+ge38d7254e` builds at
+`ABI::V3` and the same call returns `EACCES`: exit 0. **Neither run is the one to keep.** The
+record holds both, because the gap between them is the deployment constraint. When the fix
+reaches a stable release, the response is `record.py --supersede` — never an edit to the script's
 expectations.
+
+**Step 5c truncates twice on purpose.** A `DENIED` on the protected path proves nothing on its
+own: `perl` could be missing, the file could be absent, the exec wrapper could be failing. The
+second truncation, on a path the same policy permits in the same sandbox, is what makes the first
+one evidence. An earlier run of this probe reported a `read: DENIED` that turned out to be a
+redirect to an unlisted `/dev/null`, and this is the shape of the fix.
 
 A directory holding a harness and the scripts that have actually run is honest. A directory
 holding eight scripts that were never executed against the software they name is not.

@@ -437,17 +437,29 @@ vocabulary rests on.
 > lists at all, so the attestation can be compared and never inspected. It is still a record — of
 > what was submitted.
 >
-> **And the attested policy did not stop the write it existed to stop.** Appending to
-> `.specify/governance/allowed-signers` is denied; `truncate(2)` on it succeeds, and the file went
-> from 2732 bytes to 0. The sandbox's own attestation names the cause in two adjacent lines —
-> `CONFIG:PROBED abi:v8` then `CONFIG:APPLYING abi:V2` — the host offered Landlock ABI 8 and the
-> ruleset was built at 2, which predates `LANDLOCK_ACCESS_FS_TRUNCATE`. Upstream `main` and
-> `v0.1.0-pre.2+` build at `ABI::V3`; no stable release does.
+> **And on the shipped release the attested policy did not stop the write it existed to stop.**
+> Appending to `.specify/governance/allowed-signers` is denied; `truncate(2)` on it succeeds, and
+> the file went from 2732 bytes to 0. The sandbox's own attestation names the cause in two
+> adjacent lines — `CONFIG:PROBED abi:v8` then `CONFIG:APPLYING abi:V2` — the host offered
+> Landlock ABI 8 and the ruleset was built at 2, which predates `LANDLOCK_ACCESS_FS_TRUNCATE`.
+>
+> *Amended 2026-09-19.* Re-run against OpenShell's rolling `dev` build
+> (`0.0.117-dev.204+ge38d7254e`), which builds at `ABI::V3`, the same `truncate(2)` returns
+> **`EACCES`** and the file is untouched. So the enforcement point is real, above a version floor
+> that **no stable release reaches**. Two things did not improve with it. The widening behaviour
+> above is unchanged — a `read_write` addition over a `read_only` subtree is still accepted and
+> still reported `Effective` while the kernel enforces the old ruleset. And the `dev` build
+> **stopped printing the ABI**: `CONFIG:APPLYING abi:V2` is replaced by
+> `Isolation boundary attached backend=openshell-sandbox`, and a search of the whole sandbox log
+> for `abi` or `landlock` returns nothing. The line that diagnosed this defect no longer exists,
+> so the attestation cannot tell you whether truncation is covered and only a behavioural test
+> can. *(The one direction that would be dangerous is refused: removing a `read_write` path from
+> a live sandbox fails with `InvalidArgument` and records no version. Tested on `dev` only.)*
 >
 > The comparison with `APV-002` is still the right one, and it now cuts the other way too: a hash
 > over bytes nobody re-reads, and a policy over an access right the kernel was never asked to
 > withhold, fail in the same shape. See
-> [campaign §3.3](../implement/test-specup-agent-shape-assumptions.md#33--what-p2-found-and-why-falsified-is-the-honest-word-for-it).
+> [campaign §3.3](../implement/test-specup-agent-shape-assumptions.md#33--what-p2-found-and-what-the-answer-is-conditional-on).
 
 **The Deep Agents provider already exists**, which is the practical difference from the previous
 plan. Deep Agents documents eight backends, and NVIDIA OpenShell is one of them:

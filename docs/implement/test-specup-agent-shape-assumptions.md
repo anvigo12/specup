@@ -3,11 +3,15 @@
 **Audience:** whoever runs these probes, and whoever reads the results afterwards to decide
 whether `docs/research/specup-agent-runtime.md` can be written.
 
-**Status: two of eight probes have been run, and they did not agree.** `P1` was answered on
-2026-09-18 and it held. `P2` was **falsified** the same day — the governance exclusion is
-expressible, and on the only stable release of OpenShell a sandboxed process can still empty
-`.specify/governance/allowed-signers` with `truncate(2)`. The other six *Result* blocks are empty,
-and an empty block means *not run* — never *assumed fine*. Run
+**Status: two of eight probes have been run, and both are now answered — one of them only on an
+unreleased build.** `P1` was answered on 2026-09-18 and it held. `P2` was **falsified** the same
+day, then **re-run on 2026-09-19 against OpenShell's rolling `dev` build and answered**. The
+difference is a Landlock ABI version: on every stable release, up to and including `v0.0.116`
+which `install.sh` gives you by default, a sandboxed process can still empty
+`.specify/governance/allowed-signers` with `truncate(2)`. On the `dev` build that call returns
+`EACCES`. **Both readings stand**, and the gap between them is now a minimum-version deployment
+constraint rather than a defect with no fix. The other six *Result* blocks are empty, and an empty
+block means *not run* — never *assumed fine*. Run
 `python3 docs/implement/probes/record.py --list` rather than trusting this line; it reads the blocks
 below and this sentence does not.
 
@@ -286,8 +290,10 @@ exist at any layer, because
 original answer — Vouch Shield — is already ruled out. Shield's own documentation says path
 normalisation *"resolves `..` lexically but cannot see symlinks"*.
 
-**Environment:** `workspace/spike-0.1.3/P2/` — OpenShell installed **on the host**, Docker
-present. Independent of P1.
+**Environment:** `workspace/spike-0.1.3/P2/` — OpenShell reachable, Docker present. Independent
+of P1. The gateway is a systemd **user** service, so the published tarballs can be verified by
+`sha256`, extracted into the spike directory and run unprivileged; a root install is one way to
+get a gateway, not the only one.
 
 **Steps:**
 
@@ -310,19 +316,35 @@ present. Independent of P1.
 enforcement point anywhere in the stack, and the five rows of that section's table become advice.
 
 <!-- RESULT P2 -->
-- **Outcome:** falsified
-- **Date:** 2026-09-18
+- **Outcome:** answered
+- **Date:** 2026-09-19
 - **Ran by:** Claude Opus 5, at Aniket Gore's direction
-- **Evidence:** workspace/spike-0.1.3/P2/evidence-p2.txt (untracked); policy-v3/v4/v5.yaml alongside it
-- **What was found:** OpenShell 0.0.116 installs and enforces (host Landlock ABI v8), so this is not blocked. The exclusion CAN be expressed, but only as an allowlist: a read_only path nested inside a read_write parent adds no restriction at all, because rights are the union of every matching hierarchy. Stated that way all three protected writes are denied, including through a symlink from a permitted directory - the case Vouch Shield cannot catch. But the falsifier fired anyway: v0.0.116 applies Landlock ABI::V2, which predates LANDLOCK_ACCESS_FS_TRUNCATE, so append to .specify/governance/allowed-signers is denied while truncate(2) on it SUCCEEDS. The trust root APV-002 depends on went from 2732 bytes to 0. Fixed upstream - main and v0.1.0-pre.2+ use ABI::V3, commented 'Read-only policy must also deny pathname truncation' - but not in any stable release. Re-probe against v0.1.0-pre.3 and supersede. Two further findings in 3.3.
+- **Evidence:** workspace/spike-0.1.3/P2/evidence-p2-devbuild.txt and evidence-p2-release-rerun.txt (untracked); p2-allowlist.yaml, p2-subtraction.yaml, p2-allowlist-tampered.yaml alongside them
+- **What was found:** HISTORY: falsified 2026-09-18 on v0.0.116; answered 2026-09-19 on the dev build; this block supersedes that same-day 'answered' only to correct one overstatement in its text, and the outcome is unchanged. FINDING: re-run against OpenShell 0.0.117-dev.204+ge38d7254e (commit e38d7254e, the rolling dev release rebuilt 2026-09-18), which builds the ruleset at Landlock ABI::V3. Stated as an allowlist, all three protected writes are denied including through a symlink, and truncate(2) on .specify/governance/allowed-signers returns EACCES with the file unchanged at 2732 bytes - while truncate(2) on a writable path in the same sandbox under the same policy succeeds, which is what makes the denial evidence rather than an artifact. p2.sh exits 0 on this build and 1 on v0.0.116; both runs are in the evidence files, from the same script. THE ANSWER IS CONDITIONAL ON THE BUILD: every stable release to date, up to and including the v0.0.116 that install.sh gives you by default, builds at ABI::V2, and v0.1.0-pre.1 through pre.4 are git tags with no published artifacts. A minimum OpenShell version is therefore a deployment constraint with a security reason. TWO FURTHER OBSERVATIONS, both on the dev build: it no longer logs the ABI at all, so the two lines that diagnosed the original defect are gone and only a behavioural test can tell an operator whether truncation is covered; and a live policy that removes a read_write path is refused with InvalidArgument recording no version, while one that adds a read_write path over a read_only subtree is accepted and reported Effective although the kernel keeps enforcing the original ruleset. Whether v0.0.116 also refused the removal was not tested. See 3.3.
+- **Supersedes:** an earlier outcome of `answered`
 <!-- END RESULT P2 -->
 
-#### 3.3 — What P2 found, and why `falsified` is the honest word for it
+#### 3.3 — What P2 found, and what the answer is conditional on
 
-**The falsifier was written as *"the write succeeds"*, and a write succeeded.** That sentence is in git
-from `afb6b75`, before any of this ran, which is the only reason it can settle the question now. The
-temptation to record `answered` with a caveat is exactly what the three-outcome rule exists to refuse:
-a caveat large enough to swallow the result is a second outcome wearing the first one's name.
+**P2 was run twice, against two builds, and got two different outcomes. The difference is a
+version number.** On `v0.0.116` — the latest stable release, and what `install.sh` gives you by
+default — the falsifier fired. On `0.0.117-dev.204+ge38d7254e`, the rolling `dev` build, the
+exclusion holds completely. Both readings are in the record, because both are true of the
+software they name, and only one of them is true of anything you can install as a release today.
+
+| | `v0.0.116` (stable) | `0.0.117-dev.204` (`dev`) |
+|---|---|---|
+| Exclusion by subtraction | every protected write succeeds | every protected write succeeds |
+| Exclusion as an allowlist | all three denied, symlink included | all three denied, symlink included |
+| `truncate(2)` on the trust root | **SUCCEEDS — 2732 bytes → 0** | **DENIED — `EACCES`, 2732 bytes** |
+| Landlock ABI the ruleset is built at | `ABI::V2` | `ABI::V3` |
+| `p2.sh` exit code | 1 | 0 |
+
+**The falsifier was written as *"the write succeeds"*, and on the stable release a write
+succeeded.** That sentence is in git from `afb6b75`, before any of this ran, which is the only
+reason it can settle the question at all. The first result is not withdrawn and
+`record.py --supersede` keeps it visible in the block above. What changed is not the reading of
+the evidence; it is which build the evidence came from.
 
 **The protection is real, and it is expressed backwards from how anyone would write it.**
 A `read_only` entry nested inside a `read_write` parent adds **no restriction whatsoever**. Landlock
@@ -345,38 +367,81 @@ right the ruleset can withhold. The sandbox's own attestation says so in one lin
 `CONFIG:PROBED abi:v8` then `CONFIG:APPLYING abi:V2` — the host offered ABI 8 and the policy was built
 at 2.
 
-> **This is fixed upstream, and that does not make it answered.** `main` and `v0.1.0-pre.2`
-> onward carry `let abi = ABI::V3;` with the comment *"Read-only policy must also deny pathname
-> truncation."* The latest **stable release is `v0.0.116`**, which `install.sh` gives you by default,
-> and it carries `ABI::V2`. So the fix exists, in no stable release. Recording `answered` on the
-> strength of having *read* the fix would be the precise failure the Verified/Inferred contract in
-> [`EVID-0008`](../research/specup-agent-stack.md) exists to prevent: the exclusion holding against
-> truncation is **Inferred from source**, never observed here. **Re-run P2 against `v0.1.0-pre.3` and
-> `--supersede` this block.** That is one `OPENSHELL_VERSION=v0.1.0-pre.3` away.
+**On the `dev` build the same call is refused.** `truncate(2)` on `allowed-signers` returns
+**`EACCES`** and the file stays at 2732 bytes. The control that makes this conclusive is on the
+same sandbox under the same policy: `truncate(2)` on `src/app.py`, which the allowlist permits,
+**succeeds**. So truncation is not broken in the sandbox — it is withheld on the `read_only`
+hierarchy and nowhere else. Withholding it requires `LANDLOCK_ACCESS_FS_TRUNCATE`, which exists
+only at ABI 3 and above, so the behaviour establishes the applied ruleset without depending on
+anything the log says. That matters more than it should, for the reason below.
 
-**Two further findings, neither of which the probe was looking for.**
+> **The answer is conditional on the build, and the condition is a deployment constraint.**
+> `main`, `v0.1.0-pre.2` onward and the `dev` build carry `let abi = ABI::V3;` with the comment
+> *"Read-only policy must also deny pathname truncation."* No stable release does. `v0.1.0-pre.1`
+> through `pre.4` are **git tags with no published release artifacts**, so the only prebuilt
+> binary carrying the fix today is the rolling `dev` release — which moves, and therefore has to
+> be pinned by commit in any record that cites it. This one is
+> `e38d7254e6099a42d6b80329b8e4ef6f0817931f`, rebuilt 2026-09-18.
+>
+> **SpecUP therefore acquires a minimum OpenShell version with a security reason behind it, and
+> that is an ADR, not a note.** Until the fix reaches a stable release, an operator following
+> OpenShell's own install instructions gets a build on which the governance exclusion does not
+> survive `truncate(2)`.
 
-**The attested hash describes the submitted document, not the enforced ruleset.** Removing a
-`read_only` path from a live sandbox is refused outright — *"filesystem read_only path
-'/sandbox/tree' cannot be removed on a live sandbox"*. But **adding** a `read_write` path that
-overlaps a `read_only` subtree is **accepted**: version 2, new hash, `policy get` reporting
-`status: effective`, `policy list` marking version 1 `Superseded` with no error. Enforcement did not
-change — the write stayed denied and `CONFIG:APPLYING` still reported `ro:6 rw:2` rather than the
-submitted `rw:3`. So the system reports a policy as effective that the kernel is not enforcing.
-Read that against the stack report's quotation of OpenShell's own guarantee — *"current, active,
-revision, and effective-config versions must all be positive and agree with the exact submitted
-policy/hash; ... any version disagreement fails closed."* Here every version **agrees**, at 2, and the
-ruleset is still 1's. There is no disagreement to detect, so nothing fails closed. `policy get`
-returns a hash and a status and no filesystem lists at all, so the hash can be compared but never
-inspected — which is the difference between a record and an assertion that this project's whole
-provenance vocabulary rests on.
+**Nothing was installed to get this reading, and that was not a compromise.** The release
+gateway is a systemd **user** service, not a system one, so the `dev` tarballs were verified
+against their published `sha256` sums, extracted under `workspace/spike-0.1.3/P2/dev/`, and run
+as the same unprivileged user with `--db-url` pointing into the workspace. No root, no package
+manager, no change outside the spike directory, and `systemctl --user start openshell-gateway`
+puts `v0.0.116` back. [`probes/README.md`](probes/README.md) says a probe that silently acquires
+root to answer a question about containment is a worse problem than the unanswered question;
+this is what the alternative looks like when the alternative exists.
 
-**Both defaults are the unsafe ones.** `include_workdir` defaults to **`true`**, which appends the
-working directory to `read_write` and silently grants exactly what a governance exclusion withholds.
-`landlock.compatibility` defaults to **`best_effort`**, and NVIDIA's own behaviour table gives it two
-routes to no enforcement at all: kernel ABI unavailable → *"Warns and continues without Landlock"*,
-and all paths inaccessible → the same. A boundary that downgrades to a warning is not a boundary.
-Both must be set explicitly, and `hard_requirement` is what makes step 6 meaningful at all.
+**Three further findings, none of which the probe was looking for.**
+
+**The `dev` build no longer says which ABI it applied, and that is a loss.** `v0.0.116` printed
+`CONFIG:PROBED abi:v8` and then `CONFIG:APPLYING abi:V2` — two adjacent lines that named the
+defect exactly. The `dev` build prints `Isolation boundary attached backend=openshell-sandbox`
+and `Isolation boundary enforcement confirmed backend=openshell-sandbox`, and a
+case-insensitive search of the whole sandbox log for `abi` or `landlock` returns **nothing**.
+The attestation got less specific in the release that fixed the bug the attestation had
+diagnosed. An operator can no longer read the log and know whether truncation is covered; the
+only way to find out is to try it. **That is the argument for keeping `p2.sh` as a permanent
+re-runnable assertion rather than a one-off**, which [§2](#2-the-probe-protocol) already
+suspected P2 was uniquely suited to be.
+
+**The attested hash describes the submitted document, not the enforced ruleset — and this did not
+change.** **Adding** a `read_write` path that overlaps a `read_only` subtree is **accepted** on
+both builds: version 2, new hash, `policy get` reporting `Status: Effective`, `policy list`
+marking version 1 `Superseded` with no error. Enforcement does not change — the write stayed
+denied and the file stayed at 2732 bytes on both. So the system reports a policy as effective
+that the kernel is not enforcing. Read that against the stack report's quotation of OpenShell's
+own guarantee — *"current, active, revision, and effective-config versions must all be positive
+and agree with the exact submitted policy/hash; ... any version disagreement fails closed."* Here
+every version **agrees**, at 2, and the ruleset is still 1's. There is no disagreement to detect,
+so nothing fails closed. `policy get` returns a hash and a status and no filesystem lists at all,
+so the hash can be compared but never inspected — which is the difference between a record and an
+assertion that this project's whole provenance vocabulary rests on.
+
+**The direction that would be dangerous is refused.** A live `policy set` that **removes** a
+`read_write` path fails with `InvalidArgument` and a message naming the path — *"filesystem
+read_write path '/sandbox/tree/.specify/governance' cannot be removed on a live sandbox"* — and
+`policy list` records no phantom version. So a tightening cannot be reported as effective while
+the kernel keeps the wider ruleset; only a widening can, and a widening over-promises access the
+kernel then refuses. The defect is in what the control plane **says**, not in what it enforces.
+Stated precisely, because the distinction is the whole finding: removal was tested only on the
+`dev` build, so whether `v0.0.116` also refused it is **untested**.
+
+**Both defaults are still the unsafe ones.** `include_workdir` defaults to **`true`**, which
+appends the working directory to `read_write` and silently grants exactly what a governance
+exclusion withholds. `landlock.compatibility` defaults to **`best_effort`**. Both still appear
+that way in the quickstart example in NVIDIA's own `policies.mdx` at the `dev` commit. One
+correction to the falsified run's wording: the `dev` documentation describes `best_effort` as
+skipping an **individual** missing path with a warning and applying the remaining rules, rather
+than dropping enforcement wholesale — *"In `best_effort` mode, the path is skipped with a warning
+and remaining rules are still applied. In `hard_requirement` mode, sandbox startup fails
+immediately."* That is a narrower failure than first recorded, and it does not change the
+recommendation: set both explicitly, and `hard_requirement` is what makes step 6 mean anything.
 
 **One operational note that cost an hour.** `--upload` runs **after** the policy binds, so a
 `hard_requirement` policy naming paths inside an uploaded tree aborts startup before the upload
@@ -652,7 +717,7 @@ until then it is an intention.
 |---|---|---|
 | **0** | This document, `probes/`, the `docs/README.md` row | Reviewed — **done** |
 | **1** | **P1 alone.** P2 and P5 may run beside it | **P1 answered — done, 2026-09-18.** A falsification would have stopped the campaign; it did not fire |
-| **2** | P3, P4, P6, P7, P8 — and **P2, run 2026-09-18 and falsified**; re-run it against `v0.1.0-pre.3` and `--supersede` before this phase closes | All eight `answered`, `falsified` or `blocked` |
+| **2** | P3, P4, P6, P7, P8. **P2 is closed** — falsified 2026-09-18 on `v0.0.116`, re-run 2026-09-19 on the `dev` build and answered, superseded in place | All eight `answered`, `falsified` or `blocked` |
 | **3** | Register `EVID-0010`–`EVID-0016` in one batch | `audit.py` reports exactly two reasons |
 | **4** | The eight ADRs | Each at `REVIEW` or better; audit still two reasons |
 | **5** | `docs/research/specup-agent-runtime.md` | — |
@@ -702,8 +767,11 @@ in it assumes a process is up or down, with no partial failures modelled at all.
 the decision right, and `ASM-07` in particular is a question about intent that no amount of
 rigour converts into a finding.
 
-**And a `blocked` outcome is the one most likely to be misread later.** OpenShell is alpha and is
-a host installation rather than a container. If P2 is blocked, `ASM-28` is unanswered — and
+**And a `blocked` outcome is the one most likely to be misread later.** OpenShell is alpha, and
+its installer wants root. *(Corrected 2026-09-19: the installer wants root, but OpenShell does
+not need it. The gateway is a systemd **user** service, so the published tarballs run unprivileged
+from a working directory — which is how P2 was re-run. A `blocked` on packaging grounds should
+therefore be argued, not assumed.)* If P2 had stayed blocked, `ASM-28` would be unanswered — and
 `ASM-28` is the assumption carrying the only enforcement point for the one rule the governance
 layer has. An unanswered assumption in that position is worse than a falsified one, because
 nothing about it looks wrong.

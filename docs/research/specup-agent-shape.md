@@ -497,7 +497,7 @@ the runtime coherent, and nothing upstream says it.
 | `ASM-13` | `vouch/` holds the Shield rules and the `did:web` document, **and never the private key** | carried | A repository is the worst possible place for a signing key, and a directory named for identity is where somebody will put one |
 | `ASM-17` | `vouch-bridge` runs as a **per-host sidecar**, reached over a local socket the sandbox cannot see | **new** | Per-run means a key in each sandbox, which inverts the Identity Sidecar pattern |
 | `ASM-26` | All stateful services are single-instance. **No HA, no replication, no failover** | **new** | §7's failure table is a list of outages rather than degradations |
-| `ASM-28` | ~~**The governance tree is protected by the OpenShell filesystem policy, not by Shield rules**~~ **FALSIFIED 2026-09-18 — on the only stable release.** The policy blocks writes, including through a symlink; it does not block `truncate(2)`, and the trust root went from 2732 bytes to 0 | **new — and it corrects [stack §13.7](specup-agent-stack.md#137-one-rule-and-the-five-places-it-lands)** | Shield cannot see symlinks and says so; a path rule there is advisory. If the policy cannot express the exclusion, the protection does not exist at any layer |
+| `ASM-28` | **The governance tree is protected by the OpenShell filesystem policy, not by Shield rules** — **ANSWERED 2026-09-19, and only above a version floor.** Written as an allowlist the policy blocks writes, symlinks included. `truncate(2)` is blocked at Landlock `ABI::V3` (the `dev` build) and **not blocked on any stable release**, where the trust root went from 2732 bytes to 0. Falsified 2026-09-18 on `v0.0.116`; that reading stands | **new — and it corrects [stack §13.7](specup-agent-stack.md#137-one-rule-and-the-five-places-it-lands)** | Shield cannot see symlinks and says so; a path rule there is advisory. If the policy cannot express the exclusion, the protection does not exist at any layer |
 | `ASM-04` | Agent Inbox authenticates cleanly against Aegra's JWT or OAuth | carried, and flagged untested upstream | Its connection form asks for a LangSmith API key. If this fails, the decision surface is the dashboard alone and [stack §3.3](specup-agent-stack.md#33-agent-inbox--the-explicit-decisions) loses its premise |
 
 ### Six can be tested in an afternoon, and three of them are load-bearing
@@ -508,7 +508,7 @@ Everything above is untested. These six need no new code:
 |---|---|
 | ~~Point an `aegra.json` at one Open SWE graph and start a run~~ **done** | **`ASM-03`** — the largest risk in the shape, and it holds |
 | Open Agent Inbox against a local Aegra with JWT configured | **`ASM-04`** |
-| ~~`openshell sandbox create` with a policy that excludes `.specify/extensions/**`, then try to write there~~ **done — and the write was the wrong test** | **`ASM-28`** — appending is blocked, truncating is not |
+| ~~`openshell sandbox create` with a policy that excludes `.specify/extensions/**`, then try to write there~~ **done — and the write was the wrong test** | **`ASM-28`** — appending is blocked on every build; truncating is blocked only at Landlock ABI 3, which no stable release uses |
 | Run `vouch-bridge` on the host and sign from inside a sandbox over the socket | `ASM-17` |
 | Write one byte to an index file from the agent process and see whether anything objects | `ASM-19` |
 | Start the agent with no index present | the cold-start behaviour nothing specifies |
@@ -550,7 +550,8 @@ this document describes a different system.
 > pre-registered falsifier. See
 > [campaign §3.2](../implement/test-specup-agent-shape-assumptions.md#32--p1b-what-open-swes-own-test-suite-says).
 
-> **`ASM-28` was tested on 2026-09-18 and it was falsified.** The row above now reads that way, and
+> **`ASM-28` was tested twice — falsified on 2026-09-18, answered on 2026-09-19 — and the
+> difference is a version number.** The row above now reads that way, and
 > the reasoning belongs here because this is the assumption that decides whether
 > [stack §13](specup-agent-stack.md#13-meta-cognition-exploration-and-the-parts-that-must-not-be-explored)'s
 > single rule has an enforcement point or is advice.
@@ -562,21 +563,29 @@ this document describes a different system.
 > through a symlink from a permitted directory** — the case this document said Shield could not
 > catch. Landlock binds inodes, not path strings, so that half of `ASM-28` is vindicated.
 >
-> **The half that falsifies it.** `truncate(2)` is not a write Landlock can withhold at the ABI the
-> shipped release uses. Appending to `.specify/governance/allowed-signers` is denied; truncating it
-> succeeds, and **the file `APV-002` verifies signatures against went from 2732 bytes to 0.** The
-> host offered Landlock ABI 8 and the policy was built at ABI 2 — which predates
-> `LANDLOCK_ACCESS_FS_TRUNCATE`. Upstream `main` and `v0.1.0-pre.2+` fix this with `ABI::V3`; the
-> latest **stable** release does not. So the protection is one pre-release away and is absent from
-> everything you can install today.
+> **The half that falsified it, on the shipped release.** `truncate(2)` is not a write Landlock
+> can withhold at the ABI `v0.0.116` uses. Appending to `.specify/governance/allowed-signers` is
+> denied; truncating it succeeds, and **the file `APV-002` verifies signatures against went from
+> 2732 bytes to 0.** The host offered Landlock ABI 8 and the policy was built at ABI 2 — which
+> predates `LANDLOCK_ACCESS_FS_TRUNCATE`.
+>
+> **The re-run, and what it settles.** On OpenShell's rolling `dev` build
+> (`0.0.117-dev.204+ge38d7254e`), which carries `ABI::V3`, the same call returns **`EACCES`** and
+> the file is untouched — while `truncate(2)` on a permitted path in the same sandbox under the
+> same policy still succeeds, which is what makes the denial evidence rather than an artifact.
+> So the exclusion does hold completely, and it holds on **no stable release**: `v0.1.0-pre.1`
+> through `pre.4` are git tags with no published artifacts, and `install.sh` gives you `v0.0.116`
+> by default.
 >
 > **What this changes for §10 and for the ADRs.** The enforcement point is not imaginary, so the five
 > rows of stack §13's table are not advice — but they are only real under a pinned OpenShell version,
 > and that pin becomes a requirement rather than a preference. **A minimum OpenShell version is now a
 > deployment constraint with a security reason behind it**, which is the sort of thing an ADR has to
-> carry a *Revisit when* for. The full record, both further findings, and the reason `answered` was
-> refused are in
-> [campaign §3.3](../implement/test-specup-agent-shape-assumptions.md#33--what-p2-found-and-why-falsified-is-the-honest-word-for-it).
+> carry a *Revisit when* for. One more reason it has to be a pin and not a note: the `dev` build
+> **stopped logging the ABI**, so an operator can no longer read the attestation and tell whether
+> truncation is covered. The only way to know is to run the probe. The full record and all three
+> further findings are in
+> [campaign §3.3](../implement/test-specup-agent-shape-assumptions.md#33--what-p2-found-and-what-the-answer-is-conditional-on).
 
 ---
 
@@ -627,17 +636,21 @@ page is a synthesis of those readings**, which is one remove further from eviden
 here is either a restatement of something in the stack report or an inference drawn across two of
 them. The thirty-one assumption ids exist because that second category would otherwise be invisible.
 
-**Six of the thirty-one are testable today and two have now been tested — one held and one did
-not.** `ASM-03` was exercised against a running Aegra on 2026-09-18 and held, so the first two
-planes of [§1](#1-five-planes-not-twelve-components) are no longer a hypothesis with a diagram — the
-control plane loads and runs the graphs the execution plane is built from. `ASM-28` was exercised
-against a running OpenShell the same day and was **falsified**: the filesystem policy blocks writes
-to the governance tree, symlinks included, and does not block `truncate(2)` on the release you can
-install. **The other twenty-nine are exactly as untested as they were**, and one probe answering
-does not make the rest more likely; it only removes the one that would have invalidated the others.
+**Six of the thirty-one are testable today and two have now been tested; both hold, and one of
+them holds conditionally.** `ASM-03` was exercised against a running Aegra on 2026-09-18 and
+held, so the first two planes of [§1](#1-five-planes-not-twelve-components) are no longer a
+hypothesis with a diagram — the control plane loads and runs the graphs the execution plane is
+built from. `ASM-28` was exercised against a running OpenShell the same day and was **falsified**,
+then re-run on 2026-09-19 against the `dev` build and **answered**: the filesystem policy blocks
+writes to the governance tree, symlinks included, and blocks `truncate(2)` only above a Landlock
+ABI no stable release uses. **The other twenty-nine are exactly as untested as they were**, and
+one probe answering does not make the rest more likely; it only removes the one that would have
+invalidated the others.
 
-**That the two disagreed is the most useful thing on this page.** A campaign where every probe
-confirms the document is a campaign that was not measuring anything.
+**That `ASM-28` first came back falsified is the most useful thing on this page.** Had it been
+run a day later it would have come back clean, and the version floor it now carries — the whole
+security constraint — would never have been noticed. A campaign where every probe confirms the
+document is a campaign that was not measuring anything.
 
 **And the document has a specific failure mode worth naming, because it is the one a synthesis
 invites.** A reader who wants an architecture will find one here: five planes, eleven processes, two
