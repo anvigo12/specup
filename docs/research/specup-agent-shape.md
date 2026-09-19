@@ -76,7 +76,7 @@ is *Verified* from the stack report unless it carries an `ASM-` id.
 | 5 | **ClickHouse** | Langfuse traces, observations, scores | `8123`/`9000` | derived | Traces stop being queryable |
 | 6 | **SeaweedFS** | Langfuse raw events; built index artifacts | S3 gateway | **authoritative for raw events** | Langfuse ingest halts; no process can load an index |
 | 7 | **Langfuse** | trace store UI and API; OTLP endpoint | HTTP | none in-process | The evidence plane goes blind |
-| 8 | **Model server** | one process serving the embedder **and** the reranker (`ASM-11`) | HTTP | none | Dense retrieval and reranking stop; BM25 survives |
+| 8 | **Model server** | one process serving the embedder **and** the reranker (`ASM-11`, **measured 2026-09-19**) | HTTP | none | Dense retrieval and reranking stop; BM25 survives. **Corrected: they stop together and they also stop if either model fails to load** — a reranker Infinity could not type aborted startup and took the healthy embedder with it. One process is one blast radius |
 | 9 | **OpenShell daemon** | creates and supervises sandboxes | host socket | sandbox lifecycle | Every tool call fails |
 | 10 | **`vouch-bridge`** | the signing sidecar; holds the agent's private key | local socket (`ASM-17`) | **the key** | No commit can be signed; no PR can be opened |
 | 11 | **OTel Collector** | receives `stdout` logs and OTLP spans, routes both | OTLP | buffer | Logs and traces are dropped at the edge |
@@ -469,7 +469,7 @@ the runtime coherent, and nothing upstream says it.
 | Id | The assumption | Source | If it is wrong |
 |---|---|---|---|
 | `ASM-07` | `db/neo4j` holds a code property graph — symbols, files, imports, call edges | carried. **The weakest inference in the stack report** | It could be agent memory, a requirements ontology or a dependency graph. Step 3 of the lifecycle describes the wrong query |
-| `ASM-11` | One model server serves both the embedder and the reranker | carried | Two processes, two serving budgets, and §7's single degradation row becomes two |
+| `ASM-11` | **One model server serves both the embedder and the reranker** — **ANSWERED 2026-09-19.** One Infinity process served both, at 3337 MiB and one pid. Two conditions it did not state: the runtime must be Infinity and not TEI, which takes one `--model-id` per process; and the reranker must declare `SequenceClassification`, which `Qwen3-Reranker` does not | carried | Two processes, two serving budgets, and §7's single degradation row becomes two |
 | `ASM-12` | One BPE tokenizer is shared by every stage rather than one per stage | carried | A lexical hit and a dense hit stop referring to the same span — a retrieval bug that is very hard to see from results |
 | `ASM-18` | **The indexing job runs outside the sandbox**, as an admin process in the same package | **new** | Running it inside means granting the sandbox provider egress and a provider credential, which is most of what the policy exists to deny |
 | `ASM-19` | Indexes are pulled read-only at process start and never written at runtime | **new** | Factor VI's resolution collapses and the process stops being share-nothing |
@@ -636,16 +636,19 @@ page is a synthesis of those readings**, which is one remove further from eviden
 here is either a restatement of something in the stack report or an inference drawn across two of
 them. The thirty-one assumption ids exist because that second category would otherwise be invisible.
 
-**Six of the thirty-one are testable today and two have now been tested; both hold, and one of
-them holds conditionally.** `ASM-03` was exercised against a running Aegra on 2026-09-18 and
-held, so the first two planes of [§1](#1-five-planes-not-twelve-components) are no longer a
-hypothesis with a diagram — the control plane loads and runs the graphs the execution plane is
-built from. `ASM-28` was exercised against a running OpenShell the same day and was **falsified**,
-then re-run on 2026-09-19 against the `dev` build and **answered**: the filesystem policy blocks
-writes to the governance tree, symlinks included, and blocks `truncate(2)` only above a Landlock
-ABI no stable release uses. **The other twenty-nine are exactly as untested as they were**, and
-one probe answering does not make the rest more likely; it only removes the one that would have
-invalidated the others.
+**Six of the thirty-one are testable today and three have now been tested; all three hold, and
+two of them hold only under a condition they did not state.** `ASM-03` was exercised against a
+running Aegra on 2026-09-18 and held, so the first two planes of
+[§1](#1-five-planes-not-twelve-components) are no longer a hypothesis with a diagram — the
+control plane loads and runs the graphs the execution plane is built from. `ASM-28` was
+exercised against a running OpenShell the same day and was **falsified**, then re-run on
+2026-09-19 against the `dev` build and **answered**: the filesystem policy blocks writes to the
+governance tree, symlinks included, and blocks `truncate(2)` only above a Landlock ABI no stable
+release uses. `ASM-11` was answered on 2026-09-19 — one process did serve both models — on
+condition that the runtime is Infinity rather than TEI, and that the reranker is not the one
+this project had decided on. **The other twenty-eight are exactly as untested as they were**,
+and one probe answering does not make the rest more likely; it only removes the one that would
+have invalidated the others.
 
 **That `ASM-28` first came back falsified is the most useful thing on this page.** Had it been
 run a day later it would have come back clean, and the version floor it now carries — the whole

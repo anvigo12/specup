@@ -3,15 +3,26 @@
 **Audience:** whoever runs these probes, and whoever reads the results afterwards to decide
 whether `docs/research/specup-agent-runtime.md` can be written.
 
-**Status: two of eight probes have been run, and both are now answered — one of them only on an
-unreleased build.** `P1` was answered on 2026-09-18 and it held. `P2` was **falsified** the same
-day, then **re-run on 2026-09-19 against OpenShell's rolling `dev` build and answered**. The
-difference is a Landlock ABI version: on every stable release, up to and including `v0.0.116`
-which `install.sh` gives you by default, a sandboxed process can still empty
-`.specify/governance/allowed-signers` with `truncate(2)`. On the `dev` build that call returns
-`EACCES`. **Both readings stand**, and the gap between them is now a minimum-version deployment
-constraint rather than a defect with no fix. The other six *Result* blocks are empty, and an empty
-block means *not run* — never *assumed fine*. Run
+**Status: three of eight probes have been run, and all three are answered — two of them only
+under a condition the assumption did not state.** `P1` was answered on 2026-09-18 and it held.
+
+`P2` was **falsified** the same day, then **re-run on 2026-09-19 against OpenShell's rolling
+`dev` build and answered**. The difference is a Landlock ABI version: on every stable release,
+up to and including `v0.0.116` which `install.sh` gives you by default, a sandboxed process can
+still empty `.specify/governance/allowed-signers` with `truncate(2)`. On the `dev` build that
+call returns `EACCES`. **Both readings stand**, and the gap between them is now a
+minimum-version deployment constraint rather than a defect with no fix.
+
+`P5` was answered on 2026-09-19: one process did serve both the embedder and the reranker, at
+one pid and 3337 MiB. It carries two conditions the assumption never mentioned. The runtime must
+be **Infinity and not TEI**, which takes one model per process. And the reranker must **not** be
+the one this project decided on — `Qwen3-Reranker-0.6B` declares a causal-LM architecture that
+the serving runtime cannot type as a reranker, so it either stops the server from starting or
+gets loaded as an embedder.
+
+**Two probes have now returned a condition rather than a plain yes**, which is the pattern worth
+noticing: the assumptions were not wrong, they were underspecified. The other five *Result*
+blocks are empty, and an empty block means *not run* — never *assumed fine*. Run
 `python3 docs/implement/probes/record.py --list` rather than trusting this line; it reads the blocks
 below and this sentence does not.
 
@@ -543,12 +554,97 @@ once, or because it supports embedding but not reranking.
 "one model server" row becomes two processes, and the failure matrix gains a row.
 
 <!-- RESULT P5 -->
-- **Outcome:** _not run_
-- **Date:**
-- **Ran by:**
-- **Evidence:**
-- **What was found:**
+- **Outcome:** answered
+- **Date:** 2026-09-19
+- **Ran by:** Claude Opus 5, at Aniket Gore's direction
+- **Evidence:** workspace/spike-0.1.3/P5/evidence-p5-mixed-pair.txt (the answering run), evidence-p5.txt and evidence-p5-st5.txt (the two Qwen3-Reranker failures), evidence-p5-versions.txt (all versions) - untracked
+- **What was found:** ONE process served both. Infinity 0.0.77 (MIT) loaded Qwen/Qwen3-Embedding-0.6B and a cross-encoder reranker in a single process: /models reported capabilities ['embed'] and ['rerank'] separately, /embeddings returned 1024 dims, /rerank ranked, and the process tree read from /proc was exactly 1 pid at 3337 MiB RSS on CPU float32. Both endpoints were checked for correctness and not just for HTTP 200: two queries retrieved 2/2 correctly by cosine over the embeddings and ranked 2/2 correctly through /rerank. The runtime choice is load-bearing and was read from upstream rather than assumed - TEI's usage line is 'text-embeddings-router [OPTIONS] --model-id <MODEL_ID>', singular and required, so TEI is one model per process and cannot satisfy ASM-11 at all. THE RERANKER THE STACK DECIDED DOES NOT WORK HERE, and that is the finding this probe was not looking for. Qwen/Qwen3-Reranker-0.6B declares architectures ['Qwen3ForCausalLM'], and infinity_emb/inference/select_model.py:47 selects a reranker only when the string 'SequenceClassification' appears in architectures, with no flag to override. On Infinity's own pin (sentence-transformers 3.4.1) the server will not start at all, because the model's modules.json references sentence_transformers.base and cross_encoder.modules.logit_score, which are v5 namespaces. On sentence-transformers 5.7.0 the server starts and loads both models in one process, but registers the reranker with capabilities ['embed'] and /rerank returns HTTP 400 - the pre-registered falsifier's exact wording, 'it supports embedding but not reranking'. A third observation: one unloadable model aborts the whole server, so the healthy embedder does not survive a bad reranker, which is a tighter coupling than the shape document's degradation row assumes. Serving budget, previously unquantified: 3337 MiB for the answering pair, 5321 MiB for two 0.6B Qwen models, 1.70s to embed 8 short texts and 0.08s to rerank 4 documents on 4 AVX2 cores with no usable accelerator. See 3.4.
 <!-- END RESULT P5 -->
+
+#### 3.4 — What P5 found, and the reranker that has to be replaced
+
+**`ASM-11` holds. One process serves both.** Infinity 0.0.77 loaded an embedder and a reranker
+together, registered them under separate capabilities, answered both endpoints, and read as
+exactly one pid in `/proc` — not a supervisor with children, one process.
+
+| | |
+|---|---|
+| Processes in the server's tree | **1** |
+| Resident memory, whole tree | 3337 MiB, CPU `float32` |
+| `/models` capabilities | `embed` → `['embed']`, `rerank` → `['rerank']` |
+| Embed 8 short texts | 1.70s, 1024 dims |
+| Rerank 4 documents | 0.08s |
+| Retrieval correct / ranking correct | **2/2 and 2/2** |
+
+**The runtime choice is the answer, not a detail.** Text Embeddings Inference cannot satisfy
+`ASM-11` at all: its usage line is `text-embeddings-router [OPTIONS] --model-id <MODEL_ID>`,
+singular and required — **one model per process**. Infinity's own help says the opposite in as
+many words: *"cli options can be overloaded i.e. `v2 --model-id model/id1 --model-id
+model/id2`"*. [Stack §12.1](../research/specup-agent-stack.md#121-decisions-taken) lists TEI,
+Infinity, llama.cpp and Ollama as interchangeable permissive options. **For this assumption they
+are not interchangeable**, and a deployment that picks TEI has falsified `ASM-11` by
+construction.
+
+**And the reranker the stack decided cannot be served at all.**
+[Stack §3.6.7](../research/specup-agent-stack.md#367-rerankqwen3-reranker--the-last-18-points)
+names `Qwen3-Reranker-0.6B`. It declares `architectures: ["Qwen3ForCausalLM"]`, and Infinity
+selects a reranker on exactly one condition, at `infinity_emb/inference/select_model.py:47`:
+
+```python
+if any("SequenceClassification" in arch for arch in config.get("architectures", [])):
+    return RerankEngine.from_inference_engine(engine_args.engine)
+...
+return EmbedderEngine.from_inference_engine(engine_args.engine)
+```
+
+A causal-LM reranker never matches, and **no flag overrides it** — `--served-model-name` renames
+a model, it does not retype it. The failure has two shapes depending on a dependency version,
+and neither is a warning:
+
+| `sentence-transformers` | What happens |
+|---|---|
+| **3.4.1** — Infinity's own pin (`<4.0.0`) | **The server does not start.** `ModuleNotFoundError: No module named 'sentence_transformers.base'`. The model's `modules.json` names `sentence_transformers.base.modules.transformer.Transformer` and `cross_encoder.modules.logit_score.LogitScore`, both **v5** namespaces |
+| **5.7.0** — above the pin | Server starts, **one process, both models loaded** — and the reranker registers as `capabilities=['embed']`. `/rerank` returns **HTTP 400** |
+
+The second row is the pre-registered falsifier in its own words: *"it supports embedding but not
+reranking."* It did not fire against `ASM-11`, because the assumption is about the **serving
+architecture** and the architecture held as soon as the reranker was one Infinity can type. It
+fired against the **model pairing**, which is a different claim living in a different document.
+
+> **So stack §3.6.7's decision needs changing, and the replacement is already written there.**
+> That section names **`bge-reranker-v2-m3`** (Apache-2.0, `XLMRobertaForSequenceClassification`,
+> so it matches the check) as the permissive alternative, and states the cost: a **512-token**
+> documented window against Qwen3-Reranker's 32K, *"and for code that difference is not
+> academic."* That cost now has to be paid, or the serving runtime has to change. It is a
+> decision, so it belongs in an ADR rather than here.
+
+**One further finding the probe was not looking for: the failure is not isolated.** When the
+reranker could not load, the **whole server aborted** — `Creating 2 engines: ['embed', 'rerank']`
+and then `Application startup failed. Exiting.` The healthy embedder did not survive the broken
+reranker. [Shape §7](../research/specup-agent-shape.md) records the model server's failure mode
+as *"dense retrieval and reranking stop; BM25 survives"*, which reads as two capabilities
+degrading. **One process is one blast radius**, and that is the cost side of the answer this
+probe returned: `ASM-11` is true, and it is true because they share a process.
+
+**The serving budget, which [stack §9](../research/specup-agent-stack.md#9-what-the-layout-does-not-have)
+lists as unquantified.** On four AVX2 cores with no usable accelerator: **3337 MiB** for the
+answering pair and **5321 MiB** for two 0.6B Qwen models, 1.70s to embed eight short texts,
+0.08s to rerank four documents. Cold start to ready was 95s for the two Qwen models.
+
+**And a ceiling worth recording before anyone proposes larger models.** Both models must be
+resident at once — that is what the assumption *means* — so the pair's cost is the sum:
+
+| Pair, `float32`, both resident | |
+|---|---|
+| 0.6B + 0.6B | **4.4 GiB** — measured at 5321 MiB with overhead |
+| 4B + 4B | 30.0 GiB |
+| 8B + 8B | 58.7 GiB |
+
+Against roughly 10 GiB available here, only the first fits, which is the pair stack §3.6 already
+chose. Reduced precision does not rescue the others on this class of host: `torch` reports **no
+AVX-512 BF16** on this CPU, so `bfloat16` is emulated and slower than `float32`, and 4B+4B is
+still 15 GiB at half precision. **A machine with AMX or a GPU should re-measure rather than
+inherit these numbers** — they are a floor for the architecture, not a limit of it.
 
 ---
 
@@ -717,7 +813,7 @@ until then it is an intention.
 |---|---|---|
 | **0** | This document, `probes/`, the `docs/README.md` row | Reviewed — **done** |
 | **1** | **P1 alone.** P2 and P5 may run beside it | **P1 answered — done, 2026-09-18.** A falsification would have stopped the campaign; it did not fire |
-| **2** | P3, P4, P6, P7, P8. **P2 is closed** — falsified 2026-09-18 on `v0.0.116`, re-run 2026-09-19 on the `dev` build and answered, superseded in place | All eight `answered`, `falsified` or `blocked` |
+| **2** | P3, P4, P6, P7, P8. **P2 and P5 are closed** — P2 falsified 2026-09-18 on `v0.0.116`, re-run 2026-09-19 on the `dev` build and answered, superseded in place; P5 answered 2026-09-19. **P4 was waiting on P2 and is now unblocked** | All eight `answered`, `falsified` or `blocked` |
 | **3** | Register `EVID-0010`–`EVID-0016` in one batch | `audit.py` reports exactly two reasons |
 | **4** | The eight ADRs | Each at `REVIEW` or better; audit still two reasons |
 | **5** | `docs/research/specup-agent-runtime.md` | — |

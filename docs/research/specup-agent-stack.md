@@ -729,6 +729,17 @@ models, and one process can serve both this stage and §3.6.7. The serving confi
 these model directories; inventing a `serve/` directory would imply a component that is one
 container running two models.
 
+> **Corrected 2026-09-19 — "one process can serve both" is true, and the four runtimes are not
+> interchangeable for it.** P5 measured a single Infinity process serving an embedder and a
+> reranker at one pid and 3337 MiB. **TEI cannot do this**: its usage line is
+> `text-embeddings-router [OPTIONS] --model-id <MODEL_ID>`, singular and required — one model per
+> process. Infinity's help states the opposite capability directly: *"cli options can be
+> overloaded i.e. `v2 --model-id model/id1 --model-id model/id2`"*. The sentence above listed
+> four runtimes as equivalent on the strength of all four serving both **kinds** of model, which
+> is not the same claim as serving two models **at once**. Whichever runtime is chosen also
+> constrains which reranker can be loaded — see the amendment in
+> [§3.6.7](#367-rerankqwen3-reranker--the-last-18-points).
+
 #### 3.6.5 `index/bm25s/` and `index/ann/` — lexical and dense
 
 **Verified.** `bm25s` is a BM25 implementation under **MIT** (copyright Xing Han Lu) depending
@@ -825,6 +836,27 @@ cached outside the repository, never committed and never shipped. The full state
 multilingual, and the usual lightweight default. Its documented usage truncates at **512 tokens**,
 against Qwen3-Reranker's 32K, and for code that difference is not academic: 512 tokens is a
 medium-sized function.
+
+> **Amended 2026-09-19, and this is no longer the alternative — it is the candidate.** P5 tried
+> to serve `Qwen3-Reranker-0.6B` from the model server this stack specifies and **could not**.
+> The model declares `architectures: ["Qwen3ForCausalLM"]`, and Infinity selects a reranker only
+> when `"SequenceClassification"` appears in that list
+> (`infinity_emb/inference/select_model.py:47`), with no flag to override. Below Infinity's own
+> `sentence-transformers` pin the server will not start, because the model's `modules.json`
+> names v5-only module classes; above it the server starts, loads the model in the same process
+> — and registers it as an **embedder**, so `/rerank` returns HTTP 400.
+>
+> This is a **packaging** mismatch and not a judgement on the model: `Qwen3-Reranker` is a
+> causal-LM reranker scored from yes/no logits, and the generic cross-encoder loaders every
+> permissive serving runtime uses expect a classification head. `bge-reranker-v2-m3` is
+> `XLMRobertaForSequenceClassification` and matches.
+>
+> **So the 512-token cost named above now has to be paid, or the serving runtime has to
+> change** — and the second option is not free either, because
+> [§12.1 decision 7](#121-decisions-taken)'s "one process serves both" is the thing that made
+> TEI unusable in the first place. That is a decision with a measured cost on both sides, which
+> means an ADR. The full record is in
+> [campaign §3.4](../implement/test-specup-agent-shape-assumptions.md#34--what-p5-found-and-the-reranker-that-has-to-be-replaced).
 
 **And the one to avoid is the one most likely to be recommended.** `jina-reranker-v3` is a 0.6B
 model with a 131K window reporting **61.94 nDCG@10 on BEIR**, state of the art among open-weight
@@ -1377,7 +1409,7 @@ Counted by consumer rather than by container, the stack is smaller than its dire
 | **ClickHouse** | Langfuse only | **No.** Transitive dependency of §3.5 |
 | **The graph** | structural retrieval only | **Yes, and it is now the customer's** — reached over Bolt, run by whoever runs it ([decision 6](#121-decisions-taken)). It is the one service in this table SpecUP can point at rather than deploy |
 | **SeaweedFS** | Langfuse (required), `rag/index` artifacts | One instance serves both, and the second consumer is now certain rather than conditional |
-| **Model serving** | `rag/embed`, `rag/rerank` | **One process serves both**, and only these two — stage 2 calls SpecUP's configured provider instead ([decision 7](#121-decisions-taken)). TEI, Infinity, llama.cpp or Ollama — permissive, and not a directory in the layout because it is config, not a component |
+| **Model serving** | `rag/embed`, `rag/rerank` | **One process serves both** — **measured 2026-09-19 at one pid and 3337 MiB**, and only these two, because stage 2 calls SpecUP's configured provider instead ([decision 7](#121-decisions-taken)). **Not "TEI, Infinity, llama.cpp or Ollama" any more:** TEI takes one `--model-id` per process and cannot serve both, so the permissive options are not interchangeable for this row. Still config rather than a directory in the layout |
 
 So twelve components resolve to **five stateful services plus one model server**, of which three
 exist because Langfuse does and one is not SpecUP's to run. `vouch/` adds no service: Shield is a
