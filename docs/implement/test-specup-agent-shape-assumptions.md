@@ -3,7 +3,7 @@
 **Audience:** whoever runs these probes, and whoever reads the results afterwards to decide
 whether `docs/research/specup-agent-runtime.md` can be written.
 
-**Status: four of eight probes have been run, and all four are answered — three of them only
+**Status: five of eight probes have been run, and all five are answered — four of them only
 under a condition the assumption did not state.** `P1` was answered on 2026-09-18 and it held.
 
 `P2` was **falsified** the same day, then **re-run on 2026-09-19 against OpenShell's rolling
@@ -27,10 +27,21 @@ sandbox that could not read a copy of that key sitting in its own filesystem —
 image and audio signing service. There is also no local socket to reach it on, because an
 OpenShell sandbox is a container with no mount flag. Nothing shipped fills this role today.
 
-**Three probes have now returned a condition rather than a plain yes**, which is the pattern
+`P3` was answered on 2026-09-22, and its condition is of a kind none of the others produced. The
+interoperation works completely: Agent Inbox authenticated against an Aegra that refuses
+anonymous callers, listed the interrupts under their own action names, honoured the four
+`HumanInterruptConfig` booleans, and resumed the thread with each of the four response verbs —
+all of it driven in a real browser, because "the list renders" is not a claim `curl` can settle.
+The caveat the stack report carried was the wrong one: the LangSmith key is a placeholder
+attribute and not a constraint. **The finding that reaches furthest is about neither component.
+Open SWE calls `interrupt()` nowhere in 679 Python files**, so the inbox would list nothing for
+an Open SWE run, and §3.3's premise that it is the one queue for every human decision does not
+hold yet.
+
+**Four probes have now returned a condition rather than a plain yes**, which is the pattern
 worth noticing: the assumptions were not wrong, they were underspecified — and twice the
 specific *component* named turned out to be the wrong one while the *shape* survived. The other
-four *Result* blocks are empty, and an empty block means *not run* — never *assumed fine*. Run
+three *Result* blocks are empty, and an empty block means *not run* — never *assumed fine*. Run
 `python3 docs/implement/probes/record.py --list` rather than trusting this line; it reads the blocks
 below and this sentence does not.
 
@@ -479,6 +490,13 @@ does not render, or a `HumanResponse` does not resume the thread.
 
 **Environment:** P1's stack, with Aegra configured for JWT. Needs P1 `answered`.
 
+*Corrected 2026-09-22, after the run, in two places.* **Aegra has no JWT auth type.** `AUTH_TYPE`
+takes `noop` or `custom`, neither of which does anything on its own — see
+[3.6](#36--what-p3-found-and-the-interrupts-open-swe-never-raises). Authentication is a Python
+module named by `aegra.json`, and the probe supplies one. **And P1's stack is not what this
+needs:** Open SWE calls `interrupt()` nowhere, so its five graphs cannot produce the thing P3
+observes. The probe runs Aegra and Postgres from P1's checkout, against a graph of its own.
+
 **Steps:**
 
 1. Configure Aegra with JWT auth. **Never `none`** — see
@@ -494,12 +512,104 @@ does not render, or a `HumanResponse` does not resume the thread.
 premise, and the `agent-inbox/` directory has no intent behind it.
 
 <!-- RESULT P3 -->
-- **Outcome:** _not run_
-- **Date:**
-- **Ran by:**
-- **Evidence:**
-- **What was found:**
+- **Outcome:** answered
+- **Date:** 2026-09-22
+- **Ran by:** Aniket Gore, with Claude Opus 5
+- **Evidence:** `workspace/spike-0.1.3/P3/evidence-p3.txt` (untracked), produced by `docs/implement/probes/p3.sh`; per-step JSON in `workspace/spike-0.1.3/P3/run/logs/`
+- **What was found:** Agent Inbox authenticates against Aegra with an arbitrary opaque key in `x-api-key` — the LangSmith label is a placeholder, not a constraint — lists the interrupts under their own action names with the four `HumanInterruptConfig` booleans honoured, and resumes the thread with each of `accept`, `edit`, `response` and `ignore`. Three conditions the assumption did not state: it works only against the **production build**, because under `next dev` the detail view crashes before any control is reachable; Aegra must be given a custom auth module that reads `x-api-key`, since its own shipped JWT example reads `Authorization: Bearer` which this client never sends; and Open SWE emits no `interrupt()` at all, so the inbox would show nothing for an Open SWE run.
 <!-- END RESULT P3 -->
+
+#### 3.6 — What P3 found, and the interrupts Open SWE never raises
+
+**`ASM-04` holds, and the caveat the stack report carried was the wrong one.** The inbox
+connected, authenticated, listed and resumed:
+
+| Step | Result |
+|---|---|
+| Unauthenticated `POST /threads/search` | **401** |
+| A credential that is not the configured one | **401** |
+| An arbitrary opaque key, in the header the browser actually sends | **200** |
+| Credential header the browser used, over 156 requests | **`x-api-key`**, every one accepted |
+| `Authorization` header present on any request | **never** |
+| Rows rendered, titled with the action the graph emitted | **5 of 5**, none titled `Interrupt` |
+| Rows carrying the `improper_schema` placeholder | **0** |
+| A config allowing only `accept` | rendered **`['Accept']`** — no Ignore, no Respond, no editable fields |
+| `accept`, `edit`, `response`, `ignore` clicked in the browser | all four left `interrupted` for `idle` |
+| What the graph received | the exact one-element `HumanResponse` list, per verb |
+| A second identity searching for the first's threads | **nothing** |
+
+**The LangSmith key is a label, not a constraint.** `lsv2_pt_…` appears twice in the whole
+repository, both times as an HTML `placeholder` attribute. There is no regex, no comparison and
+no call to any LangSmith service; `smith.langchain.com` is hardcoded once, to build the "Open in
+Studio" link. The key is only *required* when the deployment URL contains the literal
+`us.langgraph.app`. So the first clause of the falsifier — *"the inbox accepts only a LangSmith
+key"* — is false, and [stack §3.3](../research/specup-agent-stack.md#33-agent-inbox--the-explicit-decisions)'s
+first caveat can be retired.
+
+**What the stack report should have worried about instead is the header.** Agent Inbox has no
+login, no session and no bearer-token field. `src/lib/client.ts` is the only place a client is
+built, and it sends exactly one credential header:
+
+```ts
+return new Client({ apiUrl: deploymentUrl, defaultHeaders: {
+  ...(langchainApiKey && { "x-api-key": langchainApiKey }) } });
+```
+
+Aegra's own shipped auth example, `examples/jwt_mock_auth_example.py`, reads
+`Authorization: Bearer`. **Those two never meet.** The pairing works only because a custom auth
+module can read whatever it likes, which is what `p3_auth.py` does — and it reports which header
+arrived rather than assuming, which is the only reason this is a measurement.
+
+**Three things about Aegra that P3 had to establish before any of the above meant anything.**
+
+- **`AUTH_TYPE` does nothing.** Every branch of `get_auth_backend()` returns the same backend,
+  for `noop`, for `custom` and for an unrecognised value. What actually enables authentication is
+  an `auth.path` key in `aegra.json`, which the shipped file does not have.
+- **It fails open, twice.** With no auth file, `authenticate()` returns an *authenticated* user
+  called `anonymous` — so `AUTH_TYPE=custom` with a missing or broken module is silently
+  unauthenticated. And `handle_event` documents its own default as *"If no handlers are defined →
+  allows by default"*. The compose file never mentions authentication and publishes port 2026 on
+  `0.0.0.0`.
+- **Thread isolation is unconditional and does not depend on that.** `api/threads.py` stamps
+  `user_id=user.identity` on insert and puts `ThreadORM.user_id == user.identity` in the `WHERE`
+  clause of every read, with no reference to any handler. This is worth stating precisely because
+  the probe nearly measured the wrong thing: the first draft of `p3_auth.py` registered
+  `@auth.on.threads.search` to filter by owner, which would have passed while Aegra's `WHERE`
+  clause did the work. The handlers were removed and the control kept. It is the same defect
+  P4's step 5 had when a root-owned decoy made Unix permissions look like a Landlock denial.
+
+**The condition that matters operationally: the development server does not work.** Under
+`next dev`, opening any thread crashes the detail view before a single control is reachable —
+`MarkdownText` spreads `className` onto react-markdown's `<Markdown>`, and react-markdown 10
+throws on that prop with no `NODE_ENV` guard. The same tree, the same lockfile, built with
+`next build` and served with `next start`, opens the same thread and renders everything. Both
+were reproduced from a fresh browser profile and a fresh server, on the same thread id.
+**Why the two differ is not resolved here.** The production bundle does contain the deprecation
+check, so the obvious explanation — that it is compiled out — is wrong, and the campaign records
+an unexplained difference rather than inventing a mechanism for it.
+
+**And the finding that reaches furthest: Open SWE raises no interrupts at all.** Across 679
+Python files there is not one `interrupt()` call site, and no `HumanInterrupt`, `action_request`
+or `allow_accept` anywhere. Every occurrence of the word is `multitask_strategy="interrupt"`,
+which supersedes a running run. Plan approval is a **tool** — `agent/tools/approve_plan.py` —
+which writes `PLAN_STATUS_APPROVED` into Open SWE's own plan store and returns a `Command`.
+Agent Inbox enumerates threads paused on `interrupt()`. It would list nothing for an Open SWE
+run today.
+
+That does not falsify `ASM-04`, which is about the inbox and the server. It does undercut
+[stack §3.3](../research/specup-agent-stack.md#33-agent-inbox--the-explicit-decisions)'s premise
+that the inbox is *"the one place every explicit human decision in the system is queued"* —
+because the decisions Open SWE actually asks for do not travel by the mechanism the inbox reads.
+**Either Open SWE's approvals move to `interrupt()`, or the inbox queues only SpecUP's own
+gates.** That is an ADR, not a probe, and [§4](#4-the-decisions-track--eight-adrs-for-sixteen-assumptions)
+is where it belongs.
+
+**One more, for whoever writes the runtime document.** Aegra's `Thread` model has six fields and
+`interrupts` is not among them, so the inbox's primary parsing path is dead against Aegra and
+every interrupt arrives through a per-thread `GET /threads/{id}/state`. That path ends in a bare
+cast — `lastInterrupt.value as HumanInterrupt[]` — with no validation, so the payload **must be a
+list**. Agent Inbox's own README shows `interrupt(request)` with a bare dict; against Aegra that
+renders a row with no controls and no error. The list also costs one HTTP request per row.
 
 ---
 
@@ -924,7 +1034,19 @@ document and now needs to be made explicitly, with the forces recorded.
 | **5** | What the graph is for | `ASM-07` | — |
 | **6** | Key custody | `ASM-13` | **P4** |
 | **7** | Index build, provenance and publication | `ASM-31` | — |
-| **8** | Interrupt lifetime | `ASM-30` | **P8** |
+| **8** | Interrupt lifetime | `ASM-30` | **P8**, and now **P3** |
+
+**ADR 8 acquired a second question on 2026-09-22, and it is the larger of the two.** It was
+scoped to *how long a pending interrupt lives*. P3 found that, in this stack, **almost nothing
+raises one**: Open SWE calls `interrupt()` in none of its 679 Python files, and approves a plan
+through a tool that writes to its own store. So before the lifetime of an interrupt can be
+decided there is a prior question — *which decisions travel as interrupts at all*. The two
+answers are a fork: either Open SWE's approvals are moved onto `interrupt()`, which makes
+[stack §3.3](../research/specup-agent-stack.md#33-agent-inbox--the-explicit-decisions)'s single
+queue real and means patching a vendored agent, or the inbox queues only SpecUP's own governance
+gates and Open SWE keeps its dashboard, which leaves the two surfaces §3.3's second caveat
+warned about. **This is not a probe.** P3 established the fact; nothing can be measured to settle
+the choice.
 
 **These would be the first ADRs this project has written.** `.specify/architecture/` holds two
 templates and an index today, which is what
@@ -967,7 +1089,7 @@ until then it is an intention.
 |---|---|---|
 | **0** | This document, `probes/`, the `docs/README.md` row | Reviewed — **done** |
 | **1** | **P1 alone.** P2 and P5 may run beside it | **P1 answered — done, 2026-09-18.** A falsification would have stopped the campaign; it did not fire |
-| **2** | P3, P6, P7, P8. **P2, P4 and P5 are closed** — P2 falsified 2026-09-18 on `v0.0.116`, re-run 2026-09-19 on the `dev` build and answered, superseded in place; P5 answered 2026-09-19; P4 answered 2026-09-19, the last one that needed nothing from P1. **The four that remain all need P1's stack standing up again**, and P6 and P7 additionally need Langfuse | All eight `answered`, `falsified` or `blocked` |
+| **2** | P6, P7, P8. **P2, P3, P4 and P5 are closed** — P2 falsified 2026-09-18 on `v0.0.116`, re-run 2026-09-19 on the `dev` build and answered, superseded in place; P5 and P4 answered 2026-09-19; P3 answered 2026-09-22 against Aegra and Postgres from P1's checkout, plus a graph of its own, a production build of Agent Inbox and a headless browser. **The three that remain need Open SWE's own graphs running**, which P3 did not, and P6 and P7 additionally need Langfuse | All eight `answered`, `falsified` or `blocked` |
 | **3** | Register `EVID-0010`–`EVID-0016` in one batch | `audit.py` reports exactly two reasons |
 | **4** | The eight ADRs | Each at `REVIEW` or better; audit still two reasons |
 | **5** | `docs/research/specup-agent-runtime.md` | — |

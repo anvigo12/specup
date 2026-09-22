@@ -31,7 +31,12 @@ hook fails any commit that gives a file there bytes, and that premise is what
 | `p4_bridge_client.py` | the sandbox half: enough of `ssh-keygen -Y sign` to satisfy git, forwarding to the sidecar | yes |
 | `p5.sh` | P5: starts **one** Infinity process with both models and measures it | **yes — exit 0 answered, and exit 1 on the reranker the stack had decided** |
 | `p5_measure.py` | the judgement half of P5: process count from `/proc`, resident memory, and whether the two models actually retrieve and rank | yes, including both failures |
-| `p3.sh`, `p6.sh` … `p8.sh` | **absent, deliberately** | — |
+| `p3.sh` | P3 end to end: configures Aegra for real authentication, interrupts a graph, builds Agent Inbox, and clicks every response verb in a headless browser | **yes — exit 0 answered, from a cold start** |
+| `p3_auth.py` | the authentication Aegra runs under for P3, and the instrument that records **which header** the browser used | yes |
+| `p3_graph.py` | the fixture: a graph that interrupts with a `HumanInterrupt` payload and records the resume verbatim | yes, including its own self-test |
+| `p3_protocol.py` | replays the six Agent Protocol calls the inbox makes, and checks Aegra's answers | yes, including one false falsification it caused |
+| `p3_browser.js` | drives the real inbox over the Chrome DevTools Protocol. No packages: Node 24 has a global `WebSocket` | yes |
+| `p6.sh` … `p8.sh` | **absent, deliberately** | — |
 
 **`p1b` is evidence, not a probe.** It has no pre-registered falsifier, so `record.py` will not
 take its output and no `RESULT` block belongs to it. It exists because P1's one stubbed run said
@@ -39,9 +44,13 @@ almost nothing about Open SWE, and Open SWE ships 3434 tests that say a great de
 A script whose numbers are checked against constants is not a probe; it is a regression guard, and
 when its numbers move the campaign document changes rather than the constants.
 
-**The remaining four are missing on purpose.** Writing `p3.sh` today would mean inventing Agent
-Inbox's connection flags from memory — the failure `AGENTS.md` names in as many words: *"Resolve, or
-stop — never infer."* Each probe's script is written **when that probe is prepared**, against the
+**The remaining three are missing on purpose.** Writing `p6.sh` today would mean inventing
+Langfuse's migration and key-space behaviour from memory — the failure `AGENTS.md` names in as
+many words: *"Resolve, or stop — never infer."* This paragraph used to say the same about `p3.sh`,
+and the caution was justified by the run: every value that mattered — the credential header, the
+query parameters the list needs, the fact that the interrupt value must be a list — came out of
+Agent Inbox's source on the day, and the two that had been guessed beforehand were both wrong.
+Each probe's script is written **when that probe is prepared**, against the
 upstream documentation open beside it. `p2.sh` is what that looks like in practice: every flag in it
 was read from `openshell <command> --help` or from NVIDIA's own source during the run, and the two
 guesses made beforehand — `openshell version` and a positional argument to `sandbox exec` — were
@@ -96,6 +105,39 @@ refused the read and the policy under test was never consulted. Step 5b now boot
 under a policy that lists the parent directory and requires the same read to **succeed**. A
 denial is only evidence when the matching permit is shown beside it, and a probe that reports the
 expected answer for the wrong reason is worse than one that fails.
+
+**When the falsifier says "renders", decide what that means before you run it.** P3's middle
+clause — *"it connects but the interrupt list does not render"* — is not falsifiable as written,
+because Agent Inbox renders *something* for every payload it cannot parse: it substitutes an
+interrupt whose action is the sentinel `improper_schema` and titles the row with the literal word
+"Interrupt". A screenshot with rows in it would have satisfied a careless reading of the clause
+while proving that the schema had failed. `p3.sh` therefore names three discriminators in its
+header, all read from the inbox's source before the run: the row title must equal the action the
+graph emitted, the status pill must read "Requires Action" rather than "Ignore", and a config
+allowing only `accept` must render an Accept control **and nothing else**. The general rule:
+**a falsifier containing a word like "works", "renders" or "connects" is not finished until the
+probe says what would distinguish it from the nearest thing that merely looks like it.**
+
+**A UI claim needs a browser, and this one needed no new dependency.** Agent Inbox is a
+client-only Next.js app — `page.tsx` begins `"use client"`, there are no API routes and no proxy
+— so no thread data ever passes through its server and nothing about rendering can be read from
+`curl`. Asserting on server HTML and calling it "renders" would be an inference presented as a
+reading. Neither Playwright nor Puppeteer is installed here, and installing one would have meant
+reporting a result obtained with a tool brought in for the occasion; `p3_browser.js` drives the
+Chrome that is already on the machine over the DevTools Protocol, in about a hundred lines,
+because Node 24 ships a global `WebSocket`.
+
+**Two ways P3 lied to itself before it told the truth, both worth repeating.** The first was a
+false **negative**: `p3_protocol.py` waited for a thread to stop being `interrupted` and then read
+its state, which is correct for the streaming endpoint — it does not return until the stream is
+done — and wrong for the non-streaming one, which returns as soon as the run is queued. So three
+verbs passed and `ignore` "failed", which reads like a fact about `ignore` and was a fact about
+the wait. The thread had resumed correctly all along. **A verb that fails where its siblings pass
+is more often a difference in how the probe waits than a difference in the software.** The second
+was a false **empty**: the browser reported "No threads found" against a deployment holding
+thirteen matching interrupts, because the inbox's configuration had been seeded at
+`http://127.0.0.1:3100` and the page then loaded at `http://localhost:3100`. `localStorage` is
+scoped to an origin, and those are two origins. `p3.sh` now derives both from one variable.
 
 **A probe may have to supply the component the assumption names, and it must say so loudly.**
 `ASM-17` names `vouch-bridge` as the commit-signing sidecar. `vouch-bridge` exists and signs

@@ -508,7 +508,7 @@ the runtime coherent, and nothing upstream says it.
 | `ASM-17` | ~~`vouch-bridge` runs as a **per-host sidecar**, reached over a local socket the sandbox cannot see~~ **ANSWERED 2026-09-19 as a topology, and the component and the transport are both wrong.** A host-held key signed a commit made inside the sandbox; the sandbox was denied a copy of that key in its own filesystem by Landlock, with a permit shown beside the denial. But `vouch-bridge` is a **C2PA image and audio signing service** that mints an ephemeral certificate chain per request and signs no git object, and there is **no local socket** — an OpenShell sandbox is a container with no mount flag, and egress is a transparent L7 proxy. The sidecar has to be an allowlisted HTTP endpoint, and **nothing shipped implements it** | **new** | Per-run means a key in each sandbox, which inverts the Identity Sidecar pattern |
 | `ASM-26` | All stateful services are single-instance. **No HA, no replication, no failover** | **new** | §7's failure table is a list of outages rather than degradations |
 | `ASM-28` | **The governance tree is protected by the OpenShell filesystem policy, not by Shield rules** — **ANSWERED 2026-09-19, and only above a version floor.** Written as an allowlist the policy blocks writes, symlinks included. `truncate(2)` is blocked at Landlock `ABI::V3` (the `dev` build) and **not blocked on any stable release**, where the trust root went from 2732 bytes to 0. Falsified 2026-09-18 on `v0.0.116`; that reading stands | **new — and it corrects [stack §13.7](specup-agent-stack.md#137-one-rule-and-the-five-places-it-lands)** | Shield cannot see symlinks and says so; a path rule there is advisory. If the policy cannot express the exclusion, the protection does not exist at any layer |
-| `ASM-04` | Agent Inbox authenticates cleanly against Aegra's JWT or OAuth | carried, and flagged untested upstream | Its connection form asks for a LangSmith API key. If this fails, the decision surface is the dashboard alone and [stack §3.3](specup-agent-stack.md#33-agent-inbox--the-explicit-decisions) loses its premise |
+| `ASM-04` | ~~Agent Inbox authenticates cleanly against Aegra's **JWT or OAuth**~~ **ANSWERED 2026-09-22, and the risk was in a different place than this row guessed.** It authenticates with an arbitrary opaque key in `x-api-key` — the LangSmith label is an HTML placeholder, not a constraint — then lists the interrupts under their own action names, honours the four config booleans and resumes on all four verbs. But Aegra has **no JWT or OAuth type**: authentication is a Python module named by `aegra.json`, and the one Aegra ships reads `Authorization: Bearer`, which this client never sends. The client must also be a **production build**; `next dev` crashes its own detail view. **And Open SWE calls `interrupt()` nowhere**, so the inbox would list nothing for an Open SWE run | carried, and flagged untested upstream | Its connection form asks for a LangSmith API key. If this fails, the decision surface is the dashboard alone and [stack §3.3](specup-agent-stack.md#33-agent-inbox--the-explicit-decisions) loses its premise |
 
 ### Six can be tested in an afternoon, and three of them are load-bearing
 
@@ -517,7 +517,7 @@ Everything above is untested. These six need no new code:
 | Test | Settles |
 |---|---|
 | ~~Point an `aegra.json` at one Open SWE graph and start a run~~ **done** | **`ASM-03`** — the largest risk in the shape, and it holds |
-| Open Agent Inbox against a local Aegra with JWT configured | **`ASM-04`** |
+| ~~Open Agent Inbox against a local Aegra with JWT configured~~ **done — with a custom `x-api-key` handler, because Aegra has no JWT type and the inbox sends no bearer token** | **`ASM-04`** — the inbox and the server interoperate; the queue would be empty, because Open SWE raises no interrupts |
 | ~~`openshell sandbox create` with a policy that excludes `.specify/extensions/**`, then try to write there~~ **done — and the write was the wrong test** | **`ASM-28`** — appending is blocked on every build; truncating is blocked only at Landlock ABI 3, which no stable release uses |
 | ~~Run `vouch-bridge` on the host and sign from inside a sandbox over the socket~~ **done — and neither `vouch-bridge` nor a socket was usable** | **`ASM-17`** — the topology holds over an allowlisted HTTP endpoint; the named component signs images, not commits |
 | Write one byte to an index file from the agent process and see whether anything objects | `ASM-19` |
@@ -646,8 +646,8 @@ page is a synthesis of those readings**, which is one remove further from eviden
 here is either a restatement of something in the stack report or an inference drawn across two of
 them. The thirty-one assumption ids exist because that second category would otherwise be invisible.
 
-**Six of the thirty-one are testable today and four have now been tested; all four hold, and
-three of them hold only under a condition they did not state.** `ASM-03` was exercised against a
+**Six of the thirty-one are testable today and five have now been tested; all five hold, and
+four of them hold only under a condition they did not state.** `ASM-03` was exercised against a
 running Aegra on 2026-09-18 and held, so the first two planes of
 [§1](#1-five-planes-not-twelve-components) are no longer a hypothesis with a diagram — the
 control plane loads and runs the graphs the execution plane is built from. `ASM-28` was
@@ -659,16 +659,29 @@ condition that the runtime is Infinity rather than TEI, and that the reranker is
 this project had decided on. `ASM-17` was answered on 2026-09-19: a host-held key signed a commit
 made inside a sandbox that could not read a copy of that key in its own filesystem — on condition
 that the sidecar is an **allowlisted HTTP endpoint** rather than a local socket, and that it is
-**not `vouch-bridge`**, which signs C2PA images and audio. **The other twenty-seven are exactly as
-untested as they were**, and one probe answering does not make the rest more likely; it only
-removes the one that would have invalidated the others.
+**not `vouch-bridge`**, which signs C2PA images and audio. `ASM-04` was answered on 2026-09-22 in
+a real browser: Agent Inbox authenticated against an Aegra that refuses anonymous callers, listed
+the interrupts under their own action names, honoured the four config booleans and resumed the
+thread with each of the four response verbs — on condition that the credential travels in
+`x-api-key`, which Aegra's own shipped auth example does not read, and that the client is a
+production build, because the development server crashes its own detail view. **The other
+twenty-six are exactly as untested as they were**, and one probe answering does not make the rest
+more likely; it only removes the one that would have invalidated the others.
 
-**Three of the four conditions are the same shape, and that is now a pattern rather than a
+**Three of the five conditions are the same shape, and that is now a pattern rather than a
 coincidence.** In each case the *arrangement* this document describes survived contact and the
 *named component* did not: TEI cannot serve two models, `Qwen3-Reranker` cannot be typed as a
 reranker, `vouch-bridge` does not sign commits. A synthesis is good at shapes and bad at parts,
 because a part is a fact about somebody else's software and a shape is an argument. The runtime
 specification should treat every component name in here as unverified until a probe has run it.
+
+**`ASM-04`'s condition is a fourth shape, and it is the one this page should find most
+uncomfortable.** Both named components worked; what failed was an arrow between them that this
+document never drew. Agent Inbox reads threads paused on `interrupt()`, and **Open SWE calls
+`interrupt()` nowhere** — its plan approval is a tool writing to its own store. So the inbox and
+the server interoperate, and the queue this page puts them in front of would be empty. A
+synthesis is bad at parts; it is worse at the places where two parts are assumed to speak, and a
+reader should trust the boxes on this page further than the lines between them.
 
 **That `ASM-28` first came back falsified is the most useful thing on this page.** Had it been
 run a day later it would have come back clean, and the version floor it now carries — the whole

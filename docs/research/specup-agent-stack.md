@@ -384,6 +384,37 @@ does not**, and they sit next to each other in the same run.
   everything else goes to the inbox, there are two places to look, which is the problem the inbox
   was added to solve. Deciding which surface owns which decision is part of adopting it.
 
+> **Corrected 2026-09-22, by running it — the first caveat is wrong, and the second is worse than
+> stated.** Probe P3
+> ([campaign 3.6](../implement/test-specup-agent-shape-assumptions.md#36--what-p3-found-and-the-interrupts-open-swe-never-raises))
+> connected Agent Inbox `f1616f3` to Aegra `c07ad0d` in a browser.
+>
+> **The LangSmith key is a label, not a constraint.** `lsv2_pt_…` occurs twice in that
+> repository, both times as an HTML `placeholder` attribute. There is no validation of any kind,
+> and an arbitrary opaque string authenticated. The key is *required* only when the deployment
+> URL contains the literal `us.langgraph.app`.
+>
+> **The real constraint is the header, and this section did not mention it.** Agent Inbox has no
+> login and no bearer-token field; `src/lib/client.ts` sends `x-api-key` and nothing else. Aegra's
+> own shipped auth example reads `Authorization: Bearer`, so **the two do not meet out of the
+> box** — the pairing needs a custom auth module on the Aegra side. Aegra's compatibility list
+> still does not name Agent Inbox, and that remains true without meaning incompatible.
+>
+> **The second caveat understates the problem: Open SWE raises no interrupts at all.** Across 679
+> Python files there is no `interrupt()` call site. Plan approval is a tool,
+> `agent/tools/approve_plan.py`, writing to Open SWE's own plan store. Agent Inbox enumerates
+> threads paused on `interrupt()`, so today it would list **nothing** for an Open SWE run. The
+> claim above that the inbox is *"the one place every explicit human decision in the system is
+> queued"* is therefore an aspiration that requires a change to Open SWE, not a property of
+> adopting the inbox. This is the fifth ADR candidate in
+> [§12.2](#122-the-eighteen-questions)'s territory and belongs with the others.
+>
+> One deployment note, since it is cheap to get wrong: `AUTH_TYPE` in Aegra's `.env` does nothing
+> — every value selects the same backend — and with no auth file configured the server returns an
+> *authenticated* user called `anonymous`. Authentication is enabled by an `auth.path` key in
+> `aegra.json`, which the shipped file does not carry, and the compose file never mentions
+> authentication while publishing the port on `0.0.0.0`.
+
 ### 3.4 `sandbox/openshell/` — NVIDIA OpenShell
 
 **Verified.** [NVIDIA OpenShell](https://github.com/NVIDIA/OpenShell) is **Apache-2.0** — read
